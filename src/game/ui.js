@@ -4,6 +4,25 @@
    菜单系统 (键盘/手柄/触屏通用)
    ============================================================ */
 function openMenu(id,from){ MENU={id,sel:0,page:0,capture:null,from:from||null}; }
+/* ---------- 输入方式感知提示 (手柄/触屏/键盘) ---------- */
+function navHintDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('navHintP',{c:padBtnName(SET.pad.confirm),b:padBtnName(SET.pad.back)});
+  if(m==='touch')return T('navHintT');
+  return T('navHint');
+}
+function skipDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('skipP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('skipT');
+  return T('skip');
+}
+function contDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('contP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('contT');
+  return T('pressCont');
+}
 function menuBack(){
   if(!MENU)return;
   const from=MENU.from;
@@ -137,17 +156,30 @@ function drawMenu(){
   if(id==='padmap')foot=PAD.gp?(PAD.gp.id||'').slice(0,26):T('padNone');
   if(MENU.capture)foot=T('padWait');
   if(id==='option'&&MENU.sel===1)foot=T('diffTip');
-  txt(foot||T('navHint'),x+W/2,y+H-14,8,foot&&MENU.capture?PAL.gold:PAL.lite,'center');
+  txt(foot||navHintDyn(),x+W/2,y+H-14,8,foot&&MENU.capture?PAL.gold:PAL.lite,'center');
   if(id==='title'){
     uPanel(VW/2-134,VH-28,268,20,PAL.cyan,0.58);
-    txt('KEYBOARD · GAMEPAD · TOUCH',VW/2,VH-22,7,PAL.lite,'center');
+    /* 底部输入模式条: 高亮当前生效模式 */
+    const m=inMode(),segs=[['KEYBOARD','key'],['GAMEPAD','pad'],['TOUCH','touch']];
+    uctx.font='bold 7px '+FONT;
+    let sx=VW/2;
+    for(const s of segs)sx-=uctx.measureText(s[0]).width+9;
+    for(const [label,mode] of segs){
+      txt(label,sx,VH-22,7,mode===m?PAL.gold:PAL.steel);
+      sx+=uctx.measureText(label).width+9;
+    }
   }
 }
 function drawHelp(){
   const pg=MENU.page;
   uctx.globalAlpha=0.82; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   uPanel(22,8,VW-44,VH-22,PAL.cyan,0.68);
-  txtO(T('h'+pg+'t'),VW/2,14,13,PAL.gold,'center');
+  /* 标题动态按键提示: 手柄模式显示手柄键名, 触屏模式不显示键名 */
+  const HELP_ACTS={1:'mg',2:'cannon',3:'msl',4:'strike',5:'sprint',6:'shield'};
+  let ht=T('h'+pg+'t').replace(/\s*\[.*\]/,'');
+  const kh=keyHint(HELP_ACTS[pg]);
+  if(kh)ht+=' ['+kh+']';
+  txtO(ht,VW/2,14,13,PAL.gold,'center');
   const hsx=VW/2-80,hsy=34,hsw=160,hsh=84;
   uctx.imageSmoothingEnabled=false;
   uctx.drawImage(buf,hsx,hsy,hsw,hsh,hsx,hsy,hsw,hsh);
@@ -194,4 +226,156 @@ function drawUpgrade(){
   if(blink)txt('[ ⏎ / A ]',VW/2,VH-22,9,PAL.gold,'center');
   TAP_RECTS.push({x:6,y:VH-26,w:90,h:18,act:()=>{refundAll();SFX.heal();}});
   txt('R: '+T('upgRefund'),10,VH-22,7,PAL.lite);
+}
+
+/* ============================================================
+   战前键位速览 (ctrl 状态): 动态演示手柄/触屏/键盘布局
+   ============================================================ */
+const CTRL_ACTS=[
+  {id:'move',  t:'cMove'},
+  {id:'mg',    t:'cMg'},
+  {id:'cannon',t:'cCannon'},
+  {id:'msl',   t:'cMsl'},
+  {id:'strike',t:'cStrike'},
+  {id:'sprint',t:'cSprint'},
+  {id:'shield',t:'cShield'},
+  {id:'pause', t:'cPause'}];
+function ctrlKeyOf(a,mode){
+  if(mode===0){ const bi=SET.pad[a]; return bi>=0?padBtnName(bi):''; }
+  if(mode===1)return '';
+  return KEY_NAMES[a]||'';
+}
+function ctrlRing(cx,cy,r){
+  const p=0.5+0.5*Math.sin(ST.t*6);
+  uctx.strokeStyle=rgba(PAL.gold,0.35+0.55*p);
+  uctx.lineWidth=1.5;
+  uctx.beginPath(); uctx.arc(cx,cy,r+1.5+2.5*p,0,Math.PI*2); uctx.stroke();
+}
+function ctrlBtn(cx,cy,r,label,hot,dim){
+  uctx.fillStyle=hot?rgba(PAL.gold,0.30):rgba(PAL.panel,0.92);
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.fill();
+  uctx.strokeStyle=hot?PAL.gold:(dim?PAL.rail:PAL.steel); uctx.lineWidth=1;
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.stroke();
+  txt(label,cx,cy-3,7,hot?PAL.white:(dim?PAL.rail:PAL.lite),'center');
+  if(hot)ctrlRing(cx,cy,r);
+}
+function ctrlKeycap(cx,cy,w,h,label,hot){
+  upx(cx,cy,w,h,hot?rgba(PAL.gold,0.30):PAL.panel);
+  uctx.strokeStyle=hot?PAL.gold:PAL.steel; uctx.lineWidth=1;
+  uctx.strokeRect(cx+0.5,cy+0.5,w-1,h-1);
+  txt(label,cx+w/2,cy+h/2-3,7,hot?PAL.white:PAL.lite,'center');
+  if(hot)ctrlRing(cx+w/2,cy+h/2,Math.max(w,h)/2);
+}
+function drawCtrlIntro(){
+  const mode=ST.ctrlMode||0;                      /* 0=pad 1=touch 2=key */
+  const idx=ST.ctrlIdx%CTRL_ACTS.length;
+  const act=CTRL_ACTS[idx], hot=act.id;
+  uctx.globalAlpha=0.82; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
+  /* 标题 */
+  txtO(T('ctrlT'),VW/2,8,14,PAL.gold,'center');
+  txt(T('ctrlSwitch'),VW-12,12,6,PAL.lite,'right');
+  /* 布局切换标签 */
+  const tabs=[T('ctrlModeP'),T('ctrlModeT'),T('ctrlModeK')];
+  uctx.font='bold 8px '+FONT;
+  let tx=VW/2; for(const t of tabs)tx-=uctx.measureText(t).width+14;
+  tabs.forEach((t,i)=>{
+    const w=uctx.measureText(t).width;
+    txt(t,tx,26,8,i===mode?PAL.gold:PAL.steel);
+    if(i===mode)upx(tx,35,w,1,PAL.gold);
+    const sx=tx;
+    TAP_RECTS.push({x:sx-4,y:24,w:w+8,h:14,act:()=>{if(ST.ctrlMode!==i){ST.ctrlMode=i;ST.ctrlT=ST.ctrlIdx*1.7;SFX.pick();}}});
+    tx+=w+14;
+  });
+  /* 左: 布局图解面板 */
+  const X=16,Y=44,W=286,H=186;
+  uPanel(X,Y,W,H,PAL.cyan,0.86);
+  if(mode===0)drawCtrlPad(hot);
+  else if(mode===1)drawCtrlTouch(hot);
+  else drawCtrlKeys(hot);
+  /* 右: 动作列表(当前项高亮, 动态步进) */
+  const RX=308,RY=44,RW=156,RH=186;
+  uPanel(RX,RY,RW,RH,PAL.gold,0.86);
+  CTRL_ACTS.forEach((a,i)=>{
+    const ry=RY+8+i*22, sel=i===idx;
+    if(sel){ upx(RX+6,ry,RW-12,20,rgba(PAL.gold,0.22)); txt('▶',RX+10,ry+6,7,PAL.gold); }
+    txt(T(a.t),RX+22,ry+6,8,sel?PAL.white:PAL.lite);
+    const k=ctrlKeyOf(a.id,mode);
+    if(k)txt(k,RX+RW-10,ry+6,8,sel?PAL.gold:PAL.steel,'right');
+    TAP_RECTS.push({x:RX+4,y:ry-2,w:RW-8,h:22,act:()=>{ST.ctrlT=i*1.7;SFX.pick();}});
+  });
+  /* 底部: 确认出击提示(闪烁) + 手柄别名注 */
+  if((ST.t*2%1)<0.66)
+    txtO(mode===1?T('ctrlGoT'):TF('ctrlGoP',{k:mode===0?padBtnName(SET.pad.confirm):'ENTER'}),
+      VW/2,238,10,PAL.white,'center');
+  if(mode===0)txt(T('ctrlAlias'),VW/2,254,6,PAL.steel,'center');
+  TAP_RECTS.push({x:VW/2-90,y:232,w:180,h:22,act:()=>exitCtrlIntro()});
+}
+/* 手柄布局图解 (适配盖世小鸡X2S等标准安卓手柄) */
+function drawCtrlPad(hot){
+  const cx=159,cy=138;
+  upx(cx-116,cy-42,232,104,rgba(PAL.panel,0.35));
+  uctx.strokeStyle=PAL.steel; uctx.lineWidth=1; uctx.strokeRect(cx-115.5,cy-41.5,231,103);
+  /* 肩键/扳机 */
+  ctrlKeycap(cx-96,cy-40,34,9,'LT',hot==='shield');
+  ctrlKeycap(cx-58,cy-40,34,9,'LB',hot==='shield');
+  ctrlKeycap(cx+24,cy-40,34,9,'RB',hot==='sprint');
+  ctrlKeycap(cx+62,cy-40,34,9,'RT',hot==='mg');
+  /* 左摇杆 */
+  ctrlBtn(cx-78,cy-14,13,'L',hot==='move');
+  /* 十字键 (HAT轴/按钮12-15) */
+  const dx=cx-78,dy=cy+34;
+  ctrlKeycap(dx-6,dy-22,12,10,'↑',hot==='move');
+  ctrlKeycap(dx-20,dy-5,12,10,'◀',hot==='move');
+  ctrlKeycap(dx+8,dy-5,12,10,'▶',hot==='move');
+  ctrlKeycap(dx-6,dy+12,12,10,'▼',hot==='move');
+  /* ABXY (位置对应: A=南 B=东 X=西 Y=北) */
+  const bx=cx+62,by=cy-2;
+  ctrlBtn(bx,by-20,9,'Y',hot==='msl');
+  ctrlBtn(bx-20,by,9,'X',hot==='cannon');
+  ctrlBtn(bx+20,by,9,'B',hot==='strike');
+  ctrlBtn(bx,by+20,9,'A',hot==='mg');
+  /* Select/Start */
+  ctrlKeycap(cx-30,cy+34,26,9,'SEL',false);
+  ctrlKeycap(cx+6,cy+34,26,9,'STA',hot==='pause');
+  txt('STICK / D-PAD',cx-78,cy+48,6,PAL.steel,'center');
+  txt(T('cMove'),cx+62,cy+48,6,PAL.steel,'center');
+}
+/* 触屏布局图解 (对应虚拟按钮实际位置) */
+function drawCtrlTouch(hot){
+  /* 手机屏幕框 */
+  upx(40,58,240,158,rgba(PAL.panel,0.30));
+  uctx.strokeStyle=PAL.steel; uctx.strokeRect(40.5,58.5,239,157);
+  /* 方向键(左) */
+  ctrlKeycap(96,96,20,18,'▲',hot==='move');
+  ctrlKeycap(72,120,20,18,'◀',hot==='move');
+  ctrlKeycap(120,120,20,18,'▶',hot==='move');
+  ctrlKeycap(96,144,20,18,'▼',hot==='move');
+  /* 动作键(右) */
+  ctrlBtn(238,168,15,T('cMg').slice(0,2),hot==='mg');
+  ctrlBtn(204,190,11,T('cCannon').slice(0,2),hot==='cannon');
+  ctrlBtn(204,108,11,T('cMsl').slice(0,2),hot==='msl');
+  ctrlBtn(238,84,11,T('cStrike').slice(0,2),hot==='strike');
+  ctrlBtn(176,150,11,T('cSprint').slice(0,2),hot==='sprint');
+  ctrlBtn(176,108,11,T('cShield').slice(0,2),hot==='shield');
+  ctrlKeycap(252,66,20,12,'❚❚',hot==='pause');
+  txt('TAP',96,178,6,PAL.steel,'center');
+}
+/* 键盘布局图解 */
+function drawCtrlKeys(hot){
+  /* WASD 方向 */
+  ctrlKeycap(88,82,20,18,'W',hot==='move');
+  ctrlKeycap(66,104,20,18,'A',hot==='move');
+  ctrlKeycap(88,104,20,18,'S',hot==='move');
+  ctrlKeycap(110,104,20,18,'D',hot==='move');
+  /* 武器键 */
+  ctrlKeycap(160,96,22,18,'J',hot==='mg');
+  ctrlKeycap(186,96,22,18,'K',hot==='cannon');
+  ctrlKeycap(212,96,22,18,'L',hot==='msl');
+  ctrlKeycap(238,96,22,18,'U',hot==='strike');
+  /* 功能键 */
+  ctrlKeycap(160,140,48,18,'SHIFT',hot==='sprint');
+  ctrlKeycap(212,140,48,18,'SPACE',hot==='shield');
+  ctrlKeycap(160,168,22,18,'P',hot==='pause');
+  ctrlKeycap(186,168,60,18,'ENTER',false);
+  txt('WASD / ARROWS',99,132,6,PAL.steel,'center');
 }

@@ -452,9 +452,9 @@ function drawHUD(){
     upx(188,48,Math.round(124*frac),5,PAL.red);
     upx(188+31,48,1,5,PAL.ink); upx(188+62,48,1,5,PAL.ink); upx(188+93,48,1,5,PAL.ink);   /* 25% 分段刻度 */
   }
-  drawHudSkill(6,VH-47,92,T('skStrike'),'U',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  drawHudSkill(6,VH-29,92,T('skMsl'),'L',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:0),p.charge>=0.45?PAL.white:PAL.aqua,p.charging||p.charge>0);
-  drawHudSkill(102,VH-47,84,T('skTurbo'),'SHIFT',p.sprintG,p.sprintLock?PAL.red:PAL.acid,!p.sprintLock);
+  drawHudSkill(6,VH-47,92,T('skStrike'),keyHint('strike')||'—',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
+  drawHudSkill(6,VH-29,92,T('skMsl'),keyHint('msl')||'—',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:0),p.charge>=0.45?PAL.white:PAL.aqua,p.charging||p.charge>0);
+  drawHudSkill(102,VH-47,84,T('skTurbo'),keyHint('sprint')||'—',p.sprintG,p.sprintLock?PAL.red:PAL.acid,!p.sprintLock);
   uPanel(VW-134,VH-47,128,42,PAL.gold,0.78);
   txt('LOADOUT',VW-126,VH-42,7,PAL.lite);
   const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
@@ -685,7 +685,7 @@ function drawIntroCard(){
   if(hint)txt(hint,VW/2,128,9,PAL.acid,'center');
   txt(TF('introQuota',{n:cfg.quota}),VW/2,150,8,PAL.white,'center');
   txt(T('diff')+': '+I18N[SET.lang].diffNames[SET.diff],VW/2,164,8,PAL.gold,'center');
-  if((ST.t%1.2)<0.86)txt(T('skip'),VW/2,VH-24,7,PAL.lite,'center');
+  if((ST.t%1.2)<0.86)txt(skipDyn(),VW/2,VH-24,7,PAL.lite,'center');
 }
 function drawClearCard(){
   uctx.globalAlpha=0.58; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
@@ -694,7 +694,7 @@ function drawClearCard(){
   txt(TF('clearStats',{n:ST.killsLevel,t:fmtTime(ST.levelTime)}),VW/2,98,10,PAL.white,'center');
   txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
   txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
-  if((ST.t%1.2)<0.86)txtO(T('pressCont'),VW/2,164,9,PAL.white,'center');
+  if((ST.t%1.2)<0.86)txtO(contDyn(),VW/2,164,9,PAL.white,'center');
 }
 function drawOver(){
   uctx.globalAlpha=0.64; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;

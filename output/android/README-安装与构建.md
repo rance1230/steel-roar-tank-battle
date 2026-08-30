@@ -2,8 +2,8 @@
 
 ## 产物
 
-- `钢铁咆哮-坦克大战-v1.0.apk` — 自签名 release 包,约 24.4MB(含标题图 + 7 张关卡立绘)
-  - 包名 `com.rance.steelroar`,versionName 1.0 (versionCode 1)
+- `钢铁咆哮-坦克大战-v1.1.apk` — 自签名 release 包,约 24.4MB(含标题图 + 7 张关卡立绘)
+  - 包名 `com.rance.steelroar`,versionName 1.1 (versionCode 2)
   - minSdk 24(Android 7.0+)/ targetSdk 35,横屏锁定、沉浸全屏
   - 已整合 `assets/stage-intros/` 标题图 + 7 张关卡图(title-bg + stage-01~07,游戏按相对路径加载)
   - App 图标采用「像素坦克大战 iOS 母版图标.png」(基础版)
@@ -15,7 +15,7 @@
 手机开启"允许安装未知来源应用"后,直接安装 APK:
 
 ```
-adb install -r 钢铁咆哮-坦克大战-v1.0.apk
+adb install -r 钢铁咆哮-坦克大战-v1.1.apk
 ```
 
 或把 APK 传到手机(微信/AirDroid/USB)点击安装。

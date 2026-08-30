@@ -101,6 +101,15 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  skStrike:'空袭',skMsl:'导弹',skTurbo:'涡轮',
  hint1:'J机枪 K主炮 L蓄力导弹 U空袭',hint2:'WASD/方向键移动 Shift涡轮 空格护盾 P暂停',
  navHint:'↑↓选择 ←→调整 Enter确认 Esc返回 · 手柄/触屏可用',
+ navHintP:'↑↓ 选择 ←→ 调整 {c} 确认 {b} 返回',
+ navHintT:'点按选择项目 · 点按确认',
+ skipP:'{k} 跳过',skipT:'点按跳过',contP:'按 {k} 前往整备',contT:'点按 前往整备',
+ ctrlT:'战前键位速览',ctrlSwitch:'◀ ▶ 切换布局',
+ ctrlModeP:'手柄布局',ctrlModeT:'触屏布局',ctrlModeK:'键盘布局',
+ ctrlGoP:'按 {k} 出击',ctrlGoT:'点按任意处 出击',
+ ctrlAlias:'※ RT 同机枪 · LT 同护盾(未改键时) · 可在 OPTION→手柄映射 自定义',
+ cMove:'移动 · 摇杆/十字键',cMg:'机枪 · 按住连发',cCannon:'主炮 · 范围爆炸',cMsl:'导弹 · 蓄力追踪',
+ cStrike:'空袭 · 区域轰炸',cSprint:'涡轮 · 高速冲撞',cShield:'护盾 · 弹反敌弹',cPause:'暂停',
  bossWarn:'!! BOSS 来袭 !!',reflectMsg:'反弹!',parry:'格挡!',punish:'天罚!',strikeMsg:'空袭支援!',
  healMsg:'装甲 +16',ptsMsg:'部件 +',eqGet:'获得 ',
  introQuota:'敌军规模 {n} 台(含BOSS) · 全歼过关',skip:'Enter 跳过',
@@ -143,6 +152,15 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  skStrike:'空襲',skMsl:'ミサイル',skTurbo:'ターボ',
  hint1:'J機銃 K主砲 L溜めミサイル U空襲',hint2:'WASD/矢印 移動 Shiftターボ Space盾 P停止',
  navHint:'↑↓選択 ←→調整 Enter決定 Esc戻る · パッド/タッチ対応',
+ navHintP:'↑↓ 選択 ←→調整 {c} 決定 {b} 戻る',
+ navHintT:'タップで選択 · タップで決定',
+ skipP:'{k} スキップ',skipT:'タップでスキップ',contP:'{k} で整備へ',contT:'タップで整備へ',
+ ctrlT:'出撃前キー確認',ctrlSwitch:'◀ ▶ レイアウト切替',
+ ctrlModeP:'ゲームパッド',ctrlModeT:'タッチ',ctrlModeK:'キーボード',
+ ctrlGoP:'{k} で出撃',ctrlGoT:'タップで出撃',
+ ctrlAlias:'※ RT=機銃 · LT=シールド(初期値) · OPTION→パッド設定で変更可',
+ cMove:'移動 · スティック/十字',cMg:'機銃 · 押しっぱ連射',cCannon:'主砲 · 範囲爆発',cMsl:'ミサイル · 溜め追尾',
+ cStrike:'空襲 · エリア爆撃',cSprint:'ターボ · 高速体当たり',cShield:'シールド · 反射',cPause:'ポーズ',
  bossWarn:'!! BOSS 来襲 !!',reflectMsg:'反射!',parry:'ガード!',punish:'天罰!',strikeMsg:'空襲支援!',
  healMsg:'装甲 +16',ptsMsg:'パーツ +',eqGet:'入手 ',
  introQuota:'敵軍規模 {n} 台(BOSS含む) · 全滅でクリア',skip:'Enter スキップ',
@@ -185,6 +203,15 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  skStrike:'Air',skMsl:'MSL',skTurbo:'Turbo',
  hint1:'J MG  K Cannon  L Missile  U Airstrike',hint2:'WASD Move  Shift Turbo  Space Shield  P Pause',
  navHint:'Arrows: select/adjust · Enter OK · Esc Back',
+ navHintP:'↑↓ Select ←→ Adjust {c} OK {b} Back',
+ navHintT:'Tap item to select · Tap to confirm',
+ skipP:'{k} Skip',skipT:'Tap to skip',contP:'Press {k} for Deploy',contT:'Tap for Deploy',
+ ctrlT:'PRE-DEPLOY CONTROLS',ctrlSwitch:'◀ ▶ SWITCH LAYOUT',
+ ctrlModeP:'GAMEPAD',ctrlModeT:'TOUCH',ctrlModeK:'KEYBOARD',
+ ctrlGoP:'Press {k} to Deploy',ctrlGoT:'Tap anywhere to Deploy',
+ ctrlAlias:'※ RT=MG · LT=Shield (defaults) · Remap via OPTION→Pad Map',
+ cMove:'Move · Stick/D-pad',cMg:'MG · Hold to fire',cCannon:'Cannon · Splash',cMsl:'Missile · Charge+Seek',
+ cStrike:'Airstrike · Bombing',cSprint:'Turbo · Ram',cShield:'Shield · Reflect',cPause:'Pause',
  bossWarn:'!! BOSS INCOMING !!',reflectMsg:'REFLECT!',parry:'BLOCK!',punish:'SMITE!',strikeMsg:'AIRSTRIKE!',
  healMsg:'Armor +16',ptsMsg:'Parts +',eqGet:'Got ',
  introQuota:'Enemy force: {n} units (incl. BOSS) · Wipe out all to clear',
@@ -315,7 +342,7 @@ const keys=new Set(), VKEYS=new Set();
 const GAME_CODES=new Set(['F3','KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyJ','KeyK','KeyL','KeyU','Space','ShiftLeft','ShiftRight','Enter','KeyR','KeyQ','KeyP','KeyM','Escape','Backspace']);
 addEventListener('keydown',e=>{
   if(GAME_CODES.has(e.code))e.preventDefault();
-  initAudio();
+  initAudio(); setInMode('key');
   if(e.repeat)return;
   keys.add(e.code);
   onKeyPress(e.code);
@@ -335,6 +362,23 @@ const IN={
 };
 /* ---------- 手柄 (Gamepad API: 蓝牙/有线统一) ---------- */
 const PAD={hold:{},just:{},prev:{},gp:null,seen:false,ax:0,ay:0};
+/* 扳机别名: 未自定义该动作时,扳机键同步生效(适配盖世小鸡X2S等带ZL/ZR的手柄) */
+const PAD_ALIAS={mg:[7],shield:[6]};
+const PAD_BTN_NAMES=['A','B','X','Y','LB','RB','LT','RT','SEL','STA','L3','R3','↑','↓','←','→'];
+function padBtnName(i){ return (i>=0&&i<PAD_BTN_NAMES.length)?PAD_BTN_NAMES[i]:('BTN'+i); }
+/* ---------- 输入方式感知 (pad/touch/key): 最后使用的输入决定界面提示 ---------- */
+let INMODE=null;
+function inMode(){ if(INMODE)return INMODE;
+  return PAD.gp?'pad':((SET.touch!=='off'&&hasTouch)?'touch':'key'); }
+function setInMode(m){ if(m&&INMODE!==m){INMODE=m;} }
+const KEY_NAMES={mg:'J',cannon:'K',msl:'L',strike:'U',sprint:'SHIFT',shield:'SPACE',pause:'P',confirm:'ENTER',back:'ESC'};
+/* keyHint(a): 当前输入方式下动作 a 的提示按键名; 触屏模式返回 ''(虚拟按钮自带中文标签) */
+function keyHint(a){
+  const m=inMode();
+  if(m==='pad'){ const bi=(SET.pad&&SET.pad[a]!==undefined)?SET.pad[a]:-1; return bi<0?'':padBtnName(bi); }
+  if(m==='touch')return '';
+  return KEY_NAMES[a]||'';
+}
 function pollPad(){
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   let gp=null; for(const g of gps){ if(g&&g.connected){gp=g;break;} }
@@ -343,21 +387,31 @@ function pollPad(){
   if(gp){
     const b=i=>gp.buttons[i]&&gp.buttons[i].pressed;
     const ax=gp.axes[0]||0,ay=gp.axes[1]||0,DZ=0.35;
+    /* HAT 轴十字键(安卓HID手柄如盖世小鸡X2S的Android模式以 axes[9]/axes[10] 上报方向) */
+    const hx=gp.axes.length>10?(gp.axes[9]||0):0, hy=gp.axes.length>10?(gp.axes[10]||0):0, HDZ=0.5;
     const am=Math.hypot(ax,ay);   /* vNext: 模拟轴原生360°输入(死区0.18) */
     PAD.ax=am>0.18?ax:0; PAD.ay=am>0.18?ay:0;
-    if(ax<-DZ||b(14))h.left=true; if(ax>DZ||b(15))h.right=true;
-    if(ay<-DZ||b(12))h.up=true;   if(ay>DZ||b(13))h.down=true;
-    for(const a in SET.pad){ const bi=SET.pad[a]; if(bi>=0&&gp.buttons[bi])h[a]=!!gp.buttons[bi].pressed; }
+    if(ax<-DZ||hx<-HDZ||b(14))h.left=true; if(ax>DZ||hx>HDZ||b(15))h.right=true;
+    if(ay<-DZ||hy<-HDZ||b(12))h.up=true;   if(ay>DZ||hy>HDZ||b(13))h.down=true;
+    for(const a in SET.pad){ const bi=SET.pad[a];
+      let on=bi>=0&&gp.buttons[bi]&&gp.buttons[bi].pressed;
+      if(!on&&PAD_ALIAS[a]&&bi===SET_DEF.pad[a])
+        for(const ai of PAD_ALIAS[a]){ if(gp.buttons[ai]&&gp.buttons[ai].pressed){on=true;break;} }
+      if(on)h[a]=true; }
     if(!PAD.seen){ PAD.seen=true; showToast(T('padConn')); SFX.pick(); }
     if(MENU&&MENU.capture){ for(let i=0;i<gp.buttons.length;i++)
       if(gp.buttons[i].pressed){ SET.pad[MENU.capture]=i; MENU.capture=null; saveSet(); SFX.pick(); break; } }
+    /* 任一实体输入(按键/摇杆/十字键)即切换到手柄提示 */
+    let act=am>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
+    if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
+    if(act)setInMode('pad');
   }
   if(!gp){PAD.ax=0;PAD.ay=0;}
   PAD.just={}; for(const k in h)PAD.just[k]=h[k]&&!PAD.prev[k];
   for(const k in PAD.prev)if(!(k in h))PAD.just[k]=false;
   PAD.hold=h; PAD.prev=h;
 }
-addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp)showToast(T('padConn')); });
+addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp){showToast(T('padConn')); setInMode('pad');} });
 /* ---------- 触屏虚拟按键 ---------- */
 const hasTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches;
 const OVL=document.getElementById('touchovl');
@@ -366,7 +420,7 @@ function tbtn(label,ic,css,code,press){
   const el=document.createElement('div'); el.className='tbtn';
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
   for(const k in css)el.style[k]=css[k];
-  const down=e=>{ e.preventDefault(); el.classList.add('on');
+  const down=e=>{ e.preventDefault(); el.classList.add('on'); setInMode('touch');
     if(press){ onKeyPress(code); VKEYS.add(code); } else { VKEYS.add(code); } };
   const up=e=>{ e.preventDefault(); el.classList.remove('on'); VKEYS.delete(code); };
   el.addEventListener('pointerdown',down);
@@ -402,6 +456,7 @@ function showToast(msg){ const el=document.getElementById('toast');
 /* ---------- 画布触控(菜单/整备点击) ---------- */
 cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
+  if(e.pointerType==='touch')setInMode('touch');
   initAudio();
   const r=cv.getBoundingClientRect();
   const x=(e.clientX-r.left)/r.width*VW, y=(e.clientY-r.top)/r.height*VH;
@@ -409,7 +464,7 @@ cv.addEventListener('pointerdown',e=>{
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
     if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro')onKeyPress('Enter');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl')onKeyPress('Enter');
     else if(ST.state==='over')onKeyPress('KeyR');
   }
 });
@@ -1755,9 +1810,9 @@ function drawHUD(){
     upx(188,48,Math.round(124*frac),5,PAL.red);
     upx(188+31,48,1,5,PAL.ink); upx(188+62,48,1,5,PAL.ink); upx(188+93,48,1,5,PAL.ink);   /* 25% 分段刻度 */
   }
-  drawHudSkill(6,VH-47,92,T('skStrike'),'U',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  drawHudSkill(6,VH-29,92,T('skMsl'),'L',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:0),p.charge>=0.45?PAL.white:PAL.aqua,p.charging||p.charge>0);
-  drawHudSkill(102,VH-47,84,T('skTurbo'),'SHIFT',p.sprintG,p.sprintLock?PAL.red:PAL.acid,!p.sprintLock);
+  drawHudSkill(6,VH-47,92,T('skStrike'),keyHint('strike')||'—',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
+  drawHudSkill(6,VH-29,92,T('skMsl'),keyHint('msl')||'—',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:0),p.charge>=0.45?PAL.white:PAL.aqua,p.charging||p.charge>0);
+  drawHudSkill(102,VH-47,84,T('skTurbo'),keyHint('sprint')||'—',p.sprintG,p.sprintLock?PAL.red:PAL.acid,!p.sprintLock);
   uPanel(VW-134,VH-47,128,42,PAL.gold,0.78);
   txt('LOADOUT',VW-126,VH-42,7,PAL.lite);
   const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
@@ -1988,7 +2043,7 @@ function drawIntroCard(){
   if(hint)txt(hint,VW/2,128,9,PAL.acid,'center');
   txt(TF('introQuota',{n:cfg.quota}),VW/2,150,8,PAL.white,'center');
   txt(T('diff')+': '+I18N[SET.lang].diffNames[SET.diff],VW/2,164,8,PAL.gold,'center');
-  if((ST.t%1.2)<0.86)txt(T('skip'),VW/2,VH-24,7,PAL.lite,'center');
+  if((ST.t%1.2)<0.86)txt(skipDyn(),VW/2,VH-24,7,PAL.lite,'center');
 }
 function drawClearCard(){
   uctx.globalAlpha=0.58; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
@@ -1997,7 +2052,7 @@ function drawClearCard(){
   txt(TF('clearStats',{n:ST.killsLevel,t:fmtTime(ST.levelTime)}),VW/2,98,10,PAL.white,'center');
   txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
   txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
-  if((ST.t%1.2)<0.86)txtO(T('pressCont'),VW/2,164,9,PAL.white,'center');
+  if((ST.t%1.2)<0.86)txtO(contDyn(),VW/2,164,9,PAL.white,'center');
 }
 function drawOver(){
   uctx.globalAlpha=0.64; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
@@ -2355,6 +2410,25 @@ requestAnimationFrame(function(){
    菜单系统 (键盘/手柄/触屏通用)
    ============================================================ */
 function openMenu(id,from){ MENU={id,sel:0,page:0,capture:null,from:from||null}; }
+/* ---------- 输入方式感知提示 (手柄/触屏/键盘) ---------- */
+function navHintDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('navHintP',{c:padBtnName(SET.pad.confirm),b:padBtnName(SET.pad.back)});
+  if(m==='touch')return T('navHintT');
+  return T('navHint');
+}
+function skipDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('skipP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('skipT');
+  return T('skip');
+}
+function contDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('contP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('contT');
+  return T('pressCont');
+}
 function menuBack(){
   if(!MENU)return;
   const from=MENU.from;
@@ -2488,17 +2562,30 @@ function drawMenu(){
   if(id==='padmap')foot=PAD.gp?(PAD.gp.id||'').slice(0,26):T('padNone');
   if(MENU.capture)foot=T('padWait');
   if(id==='option'&&MENU.sel===1)foot=T('diffTip');
-  txt(foot||T('navHint'),x+W/2,y+H-14,8,foot&&MENU.capture?PAL.gold:PAL.lite,'center');
+  txt(foot||navHintDyn(),x+W/2,y+H-14,8,foot&&MENU.capture?PAL.gold:PAL.lite,'center');
   if(id==='title'){
     uPanel(VW/2-134,VH-28,268,20,PAL.cyan,0.58);
-    txt('KEYBOARD · GAMEPAD · TOUCH',VW/2,VH-22,7,PAL.lite,'center');
+    /* 底部输入模式条: 高亮当前生效模式 */
+    const m=inMode(),segs=[['KEYBOARD','key'],['GAMEPAD','pad'],['TOUCH','touch']];
+    uctx.font='bold 7px '+FONT;
+    let sx=VW/2;
+    for(const s of segs)sx-=uctx.measureText(s[0]).width+9;
+    for(const [label,mode] of segs){
+      txt(label,sx,VH-22,7,mode===m?PAL.gold:PAL.steel);
+      sx+=uctx.measureText(label).width+9;
+    }
   }
 }
 function drawHelp(){
   const pg=MENU.page;
   uctx.globalAlpha=0.82; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   uPanel(22,8,VW-44,VH-22,PAL.cyan,0.68);
-  txtO(T('h'+pg+'t'),VW/2,14,13,PAL.gold,'center');
+  /* 标题动态按键提示: 手柄模式显示手柄键名, 触屏模式不显示键名 */
+  const HELP_ACTS={1:'mg',2:'cannon',3:'msl',4:'strike',5:'sprint',6:'shield'};
+  let ht=T('h'+pg+'t').replace(/\s*\[.*\]/,'');
+  const kh=keyHint(HELP_ACTS[pg]);
+  if(kh)ht+=' ['+kh+']';
+  txtO(ht,VW/2,14,13,PAL.gold,'center');
   const hsx=VW/2-80,hsy=34,hsw=160,hsh=84;
   uctx.imageSmoothingEnabled=false;
   uctx.drawImage(buf,hsx,hsy,hsw,hsh,hsx,hsy,hsw,hsh);
@@ -2546,6 +2633,158 @@ function drawUpgrade(){
   TAP_RECTS.push({x:6,y:VH-26,w:90,h:18,act:()=>{refundAll();SFX.heal();}});
   txt('R: '+T('upgRefund'),10,VH-22,7,PAL.lite);
 }
+
+/* ============================================================
+   战前键位速览 (ctrl 状态): 动态演示手柄/触屏/键盘布局
+   ============================================================ */
+const CTRL_ACTS=[
+  {id:'move',  t:'cMove'},
+  {id:'mg',    t:'cMg'},
+  {id:'cannon',t:'cCannon'},
+  {id:'msl',   t:'cMsl'},
+  {id:'strike',t:'cStrike'},
+  {id:'sprint',t:'cSprint'},
+  {id:'shield',t:'cShield'},
+  {id:'pause', t:'cPause'}];
+function ctrlKeyOf(a,mode){
+  if(mode===0){ const bi=SET.pad[a]; return bi>=0?padBtnName(bi):''; }
+  if(mode===1)return '';
+  return KEY_NAMES[a]||'';
+}
+function ctrlRing(cx,cy,r){
+  const p=0.5+0.5*Math.sin(ST.t*6);
+  uctx.strokeStyle=rgba(PAL.gold,0.35+0.55*p);
+  uctx.lineWidth=1.5;
+  uctx.beginPath(); uctx.arc(cx,cy,r+1.5+2.5*p,0,Math.PI*2); uctx.stroke();
+}
+function ctrlBtn(cx,cy,r,label,hot,dim){
+  uctx.fillStyle=hot?rgba(PAL.gold,0.30):rgba(PAL.panel,0.92);
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.fill();
+  uctx.strokeStyle=hot?PAL.gold:(dim?PAL.rail:PAL.steel); uctx.lineWidth=1;
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.stroke();
+  txt(label,cx,cy-3,7,hot?PAL.white:(dim?PAL.rail:PAL.lite),'center');
+  if(hot)ctrlRing(cx,cy,r);
+}
+function ctrlKeycap(cx,cy,w,h,label,hot){
+  upx(cx,cy,w,h,hot?rgba(PAL.gold,0.30):PAL.panel);
+  uctx.strokeStyle=hot?PAL.gold:PAL.steel; uctx.lineWidth=1;
+  uctx.strokeRect(cx+0.5,cy+0.5,w-1,h-1);
+  txt(label,cx+w/2,cy+h/2-3,7,hot?PAL.white:PAL.lite,'center');
+  if(hot)ctrlRing(cx+w/2,cy+h/2,Math.max(w,h)/2);
+}
+function drawCtrlIntro(){
+  const mode=ST.ctrlMode||0;                      /* 0=pad 1=touch 2=key */
+  const idx=ST.ctrlIdx%CTRL_ACTS.length;
+  const act=CTRL_ACTS[idx], hot=act.id;
+  uctx.globalAlpha=0.82; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
+  /* 标题 */
+  txtO(T('ctrlT'),VW/2,8,14,PAL.gold,'center');
+  txt(T('ctrlSwitch'),VW-12,12,6,PAL.lite,'right');
+  /* 布局切换标签 */
+  const tabs=[T('ctrlModeP'),T('ctrlModeT'),T('ctrlModeK')];
+  uctx.font='bold 8px '+FONT;
+  let tx=VW/2; for(const t of tabs)tx-=uctx.measureText(t).width+14;
+  tabs.forEach((t,i)=>{
+    const w=uctx.measureText(t).width;
+    txt(t,tx,26,8,i===mode?PAL.gold:PAL.steel);
+    if(i===mode)upx(tx,35,w,1,PAL.gold);
+    const sx=tx;
+    TAP_RECTS.push({x:sx-4,y:24,w:w+8,h:14,act:()=>{if(ST.ctrlMode!==i){ST.ctrlMode=i;ST.ctrlT=ST.ctrlIdx*1.7;SFX.pick();}}});
+    tx+=w+14;
+  });
+  /* 左: 布局图解面板 */
+  const X=16,Y=44,W=286,H=186;
+  uPanel(X,Y,W,H,PAL.cyan,0.86);
+  if(mode===0)drawCtrlPad(hot);
+  else if(mode===1)drawCtrlTouch(hot);
+  else drawCtrlKeys(hot);
+  /* 右: 动作列表(当前项高亮, 动态步进) */
+  const RX=308,RY=44,RW=156,RH=186;
+  uPanel(RX,RY,RW,RH,PAL.gold,0.86);
+  CTRL_ACTS.forEach((a,i)=>{
+    const ry=RY+8+i*22, sel=i===idx;
+    if(sel){ upx(RX+6,ry,RW-12,20,rgba(PAL.gold,0.22)); txt('▶',RX+10,ry+6,7,PAL.gold); }
+    txt(T(a.t),RX+22,ry+6,8,sel?PAL.white:PAL.lite);
+    const k=ctrlKeyOf(a.id,mode);
+    if(k)txt(k,RX+RW-10,ry+6,8,sel?PAL.gold:PAL.steel,'right');
+    TAP_RECTS.push({x:RX+4,y:ry-2,w:RW-8,h:22,act:()=>{ST.ctrlT=i*1.7;SFX.pick();}});
+  });
+  /* 底部: 确认出击提示(闪烁) + 手柄别名注 */
+  if((ST.t*2%1)<0.66)
+    txtO(mode===1?T('ctrlGoT'):TF('ctrlGoP',{k:mode===0?padBtnName(SET.pad.confirm):'ENTER'}),
+      VW/2,238,10,PAL.white,'center');
+  if(mode===0)txt(T('ctrlAlias'),VW/2,254,6,PAL.steel,'center');
+  TAP_RECTS.push({x:VW/2-90,y:232,w:180,h:22,act:()=>exitCtrlIntro()});
+}
+/* 手柄布局图解 (适配盖世小鸡X2S等标准安卓手柄) */
+function drawCtrlPad(hot){
+  const cx=159,cy=138;
+  upx(cx-116,cy-42,232,104,rgba(PAL.panel,0.35));
+  uctx.strokeStyle=PAL.steel; uctx.lineWidth=1; uctx.strokeRect(cx-115.5,cy-41.5,231,103);
+  /* 肩键/扳机 */
+  ctrlKeycap(cx-96,cy-40,34,9,'LT',hot==='shield');
+  ctrlKeycap(cx-58,cy-40,34,9,'LB',hot==='shield');
+  ctrlKeycap(cx+24,cy-40,34,9,'RB',hot==='sprint');
+  ctrlKeycap(cx+62,cy-40,34,9,'RT',hot==='mg');
+  /* 左摇杆 */
+  ctrlBtn(cx-78,cy-14,13,'L',hot==='move');
+  /* 十字键 (HAT轴/按钮12-15) */
+  const dx=cx-78,dy=cy+34;
+  ctrlKeycap(dx-6,dy-22,12,10,'↑',hot==='move');
+  ctrlKeycap(dx-20,dy-5,12,10,'◀',hot==='move');
+  ctrlKeycap(dx+8,dy-5,12,10,'▶',hot==='move');
+  ctrlKeycap(dx-6,dy+12,12,10,'▼',hot==='move');
+  /* ABXY (位置对应: A=南 B=东 X=西 Y=北) */
+  const bx=cx+62,by=cy-2;
+  ctrlBtn(bx,by-20,9,'Y',hot==='msl');
+  ctrlBtn(bx-20,by,9,'X',hot==='cannon');
+  ctrlBtn(bx+20,by,9,'B',hot==='strike');
+  ctrlBtn(bx,by+20,9,'A',hot==='mg');
+  /* Select/Start */
+  ctrlKeycap(cx-30,cy+34,26,9,'SEL',false);
+  ctrlKeycap(cx+6,cy+34,26,9,'STA',hot==='pause');
+  txt('STICK / D-PAD',cx-78,cy+48,6,PAL.steel,'center');
+  txt(T('cMove'),cx+62,cy+48,6,PAL.steel,'center');
+}
+/* 触屏布局图解 (对应虚拟按钮实际位置) */
+function drawCtrlTouch(hot){
+  /* 手机屏幕框 */
+  upx(40,58,240,158,rgba(PAL.panel,0.30));
+  uctx.strokeStyle=PAL.steel; uctx.strokeRect(40.5,58.5,239,157);
+  /* 方向键(左) */
+  ctrlKeycap(96,96,20,18,'▲',hot==='move');
+  ctrlKeycap(72,120,20,18,'◀',hot==='move');
+  ctrlKeycap(120,120,20,18,'▶',hot==='move');
+  ctrlKeycap(96,144,20,18,'▼',hot==='move');
+  /* 动作键(右) */
+  ctrlBtn(238,168,15,T('cMg').slice(0,2),hot==='mg');
+  ctrlBtn(204,190,11,T('cCannon').slice(0,2),hot==='cannon');
+  ctrlBtn(204,108,11,T('cMsl').slice(0,2),hot==='msl');
+  ctrlBtn(238,84,11,T('cStrike').slice(0,2),hot==='strike');
+  ctrlBtn(176,150,11,T('cSprint').slice(0,2),hot==='sprint');
+  ctrlBtn(176,108,11,T('cShield').slice(0,2),hot==='shield');
+  ctrlKeycap(252,66,20,12,'❚❚',hot==='pause');
+  txt('TAP',96,178,6,PAL.steel,'center');
+}
+/* 键盘布局图解 */
+function drawCtrlKeys(hot){
+  /* WASD 方向 */
+  ctrlKeycap(88,82,20,18,'W',hot==='move');
+  ctrlKeycap(66,104,20,18,'A',hot==='move');
+  ctrlKeycap(88,104,20,18,'S',hot==='move');
+  ctrlKeycap(110,104,20,18,'D',hot==='move');
+  /* 武器键 */
+  ctrlKeycap(160,96,22,18,'J',hot==='mg');
+  ctrlKeycap(186,96,22,18,'K',hot==='cannon');
+  ctrlKeycap(212,96,22,18,'L',hot==='msl');
+  ctrlKeycap(238,96,22,18,'U',hot==='strike');
+  /* 功能键 */
+  ctrlKeycap(160,140,48,18,'SHIFT',hot==='sprint');
+  ctrlKeycap(212,140,48,18,'SPACE',hot==='shield');
+  ctrlKeycap(160,168,22,18,'P',hot==='pause');
+  ctrlKeycap(186,168,60,18,'ENTER',false);
+  txt('WASD / ARROWS',99,132,6,PAL.steel,'center');
+}
 </script>
 <script>
 "use strict";
@@ -2556,7 +2795,7 @@ let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
   bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
   shake:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
-  upg:{sel:0,from:'clear'},padNavT:0};
+  upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
   enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];cam={x:0,y:0}; }
 newGame(); openMenu('title');
@@ -2603,7 +2842,16 @@ function deployFromUpgrade(){
   saveRun(); startLevel();
 }
 function toTitle(){ ST.state='title'; openMenu('title'); BGM.play('title',true); }
-function startNewGame(){ RUN=RUN_DEF(); startLevel(); }
+/* 战前键位速览页: 进入新游戏时展示, 动态演示当前输入方式的按键布局, 确认跳过 */
+const CTRL_MODES=['pad','touch','key'];
+function enterCtrlIntro(){
+  ST.state='ctrl'; ST.ctrlT=0; ST.ctrlIdx=0;
+  const detected=CTRL_MODES.indexOf(inMode());
+  ST.ctrlMode=detected>=0?detected:2;
+  MENU=null; BGM.play('title',true);
+}
+function exitCtrlIntro(){ startLevel(); }
+function startNewGame(){ RUN=RUN_DEF(); enterCtrlIntro(); }
 function continueGame(){ if(loadRun())startLevel(); else startNewGame(); }
 
 function onKeyPress(code){
@@ -2613,6 +2861,11 @@ function onKeyPress(code){
   if(MENU){ menuKey(code); return; }
   switch(ST.state){
     case 'title': if(code==='Enter')menuActivate(); break;
+    case 'ctrl':
+      if(code==='ArrowLeft'||code==='KeyA'){ ST.ctrlMode=(ST.ctrlMode+2)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); break; }
+      if(code==='ArrowRight'||code==='KeyD'){ ST.ctrlMode=(ST.ctrlMode+1)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); break; }
+      if(code==='Enter'||code==='KeyJ'||code==='Space'||code==='Escape'||code==='KeyR')exitCtrlIntro();
+      break;
     case 'intro': if(code==='Enter')ST.introT=0; break;
     case 'clear': if(code==='Enter'||code==='KeyJ'||code==='Space')afterClear(); break;
     case 'upgrade': upgKey(code); break;
@@ -2657,6 +2910,11 @@ function tick(dt){
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;
   }
+  if(ST.state==='ctrl'){ ST.ctrlT+=dt; ST.ctrlIdx=Math.floor(ST.ctrlT/1.7);
+    if(PAD.just.left){ ST.ctrlMode=(ST.ctrlMode+2)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); }
+    if(PAD.just.right){ ST.ctrlMode=(ST.ctrlMode+1)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); }
+    if(PAD.just.confirm||PAD.just.back||PAD.just.pause)exitCtrlIntro();
+    updParts(dt); return; }
   if(ST.state==='intro'){ ST.introT-=dt; if(ST.introT<=0){ST.state='play'; BGM.play(STAGE_MUSIC[RUN.lvl],true);} updParts(dt); return; }
   if(ST.state==='play'&&!MENU){
     if(window.AP&&AP.active)AP.tick(dt);   /* P3.5 资产场景: 爆炸脚本/炮塔随动/炮口灯 */
@@ -2699,7 +2957,7 @@ function draw(alpha){
   TAP_RECTS=[];
   const hs=(MENU&&MENU.id==='help');
   /* 阶段1: 像素世界 → 离屏缓冲 */
-  if(ST.state==='title'){ drawTitleBg(); if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84); }
+  if(ST.state==='title'||ST.state==='ctrl'){ drawTitleBg(); if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84); }
   else if(ST.state==='intro'){ drawStageIntroBg(); }
   else { drawWorld(); if(ST.state==='win')drawWinBG(); }
   /* 阶段2: nearest-neighbor 放大到显示画布 */
@@ -2710,6 +2968,7 @@ function draw(alpha){
   uctx.textBaseline='top';
   /* 阶段3: 高清UI层 */
   if(ST.state==='title'){ if(MENU)drawMenu(); if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
+  if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
@@ -2733,6 +2992,7 @@ window.G={
     bgmName:BGM.name,pad:PAD.gp?PAD.gp.index:-1,
     vkeys:[...VKEYS], alive:enemies.map(e=>({k:e.kind,b:e.boss,hp:Math.round(e.hp),x:Math.round(e.x),y:Math.round(e.y)}))}; },
   start(){ startNewGame(); },
+  ctrl(){ enterCtrlIntro(); },
   dbg:DBG,
   skipTo(i){ RUN.lvl=clamp(i,0,6); startLevel(); },
   boss(){ ST.spawnedN=cfg.quota-1; enemies.filter(e=>!e.boss).forEach(e=>hurtEnemy(e,1e6,'shot')); },

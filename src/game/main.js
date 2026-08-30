@@ -6,7 +6,7 @@ let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
   bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
   shake:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
-  upg:{sel:0,from:'clear'},padNavT:0};
+  upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
   enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];cam={x:0,y:0}; }
 newGame(); openMenu('title');
@@ -53,7 +53,16 @@ function deployFromUpgrade(){
   saveRun(); startLevel();
 }
 function toTitle(){ ST.state='title'; openMenu('title'); BGM.play('title',true); }
-function startNewGame(){ RUN=RUN_DEF(); startLevel(); }
+/* 战前键位速览页: 进入新游戏时展示, 动态演示当前输入方式的按键布局, 确认跳过 */
+const CTRL_MODES=['pad','touch','key'];
+function enterCtrlIntro(){
+  ST.state='ctrl'; ST.ctrlT=0; ST.ctrlIdx=0;
+  const detected=CTRL_MODES.indexOf(inMode());
+  ST.ctrlMode=detected>=0?detected:2;
+  MENU=null; BGM.play('title',true);
+}
+function exitCtrlIntro(){ startLevel(); }
+function startNewGame(){ RUN=RUN_DEF(); enterCtrlIntro(); }
 function continueGame(){ if(loadRun())startLevel(); else startNewGame(); }
 
 function onKeyPress(code){
@@ -63,6 +72,11 @@ function onKeyPress(code){
   if(MENU){ menuKey(code); return; }
   switch(ST.state){
     case 'title': if(code==='Enter')menuActivate(); break;
+    case 'ctrl':
+      if(code==='ArrowLeft'||code==='KeyA'){ ST.ctrlMode=(ST.ctrlMode+2)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); break; }
+      if(code==='ArrowRight'||code==='KeyD'){ ST.ctrlMode=(ST.ctrlMode+1)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); break; }
+      if(code==='Enter'||code==='KeyJ'||code==='Space'||code==='Escape'||code==='KeyR')exitCtrlIntro();
+      break;
     case 'intro': if(code==='Enter')ST.introT=0; break;
     case 'clear': if(code==='Enter'||code==='KeyJ'||code==='Space')afterClear(); break;
     case 'upgrade': upgKey(code); break;
@@ -107,6 +121,11 @@ function tick(dt){
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;
   }
+  if(ST.state==='ctrl'){ ST.ctrlT+=dt; ST.ctrlIdx=Math.floor(ST.ctrlT/1.7);
+    if(PAD.just.left){ ST.ctrlMode=(ST.ctrlMode+2)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); }
+    if(PAD.just.right){ ST.ctrlMode=(ST.ctrlMode+1)%3; ST.ctrlT=ST.ctrlIdx*1.7; SFX.pick(); }
+    if(PAD.just.confirm||PAD.just.back||PAD.just.pause)exitCtrlIntro();
+    updParts(dt); return; }
   if(ST.state==='intro'){ ST.introT-=dt; if(ST.introT<=0){ST.state='play'; BGM.play(STAGE_MUSIC[RUN.lvl],true);} updParts(dt); return; }
   if(ST.state==='play'&&!MENU){
     if(window.AP&&AP.active)AP.tick(dt);   /* P3.5 资产场景: 爆炸脚本/炮塔随动/炮口灯 */
@@ -149,7 +168,7 @@ function draw(alpha){
   TAP_RECTS=[];
   const hs=(MENU&&MENU.id==='help');
   /* 阶段1: 像素世界 → 离屏缓冲 */
-  if(ST.state==='title'){ drawTitleBg(); if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84); }
+  if(ST.state==='title'||ST.state==='ctrl'){ drawTitleBg(); if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84); }
   else if(ST.state==='intro'){ drawStageIntroBg(); }
   else { drawWorld(); if(ST.state==='win')drawWinBG(); }
   /* 阶段2: nearest-neighbor 放大到显示画布 */
@@ -160,6 +179,7 @@ function draw(alpha){
   uctx.textBaseline='top';
   /* 阶段3: 高清UI层 */
   if(ST.state==='title'){ if(MENU)drawMenu(); if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
+  if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
@@ -183,6 +203,7 @@ window.G={
     bgmName:BGM.name,pad:PAD.gp?PAD.gp.index:-1,
     vkeys:[...VKEYS], alive:enemies.map(e=>({k:e.kind,b:e.boss,hp:Math.round(e.hp),x:Math.round(e.x),y:Math.round(e.y)}))}; },
   start(){ startNewGame(); },
+  ctrl(){ enterCtrlIntro(); },
   dbg:DBG,
   skipTo(i){ RUN.lvl=clamp(i,0,6); startLevel(); },
   boss(){ ST.spawnedN=cfg.quota-1; enemies.filter(e=>!e.boss).forEach(e=>hurtEnemy(e,1e6,'shot')); },

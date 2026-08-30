@@ -53,7 +53,7 @@ const keys=new Set(), VKEYS=new Set();
 const GAME_CODES=new Set(['F3','KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyJ','KeyK','KeyL','KeyU','Space','ShiftLeft','ShiftRight','Enter','KeyR','KeyQ','KeyP','KeyM','Escape','Backspace']);
 addEventListener('keydown',e=>{
   if(GAME_CODES.has(e.code))e.preventDefault();
-  initAudio();
+  initAudio(); setInMode('key');
   if(e.repeat)return;
   keys.add(e.code);
   onKeyPress(e.code);
@@ -73,6 +73,23 @@ const IN={
 };
 /* ---------- 手柄 (Gamepad API: 蓝牙/有线统一) ---------- */
 const PAD={hold:{},just:{},prev:{},gp:null,seen:false,ax:0,ay:0};
+/* 扳机别名: 未自定义该动作时,扳机键同步生效(适配盖世小鸡X2S等带ZL/ZR的手柄) */
+const PAD_ALIAS={mg:[7],shield:[6]};
+const PAD_BTN_NAMES=['A','B','X','Y','LB','RB','LT','RT','SEL','STA','L3','R3','↑','↓','←','→'];
+function padBtnName(i){ return (i>=0&&i<PAD_BTN_NAMES.length)?PAD_BTN_NAMES[i]:('BTN'+i); }
+/* ---------- 输入方式感知 (pad/touch/key): 最后使用的输入决定界面提示 ---------- */
+let INMODE=null;
+function inMode(){ if(INMODE)return INMODE;
+  return PAD.gp?'pad':((SET.touch!=='off'&&hasTouch)?'touch':'key'); }
+function setInMode(m){ if(m&&INMODE!==m){INMODE=m;} }
+const KEY_NAMES={mg:'J',cannon:'K',msl:'L',strike:'U',sprint:'SHIFT',shield:'SPACE',pause:'P',confirm:'ENTER',back:'ESC'};
+/* keyHint(a): 当前输入方式下动作 a 的提示按键名; 触屏模式返回 ''(虚拟按钮自带中文标签) */
+function keyHint(a){
+  const m=inMode();
+  if(m==='pad'){ const bi=(SET.pad&&SET.pad[a]!==undefined)?SET.pad[a]:-1; return bi<0?'':padBtnName(bi); }
+  if(m==='touch')return '';
+  return KEY_NAMES[a]||'';
+}
 function pollPad(){
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   let gp=null; for(const g of gps){ if(g&&g.connected){gp=g;break;} }
@@ -81,21 +98,31 @@ function pollPad(){
   if(gp){
     const b=i=>gp.buttons[i]&&gp.buttons[i].pressed;
     const ax=gp.axes[0]||0,ay=gp.axes[1]||0,DZ=0.35;
+    /* HAT 轴十字键(安卓HID手柄如盖世小鸡X2S的Android模式以 axes[9]/axes[10] 上报方向) */
+    const hx=gp.axes.length>10?(gp.axes[9]||0):0, hy=gp.axes.length>10?(gp.axes[10]||0):0, HDZ=0.5;
     const am=Math.hypot(ax,ay);   /* vNext: 模拟轴原生360°输入(死区0.18) */
     PAD.ax=am>0.18?ax:0; PAD.ay=am>0.18?ay:0;
-    if(ax<-DZ||b(14))h.left=true; if(ax>DZ||b(15))h.right=true;
-    if(ay<-DZ||b(12))h.up=true;   if(ay>DZ||b(13))h.down=true;
-    for(const a in SET.pad){ const bi=SET.pad[a]; if(bi>=0&&gp.buttons[bi])h[a]=!!gp.buttons[bi].pressed; }
+    if(ax<-DZ||hx<-HDZ||b(14))h.left=true; if(ax>DZ||hx>HDZ||b(15))h.right=true;
+    if(ay<-DZ||hy<-HDZ||b(12))h.up=true;   if(ay>DZ||hy>HDZ||b(13))h.down=true;
+    for(const a in SET.pad){ const bi=SET.pad[a];
+      let on=bi>=0&&gp.buttons[bi]&&gp.buttons[bi].pressed;
+      if(!on&&PAD_ALIAS[a]&&bi===SET_DEF.pad[a])
+        for(const ai of PAD_ALIAS[a]){ if(gp.buttons[ai]&&gp.buttons[ai].pressed){on=true;break;} }
+      if(on)h[a]=true; }
     if(!PAD.seen){ PAD.seen=true; showToast(T('padConn')); SFX.pick(); }
     if(MENU&&MENU.capture){ for(let i=0;i<gp.buttons.length;i++)
       if(gp.buttons[i].pressed){ SET.pad[MENU.capture]=i; MENU.capture=null; saveSet(); SFX.pick(); break; } }
+    /* 任一实体输入(按键/摇杆/十字键)即切换到手柄提示 */
+    let act=am>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
+    if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
+    if(act)setInMode('pad');
   }
   if(!gp){PAD.ax=0;PAD.ay=0;}
   PAD.just={}; for(const k in h)PAD.just[k]=h[k]&&!PAD.prev[k];
   for(const k in PAD.prev)if(!(k in h))PAD.just[k]=false;
   PAD.hold=h; PAD.prev=h;
 }
-addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp)showToast(T('padConn')); });
+addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp){showToast(T('padConn')); setInMode('pad');} });
 /* ---------- 触屏虚拟按键 ---------- */
 const hasTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches;
 const OVL=document.getElementById('touchovl');
@@ -104,7 +131,7 @@ function tbtn(label,ic,css,code,press){
   const el=document.createElement('div'); el.className='tbtn';
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
   for(const k in css)el.style[k]=css[k];
-  const down=e=>{ e.preventDefault(); el.classList.add('on');
+  const down=e=>{ e.preventDefault(); el.classList.add('on'); setInMode('touch');
     if(press){ onKeyPress(code); VKEYS.add(code); } else { VKEYS.add(code); } };
   const up=e=>{ e.preventDefault(); el.classList.remove('on'); VKEYS.delete(code); };
   el.addEventListener('pointerdown',down);
@@ -140,6 +167,7 @@ function showToast(msg){ const el=document.getElementById('toast');
 /* ---------- 画布触控(菜单/整备点击) ---------- */
 cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
+  if(e.pointerType==='touch')setInMode('touch');
   initAudio();
   const r=cv.getBoundingClientRect();
   const x=(e.clientX-r.left)/r.width*VW, y=(e.clientY-r.top)/r.height*VH;
@@ -147,7 +175,7 @@ cv.addEventListener('pointerdown',e=>{
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
     if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro')onKeyPress('Enter');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl')onKeyPress('Enter');
     else if(ST.state==='over')onKeyPress('KeyR');
   }
 });
