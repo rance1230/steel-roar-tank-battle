@@ -3,6 +3,7 @@
 ## 产物
 
 - `钢铁咆哮-坦克大战-v1.1.apk` — 自签名 release 包,约 24.4MB(含标题图 + 7 张关卡立绘)
+  - v1.1:盖世小鸡 X2S 等安卓手柄适配(十字键 HAT 轴、RT=机枪/LT=护盾扳机别名)、按键提示随手柄/触屏/键盘自动切换、新增开局「战前键位速览」动态演示页(见说明书 3.4)
   - 包名 `com.rance.steelroar`,versionName 1.1 (versionCode 2)
   - minSdk 24(Android 7.0+)/ targetSdk 35,横屏锁定、沉浸全屏
   - 已整合 `assets/stage-intros/` 标题图 + 7 张关卡图(title-bg + stage-01~07,游戏按相对路径加载)
