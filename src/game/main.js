@@ -15,6 +15,7 @@ newGame(); openMenu('title');
 function startLevel(){
   cfg=LEVELS[RUN.lvl]; genMap();
   player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];
+  spawnWingman();
   clearDecals(); initMotes();
   /* 战场暖光池锚定掩体/岩石 (审查C4): 'lighter' 呼吸暖光 */
   lightPools=[];
@@ -40,7 +41,7 @@ function levelClear(){
   ST.state='clear'; ST.clearT=0;
   const bonus=200+Math.max(0,Math.round((90-ST.levelTime))*10);
   RUN.score+=bonus; RUN.time+=ST.levelTime; ST.clearBonus=bonus; saveRun();
-  try{ if(RUN.score>ST.best){ST.best=RUN.score;localStorage.setItem('trBest',''+ST.best);} }catch(e){}
+  try{ if(!ST.debugActive&&RUN.score>ST.best){ST.best=RUN.score;localStorage.setItem('trBest',''+ST.best);} }catch(e){}   /* §27: Debug 不更新最高分 */
   BGM.play('warp',false);
 }
 function afterClear(){ // clear卡 → 整备或通关
@@ -53,6 +54,32 @@ function deployFromUpgrade(){
   saveRun(); startLevel();
 }
 function toTitle(){ ST.state='title'; openMenu('title'); BGM.play('title',true); }
+/* ---------- §27 秘籍: ↑↑↓↓←→←→ J K ENTER (手柄: 方向+机枪+主炮+暂停), 仅标题页 ---------- */
+const KONAMI_SEQ=['up','up','down','down','left','right','left','right','mg','cannon','go'];
+const KONAMI_KEY={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',
+  ArrowRight:'right',KeyD:'right',KeyJ:'mg',KeyK:'cannon',Enter:'go'};
+let KONAMI_I=0, KONAMI_T=0;
+function konamiFeed(tok){
+  if(ST.state!=='title')return;
+  const now=performance.now()/1000;
+  if(now-KONAMI_T>2)KONAMI_I=0;                    /* 间隔>2秒自动重置 */
+  if(tok===KONAMI_SEQ[KONAMI_I]){
+    KONAMI_I++; KONAMI_T=now;
+    if(KONAMI_I>=KONAMI_SEQ.length){
+      KONAMI_I=0; ST.debugActive=true;
+      if(!ST.dbg)ST.dbg={hpBonus:0,atk:1,defBonus:0,spd:1};
+      showToast(T('debugOn')); SFX.pick();
+      openMenu('title');                            /* 刷新菜单, 出现 DEBUG MODE 项 */
+    }
+  } else KONAMI_I=(tok===KONAMI_SEQ[0])?1:0;        /* 输入错误立即重置 */
+}
+function konamiPad(){
+  if(ST.state!=='title'||!PAD.gp)return;
+  if(PAD.just.up)konamiFeed('up'); else if(PAD.just.down)konamiFeed('down');
+  else if(PAD.just.left)konamiFeed('left'); else if(PAD.just.right)konamiFeed('right');
+  else if(PAD.just.mg)konamiFeed('mg'); else if(PAD.just.cannon)konamiFeed('cannon');
+  else if(PAD.just.pause)konamiFeed('go');
+}
 /* 战前键位速览页: 进入新游戏时展示, 动态演示当前输入方式的按键布局, 确认跳过 */
 const CTRL_MODES=['pad','touch','key'];
 function enterCtrlIntro(){
@@ -62,13 +89,15 @@ function enterCtrlIntro(){
   MENU=null; BGM.play('title',true);
 }
 function exitCtrlIntro(){ startLevel(); }
-function startNewGame(){ RUN=RUN_DEF(); enterCtrlIntro(); }
+/* 开局流程: 机体选择 → 僚机选择 → 键位速览 → 战斗 */
+function startNewGame(){ RUN=RUN_DEF(); openMenu('hull','title'); }
 function continueGame(){ if(loadRun())startLevel(); else startNewGame(); }
 
 function onKeyPress(code){
   if(code==='F3'){ PERF.show=!PERF.show; return; }
   if(code==='KeyM'){ ST.muted=!ST.muted; if(master)master.gain.value=ST.muted?0:1; return; }
   initAudio();
+  if(KONAMI_KEY[code])konamiFeed(KONAMI_KEY[code]);
   if(MENU){ menuKey(code); return; }
   switch(ST.state){
     case 'title': if(code==='Enter')menuActivate(); break;
@@ -91,7 +120,7 @@ function onKeyPress(code){
       break;
     case 'play':
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
-      if(code==='Space'){ if(player.shieldCd<=0){ player.shieldT=0.42; player.shieldCd=0.75; player.shieldAge=0; SFX.pick(); } }
+      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=sc.cd; player.shieldAge=0; SFX.pick(); } }
       if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5; callAirstrike(); }
       break;
   }
@@ -99,7 +128,7 @@ function onKeyPress(code){
 
 /* ---------- 主更新 ---------- */
 function tick(dt){
-  ST.t+=dt; pollPad(); updOvl();
+  ST.t+=dt; pollPad(); updOvl(); konamiPad();
   // 手柄菜单导航(长按重复)
   if(MENU&&!MENU.capture&&MENU.id!=='help'){
     if(PAD.just.up)menuMove(-1); if(PAD.just.down)menuMove(1);
@@ -133,7 +162,7 @@ function tick(dt){
     updCombo(dt);
     ST.levelTime+=dt;
     if(PAD.just.pause){ openMenu('pause'); return; }
-    updPlayer(dt); updEnemies(dt); updShots(dt); updPlanes(dt); updPickups(dt); updParts(dt); updWeather(dt);
+    updPlayer(dt); updWingman(dt); updEnemies(dt); updShots(dt); updPlanes(dt); updPickups(dt); updParts(dt); updWeather(dt);
     cam.x+=((clamp(player.x-VW/2,0,WORLDW-VW))-cam.x)*Math.min(1,dt*5);
     cam.y+=((clamp(player.y-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
     ST.shake=Math.max(0,ST.shake-dt*11);
@@ -174,7 +203,15 @@ function draw(alpha){
   TAP_RECTS=[];
   const hs=(MENU&&MENU.id==='help');
   /* 阶段1: 像素世界 → 离屏缓冲 */
-  if(ST.state==='title'||ST.state==='ctrl'){ drawTitleBg(); if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84); }
+  if(ST.state==='title'||ST.state==='ctrl'){
+    drawTitleBg();
+    if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84);
+    else if(ST.state==='ctrl'){   /* 速览页实况演示窗: 复用引擎实况小场景 */
+      const act=CTRL_ACTS[ST.ctrlIdx%CTRL_ACTS.length];
+      if(act.scene>=0)drawHelpScene(act.scene,295,58,170,80);
+      else{ px(295,58,170,80,PAL.ink); }   /* pause 无场景, UI层叠暂停样式 */
+    }
+  }
   else if(ST.state==='intro'){ drawStageIntroBg(); }
   else { drawWorld(); if(ST.state==='win')drawWinBG(); }
   /* 阶段2: nearest-neighbor 放大到显示画布 */
@@ -206,6 +243,8 @@ window.G={
     enemies:enemies.length,kills:ST.killsLevel,quota:cfg?cfg.quota:0,time:ST.levelTime,
     score:RUN.score,runKills:RUN.kills,pts:RUN.pts,cycle:RUN.cycle,lvl:RUN.lvl,
     up:JSON.parse(JSON.stringify(RUN.up)),eq:JSON.parse(JSON.stringify(RUN.eq)),
+    hull:RUN.hull,wing:RUN.wing,debug:!!ST.debugActive,
+    wingman:wingman?{type:wingman.type,hp:Math.round(wingman.hp),maxHp:wingman.maxHp,down:wingman.downT>0}:null,
     bgmName:BGM.name,pad:PAD.gp?PAD.gp.index:-1,
     vkeys:[...VKEYS], alive:enemies.map(e=>({k:e.kind,b:e.boss,hp:Math.round(e.hp),x:Math.round(e.x),y:Math.round(e.y)}))}; },
   start(){ startNewGame(); },

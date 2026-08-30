@@ -58,6 +58,34 @@ function menuItems(id){
     if(hasSave())its.push({label:'mCont',enter:()=>continueGame()});
     its.push({label:'mOpt',enter:()=>openMenu('option','title')});
     its.push({label:'mHelp',enter:()=>openMenu('help','title')});
+    if(ST.debugActive)its.push({label:'mDebug',enter:()=>openMenu('debug','title')});
+    return its;
+  }
+  if(id==='hull'){
+    for(const k of HULL_KEYS)
+      its.push({choice:1,enter:()=>{RUN.hull=k; openMenu('wingman','hull');
+        MENU.sel=WING_KEYS.indexOf(HULL_M2W[RUN.hull]);},
+        labelFn:()=>T(HULLS[k].i18n)+(k===RUN.hull?' ◀':''),
+        value:()=>''});
+    its.push({label:'back',enter:()=>menuBack()});
+    return its;
+  }
+  if(id==='wingman'){
+    for(const k of WING_KEYS)
+      its.push({choice:1,enter:()=>{RUN.wing=k; enterCtrlIntro();},
+        labelFn:()=>(k==='none'?T('wN'):T(WINGS[k].i18n))+(k===HULL_M2W[RUN.hull]?' ★':'')+(k===RUN.wing?' ◀':''),
+        value:()=>''});
+    its.push({label:'back',enter:()=>menuBack()});
+    return its;
+  }
+  if(id==='debug'){
+    if(!ST.dbg)ST.dbg={hpBonus:0,atk:1,defBonus:0,spd:1};
+    its.push({label:'dbgGod',choice:1,value:()=>DBG.god?T('on'):T('off'),delta:()=>{DBG.god=!DBG.god;}});
+    its.push({label:'dbgHp',choice:1,value:()=>'+'+(ST.dbg.hpBonus|0)+' → '+calcStats().maxHp,delta:d=>{ST.dbg.hpBonus=clamp(ST.dbg.hpBonus+d*50,0,900);}});
+    its.push({label:'dbgAtk',choice:1,value:()=>'x'+ST.dbg.atk,delta:d=>{const a=[1,2,3,5];ST.dbg.atk=a[clamp(a.indexOf(ST.dbg.atk)+d,0,3)];}});
+    its.push({label:'dbgDef',choice:1,value:()=>Math.round(ST.dbg.defBonus*100)+'%',delta:d=>{ST.dbg.defBonus=clamp(ST.dbg.defBonus+d*0.15,0,0.8);}});
+    its.push({label:'dbgSpd',choice:1,value:()=>'x'+ST.dbg.spd,delta:d=>{const sp=[1,1.5,2];ST.dbg.spd=sp[clamp(sp.indexOf(ST.dbg.spd)+d,0,2)];}});
+    its.push({label:'back',enter:()=>menuBack()});
     return its;
   }
   if(id==='pause'){
@@ -99,7 +127,7 @@ function menuItems(id){
 }
 function menuMove(d){ const n=menuItems(MENU.id).length; MENU.sel=(MENU.sel+d+n)%n; SFX.pick(); }
 function menuAdjust(d){ const it=menuItems(MENU.id)[MENU.sel];
-  if(MENU.id==='help'){ MENU.page=(MENU.page+d+11)%11; return; }
+  if(MENU.id==='help'){ MENU.page=(MENU.page+d+13)%13; return; }
   if(it&&it.choice&&it.delta)it.delta(d); }
 function menuActivate(){ const its=menuItems(MENU.id),it=its[MENU.sel];
   if(!it)return;
@@ -143,13 +171,13 @@ function drawMenu(){
   const id=MENU.id;
   if(id==='help'){ drawHelp(); return; }
   const its=menuItems(id);
-  const titles={title:'',option:'OPTION',padmap:T('padmap'),pause:T('pauseT')};
+  const titles={title:'',option:'OPTION',padmap:T('padmap'),pause:T('pauseT'),hull:T('hullT'),wingman:T('wingT'),debug:T('mDebug')};
   const W=id==='title'?196:250, rowH=16, headH=id==='title'?16:24;
   const H=headH+its.length*rowH+20;
   const x=id==='title'?24:(VW-W)/2, y=id==='title'?118:(VH-H)/2+4;
   uPanel(x-3,y-3,W+6,H+6,id==='pause'?PAL.cyan:PAL.gold,0.82);
   upx(x+7,y+headH-8,W-14,1,PAL.rail);
-  const title=id==='option'?'OPTION':T(id==='padmap'?'padmap':id==='pause'?'pauseT':id);
+  const title=id==='option'?'OPTION':T(id==='padmap'?'padmap':id==='pause'?'pauseT':id==='hull'?'hullT':id==='wingman'?'wingT':id==='debug'?'mDebug':id);
   if(id!=='title')txt(title,x+W/2,y+8,10,PAL.gold,'center');
   if(id==='title')txtO(T('gameTitle'),VW/2,18,23,PAL.gold,'center');
   if(id==='title')txtO(T('sub'),VW/2,43,11,PAL.white,'center');
@@ -175,6 +203,8 @@ function drawMenu(){
   if(id==='padmap')foot=PAD.gp?(PAD.gp.id||'').slice(0,26):T('padNone');
   if(MENU.capture)foot=T('padWait');
   if(id==='option'&&MENU.sel===1)foot=T('diffTip');
+  if(id==='hull'&&HULL_KEYS[MENU.sel])foot=T(HULLS[HULL_KEYS[MENU.sel]].i18n+'_f');
+  if(id==='wingman'){const k=WING_KEYS[MENU.sel];if(k)foot=T((k==='none'?'wN':WINGS[k].i18n)+'_f');}
   txt(foot||navHintDyn(),x+W/2,y+H-14,8,foot&&MENU.capture?PAL.gold:PAL.lite,'center');
   if(id==='title'){
     uPanel(VW/2-134,VH-28,268,20,PAL.cyan,0.58);
@@ -209,10 +239,10 @@ function drawHelp(){
   lines.forEach((l,i)=>txt(l,VW/2,127+i*12,9,PAL.white,'center'));
   txt('‹',36,VH/2,16,PAL.gold,'center');
   txt('›',VW-36,VH/2,16,PAL.gold,'center');
-  txt((pg+1)+'/11',VW/2,VH-26,8,PAL.lite,'center');
+  txt((pg+1)+'/13',VW/2,VH-26,8,PAL.lite,'center');
   txt(T('back')+': Esc',VW/2,VH-14,7,PAL.steel,'center');
-  MENU_RECTS.push({x:0,y:0,w:80,h:VH,act:()=>{MENU.page=(MENU.page+10)%11;}});
-  MENU_RECTS.push({x:VW-80,y:0,w:80,h:VH,act:()=>{MENU.page=(MENU.page+1)%11;}});
+  MENU_RECTS.push({x:0,y:0,w:80,h:VH,act:()=>{MENU.page=(MENU.page+12)%13;}});
+  MENU_RECTS.push({x:VW-80,y:0,w:80,h:VH,act:()=>{MENU.page=(MENU.page+1)%13;}});
   MENU_RECTS.push({x:80,y:0,w:VW-160,h:30,act:()=>menuBack()});
 }
 /* ---------- 整备画面 ---------- */
@@ -248,17 +278,18 @@ function drawUpgrade(){
 }
 
 /* ============================================================
-   战前键位速览 (ctrl 状态): 动态演示手柄/触屏/键盘布局
+   战前键位速览 (ctrl 状态): 布局图解 + 实况游戏画面演示 + 动作条
    ============================================================ */
+/* scene: 对应引擎实况小场景(drawHelpScene)页号, -1=暂停(无场景) */
 const CTRL_ACTS=[
-  {id:'move',  t:'cMove'},
-  {id:'mg',    t:'cMg'},
-  {id:'cannon',t:'cCannon'},
-  {id:'msl',   t:'cMsl'},
-  {id:'strike',t:'cStrike'},
-  {id:'sprint',t:'cSprint'},
-  {id:'shield',t:'cShield'},
-  {id:'pause', t:'cPause'}];
+  {id:'move',  t:'cMove',  scene:0},
+  {id:'mg',    t:'cMg',    scene:1},
+  {id:'cannon',t:'cCannon',scene:2},
+  {id:'msl',   t:'cMsl',   scene:3},
+  {id:'strike',t:'cStrike',scene:4},
+  {id:'sprint',t:'cSprint',scene:5},
+  {id:'shield',t:'cShield',scene:6},
+  {id:'pause', t:'cPause', scene:-1}];
 function ctrlKeyOf(a,mode){
   if(mode===0){ const bi=SET.pad[a]; return bi>=0?padBtnName(bi):''; }
   if(mode===1)return '';
@@ -285,6 +316,13 @@ function ctrlKeycap(cx,cy,w,h,label,hot){
   txt(label,cx+w/2,cy+h/2-3,7,hot?PAL.white:PAL.lite,'center');
   if(hot)ctrlRing(cx+w/2,cy+h/2,Math.max(w,h)/2);
 }
+/* 实况演示窗(边框, 不填充): 画面由 draw() 阶段1 直接画进 buf */
+function ctrlWindow(x,y,w,h){
+  uctx.strokeStyle=rgba(PAL.cyan,0.64); uctx.lineWidth=1;
+  uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+  upx(x,y,12,1,PAL.cyan); upx(x,y,1,12,PAL.cyan);
+  upx(x+w-12,y+h-1,12,1,PAL.cyan); upx(x+w-1,y+h-12,1,12,PAL.cyan);
+}
 function drawCtrlIntro(){
   const mode=ST.ctrlMode||0;                      /* 0=pad 1=touch 2=key */
   const idx=ST.ctrlIdx%CTRL_ACTS.length;
@@ -306,28 +344,44 @@ function drawCtrlIntro(){
     tx+=w+14;
   });
   /* 左: 布局图解面板 */
-  const X=16,Y=44,W=286,H=186;
+  const X=14,Y=44,W=272,H=152;
   uPanel(X,Y,W,H,PAL.cyan,0.86);
+  uctx.save();
+  uctx.translate(X+W/2,Y+H/2); uctx.scale(0.95,0.95); uctx.translate(-159,-138);
   if(mode===0)drawCtrlPad(hot);
   else if(mode===1)drawCtrlTouch(hot);
   else drawCtrlKeys(hot);
-  /* 右: 动作列表(当前项高亮, 动态步进) */
-  const RX=308,RY=44,RW=156,RH=186;
-  uPanel(RX,RY,RW,RH,PAL.gold,0.86);
+  uctx.restore();
+  /* 右: 实况演示窗 + 动作说明 */
+  const VX=294,VY=44,VW2=172,VH2=88;
+  if(act.scene<0){   /* 暂停: 无实况场景, 画暂停样式 */
+    upx(VX,VY,VW2,VH2,PAL.ink);
+    uctx.globalAlpha=0.35; upx(VX,VY,VW2,VH2,PAL.panel); uctx.globalAlpha=1;
+    txt('❚❚',VX+VW2/2,VY+22,22,PAL.gold,'center');
+    txt(T('pauseT'),VX+VW2/2,VY+56,9,PAL.white,'center');
+  }
+  ctrlWindow(VX,VY,VW2,VH2);
+  txtO(T(act.t),VX+VW2/2,VY+VH2+8,10,mode===1?PAL.white:PAL.gold,'center');
+  const k=ctrlKeyOf(act.id,mode);
+  if(k)txt('['+k+']',VX+VW2/2,VY+VH2+20,8,PAL.steel,'center');
+  const desc=act.scene>=0?T('h'+act.scene+'d'):T('cPauseD');
+  wrapTxt(desc,VW2-8,6).forEach((l,i)=>txt(l,VX+VW2/2,146+i*10,6,PAL.lite,'center'));
+  /* 底部动作条: 8项, 当前高亮 */
+  uPanel(8,196,VW-16,22,PAL.cyan,0.6);
   CTRL_ACTS.forEach((a,i)=>{
-    const ry=RY+8+i*22, sel=i===idx;
-    if(sel){ upx(RX+6,ry,RW-12,20,rgba(PAL.gold,0.22)); txt('▶',RX+10,ry+6,7,PAL.gold); }
-    txt(T(a.t),RX+22,ry+6,8,sel?PAL.white:PAL.lite);
-    const k=ctrlKeyOf(a.id,mode);
-    if(k)txt(k,RX+RW-10,ry+6,8,sel?PAL.gold:PAL.steel,'right');
-    TAP_RECTS.push({x:RX+4,y:ry-2,w:RW-8,h:22,act:()=>{ST.ctrlT=i*1.7;SFX.pick();}});
+    const nm=a.id==='pause'?T('pauseT'):T('h'+a.scene+'t').replace(/\s*\[.*/,'');
+    const w=76, cx=12+i*((VW-24)/8);
+    const sel=i===idx;
+    if(sel)upx(cx,198,w-4,18,rgba(PAL.gold,0.25));
+    txt(nm,cx+w/2-2,202,7,sel?PAL.white:PAL.steel,'center');
+    TAP_RECTS.push({x:cx,y:196,w:w-4,h:22,act:()=>{ST.ctrlT=i*1.7;SFX.pick();}});
   });
   /* 底部: 确认出击提示(闪烁) + 手柄别名注 */
   if((ST.t*2%1)<0.66)
     txtO(mode===1?T('ctrlGoT'):TF('ctrlGoP',{k:mode===0?padBtnName(SET.pad.confirm):'ENTER'}),
-      VW/2,238,10,PAL.white,'center');
-  if(mode===0)txt(T('ctrlAlias'),VW/2,254,6,PAL.steel,'center');
-  TAP_RECTS.push({x:VW/2-90,y:232,w:180,h:22,act:()=>exitCtrlIntro()});
+      VW/2,236,10,PAL.white,'center');
+  if(mode===0)txt(T('ctrlAlias'),VW/2,252,6,PAL.steel,'center');
+  TAP_RECTS.push({x:VW/2-90,y:230,w:180,h:22,act:()=>exitCtrlIntro()});
 }
 /* 手柄布局图解 (适配盖世小鸡X2S等标准安卓手柄) */
 function drawCtrlPad(hot){
@@ -341,7 +395,7 @@ function drawCtrlPad(hot){
   ctrlKeycap(cx+62,cy-40,34,9,'RT',hot==='mg');
   /* 左摇杆 */
   ctrlBtn(cx-78,cy-14,13,'L',hot==='move');
-  /* 十字键 (HAT轴/按钮12-15) */
+  /* 十字键 (HAT轴/按钮12-15) — 箭头与触屏按钮统一为实心三角 ▲▼◀▶ */
   const dx=cx-78,dy=cy+34;
   ctrlKeycap(dx-6,dy-22,12,10,'▲',hot==='move');
   ctrlKeycap(dx-20,dy-5,12,10,'◀',hot==='move');
@@ -361,15 +415,12 @@ function drawCtrlPad(hot){
 }
 /* 触屏布局图解 (对应虚拟按钮实际位置) */
 function drawCtrlTouch(hot){
-  /* 手机屏幕框 */
   upx(40,58,240,158,rgba(PAL.panel,0.30));
   uctx.strokeStyle=PAL.steel; uctx.strokeRect(40.5,58.5,239,157);
-  /* 方向键(左) */
   ctrlKeycap(96,96,20,18,'▲',hot==='move');
   ctrlKeycap(72,120,20,18,'◀',hot==='move');
   ctrlKeycap(120,120,20,18,'▶',hot==='move');
   ctrlKeycap(96,144,20,18,'▼',hot==='move');
-  /* 动作键(右) */
   ctrlBtn(238,168,15,T('cMg').slice(0,2),hot==='mg');
   ctrlBtn(204,190,11,T('cCannon').slice(0,2),hot==='cannon');
   ctrlBtn(204,108,11,T('cMsl').slice(0,2),hot==='msl');
@@ -381,17 +432,14 @@ function drawCtrlTouch(hot){
 }
 /* 键盘布局图解 */
 function drawCtrlKeys(hot){
-  /* WASD 方向 */
   ctrlKeycap(88,82,20,18,'W',hot==='move');
   ctrlKeycap(66,104,20,18,'A',hot==='move');
   ctrlKeycap(88,104,20,18,'S',hot==='move');
   ctrlKeycap(110,104,20,18,'D',hot==='move');
-  /* 武器键 */
   ctrlKeycap(160,96,22,18,'J',hot==='mg');
   ctrlKeycap(186,96,22,18,'K',hot==='cannon');
   ctrlKeycap(212,96,22,18,'L',hot==='msl');
   ctrlKeycap(238,96,22,18,'U',hot==='strike');
-  /* 功能键 */
   ctrlKeycap(160,140,48,18,'SHIFT',hot==='sprint');
   ctrlKeycap(212,140,48,18,'SPACE',hot==='shield');
   ctrlKeycap(160,168,22,18,'P',hot==='pause');

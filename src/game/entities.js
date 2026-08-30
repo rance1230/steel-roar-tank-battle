@@ -169,10 +169,18 @@ function fireCannon(){ const st=calcStats(); const a=player.a+rnd(-0.02,0.02);
   flashFx(mx,my,9);                                   /* 炮口火光 (§VFX) */
   part(mx,my,Math.cos(a)*40,Math.sin(a)*40,0.09,PAL.gold,3); SFX.cannon(); }
 function fireMissile(){
-  const st=calcStats();
-  const mx=player.x+Math.cos(player.a)*15,my=player.y+Math.sin(player.a)*15;
-  shot(mx,my,player.a+rnd(-0.15,0.15),200,46*st.atk,true,'missile',{accel:520});
-  part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
+  const st=calcStats(), h=hullCfg();
+  /* §18 突击型三枚分锁: ≥3敌 各锁其一; 单体时按 100/65/50 衰减 */
+  const alive=enemies.filter(e=>!e.dead).sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
+  const fall=[1,0.65,0.5];
+  for(let i=0;i<h.mslN;i++){
+    const mx=player.x+Math.cos(player.a)*15,my=player.y+Math.sin(player.a)*15;
+    const dmg=46*st.atk*(alive.length===1?fall[i]:1);
+    const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
+    const s=shot(mx,my,player.a+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});
+    if(tgt)s.lock=tgt;
+    part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
+  }
   SFX.missile();
 }
 function callAirstrike(){
@@ -224,8 +232,8 @@ function updPlayer(dt){
   let sprint=false;
   if(IN.sprint()&&!p.sprintLock&&p.sprintG>0){ sprint=true; p.sprintG-=dt/2.6; if(p.sprintG<=0){p.sprintG=0;p.sprintLock=true;} }
   else { p.sprintG=Math.min(1,p.sprintG+dt/3); if(p.sprintLock&&p.sprintG>0.45)p.sprintLock=false; }
-  const maxSpd=p.speed*mul*(sprint?1.9:1)*(COMBO.od?1.1:1);
-  const ACCEL=maxSpd/0.16, FRICT=maxSpd/0.2;
+  const maxSpd=p.speed*mul*(sprint?1.9*hullCfg().sprint:1)*(COMBO.od?1.1:1);
+  const ACCEL=maxSpd/0.16*hullCfg().accel, FRICT=maxSpd/0.2;
   const tvx=ix*maxSpd, tvy=iy*maxSpd;
   const dv=(im>0.01?ACCEL:FRICT)*dt;
   p.vx+=clamp(tvx-p.vx,-dv,dv);
@@ -245,12 +253,12 @@ function updPlayer(dt){
   p.strikeCd=Math.max(0,p.strikeCd-dt);
   p.fireM-=dt; p.fireC-=dt;
   if(p.maxHp!==calcStats().maxHp){ const ns=calcStats(); p.hp=Math.min(p.hp+Math.max(0,ns.maxHp-p.maxHp),ns.maxHp); p.maxHp=ns.maxHp; }
-  if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1); fireMG(); if(ST.t-mgSndT>0.08){SFX.mg();mgSndT=ST.t;} }
+  if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)/hullCfg().mgDps; fireMG(); if(ST.t-mgSndT>0.08){SFX.mg();mgSndT=ST.t;} }
   if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1); fireCannon(); }
   if(IN.msl()){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); }
-  else if(p.charging){ if(p.charge>=0.45)fireMissile(); p.charging=false; p.charge=0; }
+  else if(p.charging){ if(p.charge>=0.45*hullCfg().mslCd)fireMissile(); p.charging=false; p.charge=0; }
   if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5; callAirstrike(); }
-  if(PAD.just.shield&&p.shieldCd<=0){ p.shieldT=0.42; p.shieldCd=0.75; p.shieldAge=0; SFX.pick(); }
+  if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=sc.cd; p.shieldAge=0; SFX.pick(); }
   const tid=tileAtPx(p.x,p.y);
   p.dustT-=dt;
   if(p.moving&&p.dustT<=0){
@@ -398,11 +406,14 @@ function updEnemies(dt){
 }
 function damagePlayer(dmg,ang,noShield){
   if(player.inv>0||DBG.god)return;
+  const h=hullCfg(), sc=h.shield;
+  /* §19 要塞盾: 冲撞/地雷/AOE/Boss近战(noShield类)不能完全免疫, 持盾期间减伤60% */
+  if(noShield&&shieldActive()&&sc.fortress&&player.shieldAge>sc.perfect)dmg*=0.4;
   if(!noShield&&shieldActive()){
     floater(player.x,player.y-22,T('parry'),PAL.lite,9); SFX.reflect(); return;
   }
   const st=calcStats();
-  player.hp-=dmg*(1-st.def); player.flash=0.25; ST.shake=Math.min(10,ST.shake+2.5); SFX.hurt();
+  player.hp-=dmg*(1-st.def)*h.taken; player.flash=0.25; ST.shake=Math.min(10,ST.shake+2.5); SFX.hurt();
   burst(player.x,player.y,6,[PAL.red,PAL.white],60,0.3);
   if(player.hp<=0){ player.hp=0; playerDie(); }
 }
@@ -417,8 +428,10 @@ function updShots(dt){
     const s=shots[i];
     s.ox=s.x; s.oy=s.y;   /* PHASE 2: 插值快照 */
     if(s.kind==='missile'&&s.friendly){
-      let best=null,bd=1e9;
-      for(const e of enemies){const d=dist2(s.x,s.y,e.x,e.y);if(d<bd){bd=d;best=e;}}
+      /* §18: 优先追踪分锁目标, 目标死亡则回退最近敌 */
+      let best=(s.lock&&!s.lock.dead)?s.lock:null;
+      if(!best){ let bd=1e9;
+        for(const e of enemies){const d=dist2(s.x,s.y,e.x,e.y);if(d<bd){bd=d;best=e;}} }
       if(best){ const want=Math.atan2(best.y-s.y,best.x-s.x);
         s.ang+=clamp(angDiff(s.ang,want),-4.5*dt,4.5*dt); }
       s.spd=Math.min(400,s.spd+(s.accel||500)*dt);
@@ -436,19 +449,24 @@ function updShots(dt){
         for(const e of _gqShot){
           if(!e.dead&&dist2(s.x,s.y,e.x,e.y)<(e.r+s.r)*(e.r+s.r)){
             if(s.kind==='mg'){ applyDamage(e,s.dmg,'machinegun'); burst(s.x,s.y,3,[PAL.gold,PAL.white],50,0.2); }
-            else if(s.kind==='shell'){ explodeAt(s.x,s.y,18,s.dmg,false,'cannon'); }
+            else if(s.kind==='shell'){ explodeAt(s.x,s.y,18*hullCfg().blast,s.dmg,false,'cannon'); }
             else { explodeAt(s.x,s.y,30,s.dmg,false,s.refl?'reflect':'missile',0,s.para?{extraCombo:1}:null); }
             dead=true; break;
           } }
       } else {
         if(dist2(s.x,s.y,player.x,player.y)<(player.r+s.r+2)*(player.r+s.r+2)){
           if(shieldActive()){
-            const perfect=(player.shieldAge<=SHIELD_PERFECT);
+            const sc=hullCfg().shield;
+            const perfect=(player.shieldAge<=sc.perfect);
             let best=null,bd=1e9;
             for(const e of enemies){const d=dist2(s.x,s.y,e.x,e.y);if(d<bd){bd=d;best=e;}}
             const na=best?Math.atan2(best.y-s.y,best.x-s.x):s.ang+Math.PI;
             s.friendly=true; s.refl=true; s.para=perfect; s.ang=na;
-            s.spd*=perfect?2.1:1.7; s.dmg*=perfect?2.5:2; s.cause='reflect';
+            if(sc.fortress&&!perfect){   /* §19 要塞盾: 持续期反弹伤害 75% */
+              s.spd*=1.6; s.dmg*=0.75; s.cause='reflect';
+            } else {
+              s.spd*=perfect?2.1:1.7; s.dmg*=perfect?2.5:2; s.cause='reflect';
+            }
             s.vx=Math.cos(na)*s.spd; s.vy=Math.sin(na)*s.spd; s.life=1.6;
             RUN.score+=30;
             ST.shake=Math.min(10,ST.shake+perfect?2.5:1.5);
@@ -458,6 +476,12 @@ function updShots(dt){
             if(s.kind!=='mg')explodeAt(s.x,s.y,12,0,false);
             dead=true;
           }
+        }
+        /* 僚机承伤: 敌弹撞僚机 */
+        else if(wingman&&wingman.downT<=0&&dist2(s.x,s.y,wingman.x,wingman.y)<(wingman.r+s.r)*(wingman.r+s.r)){
+          wingman.hp-=s.dmg*0.6; burst(s.x,s.y,4,[PAL.gold,PAL.white],60,0.25);
+          if(wingman.hp<=0){ wingmanDown(); }
+          dead=true;
         }
       }
     }
@@ -520,4 +544,72 @@ function genBolt(){
   let x=x0,y=0;
   while(y<VH*0.75){ y+=rnd(18,34); x+=rnd(-16,16); pts.push([x,y]); }
   return {pts,gx:x,gy:y};
+}
+
+/* ============================================================
+   僚机系统 (v3计划 §23/§24): ASSAULT 索敌强攻 / GUARD 拦截护航 / FLEX 自适应
+   ============================================================ */
+let wingman=null, wingThreatT=0;   /* wingThreatT: 玩家近旁有来袭弹的剩余时间(FLEX 判据) */
+function spawnWingman(){
+  const w=WINGS[RUN.wing];
+  if(!w||RUN.wing==='none'||!player){ wingman=null; return; }
+  const st=calcStats(), mhp=Math.round(st.maxHp*w.hp);
+  wingman={type:RUN.wing,x:player.x-34,y:player.y+26,ox:player.x-34,oy:player.y+26,
+    vx:0,vy:0,a:0,r:9,hp:mhp,maxHp:mhp,downT:0,fireT:0,scanT:0.4,trailT:0};
+}
+function wingmanDown(){
+  if(!wingman)return;
+  wingman.downT=8;
+  burst(wingman.x,wingman.y,14,[PAL.steel,PAL.gold,PAL.white],90,0.5);
+  floater(wingman.x,wingman.y-20,T('wingDown'),PAL.red,8);
+  SFX.hurt();
+}
+function updWingman(dt){
+  if(!wingman||!player)return;
+  const w=wingman, cfg=WINGS[w.type];
+  w.ox=w.x; w.oy=w.y;
+  wingThreatT=Math.max(0,wingThreatT-dt);
+  if(w.downT>0){ w.downT-=dt;
+    if(w.downT<=0){ w.hp=Math.round(w.maxHp*0.5); w.x=player.x-30; w.y=player.y+24; w.ox=w.x; w.oy=w.y;
+      floater(w.x,w.y-18,T('wingBack'),PAL.acid,8); }
+    return; }
+  /* 威胁感知: 玩家110px内的敌弹 (FLEX 切换护航 / GUARD 拦截判据) */
+  let threat=null;
+  for(const s of shots){ if(!s.friendly&&dist2(s.x,s.y,player.x,player.y)<110*110){threat=s;break;} }
+  if(threat)wingThreatT=0.8;
+  const guarding=cfg.guard||(cfg.adapt&&wingThreatT>0);
+  /* 位置目标: 护航时贴玩家右侧; 强攻时逼近最近敌人 */
+  let tx=player.x+34,ty=player.y+18;
+  let near=null,nd=1e9;
+  for(const e of enemies){ if(e.dead)continue; const d=dist2(player.x,player.y,e.x,e.y); if(d<nd){nd=d;near=e;} }
+  if(!guarding&&near&&nd<280*280){ tx=near.x-Math.cos(Math.atan2(near.y-player.y,near.x-player.x))*70;
+    ty=near.y-Math.sin(Math.atan2(near.y-player.y,near.x-player.x))*70; }
+  const dx=tx-w.x,dy=ty-w.y,dl=Math.hypot(dx,dy)||1;
+  const wspd=Math.min(150,40+dl*3);
+  w.vx+=(dx/dl*wspd-w.vx)*Math.min(1,dt*6);
+  w.vy+=(dy/dl*wspd-w.vy)*Math.min(1,dt*6);
+  w.x+=w.vx*dt; w.y+=w.vy*dt;
+  w.x=clamp(w.x,10,WORLDW-10); w.y=clamp(w.y,10,WORLDH-10);
+  /* 开火: 240px 内最近敌人, 机枪弹 ×机型火力系数 */
+  w.fireT-=dt;
+  if(near&&nd<240*240&&w.fireT<=0){
+    w.fireT=0.16;
+    const ta=Math.atan2(near.y-w.y,near.x-w.x)+rnd(-0.06,0.06);
+    shot(w.x+Math.cos(ta)*10,w.y+Math.sin(ta)*10,ta,360,3*calcStats().atk*cfg.fire,true,'mg');
+    part(w.x+Math.cos(ta)*11,w.y+Math.sin(ta)*11,rnd(-10,10),rnd(-10,10),0.06,PAL.gold,1.6);
+  }
+  if(Math.hypot(w.vx,w.vy)>12)w.a=Math.atan2(w.vy,w.vx);
+  /* 拦截: 护航状态下每0.4s击落玩家90px内的一发敌弹 */
+  if(guarding){
+    w.scanT-=dt;
+    if(w.scanT<=0){ w.scanT=0.4;
+      for(let i=shots.length-1;i>=0;i--){ const s=shots[i];
+        if(s.friendly)continue;
+        if(dist2(s.x,s.y,player.x,player.y)<90*90&&dist2(s.x,s.y,w.x,w.y)<70*70){
+          burst(s.x,s.y,5,[PAL.cyan,PAL.white],70,0.25); releaseShot(i); break; } }
+    }
+  }
+  w.trailT-=dt;
+  if(w.trailT<=0&&Math.hypot(w.vx,w.vy)>30){ w.trailT=0.06;
+    part(w.x-Math.cos(w.a)*9,w.y-Math.sin(w.a)*9,rnd(-8,8),rnd(-8,8),0.25,PAL.cyan,1.4); }
 }

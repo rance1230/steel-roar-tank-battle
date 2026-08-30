@@ -210,7 +210,7 @@ function drawDecals(){
 }
 /* ---------- 载具绘制 ---------- */
 function drawTank(x,y,ang,o){
-  const s=o.s, accent=o.trim||PAL.cyan;
+  const s=o.s===undefined?1:o.s, accent=o.trim||PAL.cyan;   /* s 缺省=1: 修 drawHelpScene 场景 NaN */
   unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
   glow(x+Math.cos(ang+Math.PI)*9*s,y+Math.sin(ang+Math.PI)*9*s,12*s,accent,0.13);
   ctx.save(); ctx.translate(Math.round(x),Math.round(y));
@@ -390,6 +390,21 @@ function drawRadar(x,y,w,h){
   if(player){ upx(sx(player)-1,sy(player)-1,3,3,PAL.cyan); }
   uctx.restore();
 }
+function drawWingman(){
+  if(!wingman||wingman.downT>0||!player)return;
+  const w=wingman;
+  const wx=IPx(w), wy=IPy(w);
+  const cols={assault:{hull:'#8a4f2f',hi:PAL.white,trim:PAL.gold,turret:'#b06a3a',barrel:PAL.steel},
+              guard:{hull:'#2f5a8a',hi:PAL.white,trim:PAL.cyan,turret:'#4a7ab0',barrel:PAL.steel},
+              flex:{hull:'#3f7a4f',hi:PAL.white,trim:PAL.lime,turret:'#5aa06a',barrel:PAL.steel}};
+  const c=cols[w.type]||cols.flex;
+  glow(wx,wy,16,PAL.cyan,0.10+0.06*Math.sin(ST.t*4));
+  ctx.save(); ctx.translate(wx,wy); ctx.scale(0.72,0.72);
+  drawTank(0,0,w.a,{s:1,hull:c.hull,hi:c.hi,trim:c.trim,turret:c.turret,barrel:c.barrel,antenna:true,dist:0,flash:0});
+  ctx.restore();
+  px(wx-10,wy-15,20,2,PAL.panel2);
+  px(wx-10,wy-15,Math.max(1,Math.round(20*w.hp/w.maxHp)),2,PAL.cyan);
+}
 function drawHudSkill(x,y,w,label,key,frac,c,ready){
   uPanel(x,y,w,16,c,0.78);
   upx(x+4,y+4,8,8,ready?c:PAL.steel);
@@ -511,6 +526,7 @@ function drawWorld(){
   for(const pk of pickups)drawPickup(pk);
   for(const e of enemies)drawEnemy(e);
   if(ST.state!=='over')drawPlayer();
+  if(ST.state!=='over')drawWingman();
   drawShots();
   for(const b of bombs){ glow(IPx(b),IPy(b),12,PAL.ember,0.18); px(IPx(b)-2,IPy(b)-2,4,4,PAL.dark); px(IPx(b)-1,IPy(b)-4,2,3,PAL.red); }
   for(const pl of planes)drawPlaneI(pl);
@@ -546,7 +562,7 @@ function drawHelpScene(pg,x,y,w,h){
   const cx=x+w/2, cy=y+h/2;
   const P=(dx,dy)=>{ctx.save();ctx.translate(cx+dx,cy+dy);ctx.scale(0.9,0.9);ctx.restore();};
   const tankAt=(dx,dy,ang,o)=>{ctx.save();ctx.translate(cx+dx,cy+dy);ctx.scale(0.85,0.85);
-    drawTank(0,0,ang,Object.assign({hull:PAL.lite,hi:PAL.white,trim:PAL.gold,turret:PAL.steel,barrel:PAL.steel,antenna:true,dist:ST.t*40,flash:0},o||{}));ctx.restore();};
+    drawTank(0,0,ang,Object.assign({s:1,hull:PAL.lite,hi:PAL.white,trim:PAL.gold,turret:PAL.steel,barrel:PAL.steel,antenna:true,dist:ST.t*40,flash:0},o||{}));ctx.restore();};
   const truckAt=(dx,dy,ang)=>{ctx.save();ctx.translate(cx+dx,cy+dy);ctx.scale(0.85,0.85);
     drawTruck(0,0,ang,{s:1,hull:PAL.brown,hi:PAL.sand,trim:PAL.red,dist:0,flash:0});ctx.restore();};
   const t=ST.t;

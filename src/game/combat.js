@@ -5,7 +5,8 @@
    C. Breach Ram 状态机 (锁定→零距离炮击→击飞→连锁) + 质量分级 */
 
 let HITSTOP=0;              /* 全局顿帧(秒): 期间逻辑冻结, 仅渲染 */
-const SHIELD_PERFECT=0.12;  /* Perfect Parry 精准窗口(秒, 均衡型基准) */
+/* Perfect Parry 精准窗口改随机体读取 (原固定0.12=均衡型基准) */
+const SHIELD_PERFECT_LEGACY=0.12;
 const CHAIN_MAX=3;          /* 连锁深度上限, 防止无限连锁 */
 
 /* 连击权重表 (第三版计划·第六章) */
@@ -55,7 +56,7 @@ function enterBreach(e){
 function breachFire(e,stagger){
   const p=player, st=calcStats();
   if(p.breach&&p.breach.e===e)p.breach=null;   /* 防御: 清掉锁定, 避免残pin拖拽玩家 */
-  const dmg=24*st.atk*1.35;                    /* 零距离炮击 ×1.35 */
+  const dmg=24*st.atk*1.35*hullCfg().breach;   /* 零距离炮击 ×1.35 ×机型Breach倍率 */
   HITSTOP=0.05;
   STATS.breachFires++;
   ST.shake=Math.min(12,ST.shake+7);
