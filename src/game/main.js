@@ -139,9 +139,15 @@ function tick(dt){
     ST.shake=Math.max(0,ST.shake-dt*11);
   }
   else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt);
+    if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
-  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); ST.shake=Math.max(0,ST.shake-dt*11); }
+  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); ST.shake=Math.max(0,ST.shake-dt*11);
+    if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
+    else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
+    if(PAD.just.confirm){ RUN.cycle++; RUN.lvl=0; saveRun(); startLevel(); }  /* A=下一周目 */
+    else if(PAD.just.cannon){ refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'}; }  /* X=重分配 */
+    else if(PAD.just.back)toTitle();           /* B=回标题 */
     if(!ST.creditsBgm&&ST.winT>4.8){ ST.creditsBgm=true; BGM.play('credits',true); } }
   else if(ST.state==='title'){ updTitleFx(dt); updParts(dt); }
 }

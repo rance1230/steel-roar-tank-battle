@@ -156,7 +156,8 @@ function tbtn(label,ic,css,code,press){
   tbtn('暂停','❚❚',{right:'8px',top:'8px',width:'clamp(40px,9vmin,54px)',height:'clamp(40px,9vmin,54px)'},'KeyP',true);
 })();
 function updOvl(){
-  const show=(SET.touch==='on'||(SET.touch==='auto'&&hasTouch))&&!MENU&&(ST.state==='play'||ST.state==='intro');
+  /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
+  const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');
   const d=show?'block':'none';
   if(OVL.style.display!==d)OVL.style.display=d;
 }
@@ -175,7 +176,7 @@ cv.addEventListener('pointerdown',e=>{
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
     if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl')onKeyPress('Enter');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||ST.state==='win')onKeyPress('Enter');
     else if(ST.state==='over')onKeyPress('KeyR');
   }
 });

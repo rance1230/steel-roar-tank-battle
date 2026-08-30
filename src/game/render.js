@@ -701,8 +701,9 @@ function drawOver(){
   uPanel(VW/2-104,72,208,104,PAL.red,0.78);
   txtO(T('overT'),VW/2,80,20,PAL.red,'center');
   txtO(T('overS'),VW/2,110,12,PAL.white,'center');
-  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(T('overR'),VW/2,150,11,PAL.gold,'center');
-  if(ST.overT>0.8)txt(T('overQ'),VW/2,172,9,PAL.white,'center');
+  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
+  const oq=overQDyn();
+  if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
 }
 function drawWinBG(){
   px(0,0,VW,VH,PAL.ink);
@@ -717,7 +718,7 @@ function drawWin(){
   txt(TF('winStats',{n:RUN.kills,t:fmtTime(RUN.time),s:RUN.score}),VW/2,64,9,PAL.acid,'center');
   if(ST.best>0)txt(TF('best',{n:ST.best}),VW/2,78,8,PAL.gold,'center');
   txt(TF('upgPts')+': '+RUN.pts,VW/2,94,9,PAL.gold,'center');
-  if(ST.winT>2&&(ST.t%1.2)<0.86)txtO(TF('winOpt',{n:RUN.cycle+2}),VW/2,106,8,PAL.white,'center');
+  if(ST.winT>2&&(ST.t%1.2)<0.86)txtO(winOptDyn(),VW/2,106,8,PAL.white,'center');
   uctx.save(); uctx.beginPath(); uctx.rect(0,118,VW,VH-126); uctx.clip();
   const scroll=ST.winT*13;
   for(let i=0;i<CREDITS.length;i++){

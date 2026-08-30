@@ -105,6 +105,8 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  navHintT:'点按选择项目 · 点按确认',
  skipP:'{k} 跳过',skipT:'点按跳过',contP:'按 {k} 前往整备',contT:'点按 前往整备',
  ctrlT:'战前键位速览',ctrlSwitch:'◀ ▶ 切换布局',
+ overRP:'{k} 重试本关',overTP:'点按屏幕 重试本关',overQP:'{k} 返回标题',
+ winOptP:'{c} 进入第 {n} 周目 · {x} 重分配 · {b} 回标题',winOptT:'点按屏幕 进入第 {n} 周目',
  ctrlModeP:'手柄布局',ctrlModeT:'触屏布局',ctrlModeK:'键盘布局',
  ctrlGoP:'按 {k} 出击',ctrlGoT:'点按任意处 出击',
  ctrlAlias:'※ RT 同机枪 · LT 同护盾(未改键时) · 可在 OPTION→手柄映射 自定义',
@@ -156,6 +158,8 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  navHintT:'タップで選択 · タップで決定',
  skipP:'{k} スキップ',skipT:'タップでスキップ',contP:'{k} で整備へ',contT:'タップで整備へ',
  ctrlT:'出撃前キー確認',ctrlSwitch:'◀ ▶ レイアウト切替',
+ overRP:'{k} でリトライ',overTP:'タップでリトライ',overQP:'{k} でタイトルへ',
+ winOptP:'{c} 第 {n} 周目へ · {x} 再振分 · {b} タイトル',winOptT:'タップで第 {n} 周目へ',
  ctrlModeP:'ゲームパッド',ctrlModeT:'タッチ',ctrlModeK:'キーボード',
  ctrlGoP:'{k} で出撃',ctrlGoT:'タップで出撃',
  ctrlAlias:'※ RT=機銃 · LT=シールド(初期値) · OPTION→パッド設定で変更可',
@@ -207,6 +211,8 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  navHintT:'Tap item to select · Tap to confirm',
  skipP:'{k} Skip',skipT:'Tap to skip',contP:'Press {k} for Deploy',contT:'Tap for Deploy',
  ctrlT:'PRE-DEPLOY CONTROLS',ctrlSwitch:'◀ ▶ SWITCH LAYOUT',
+ overRP:'{k} Retry stage',overTP:'Tap to retry',overQP:'{k} for Title',
+ winOptP:'{c} NG+{n} · {x} Respec · {b} Title',winOptT:'Tap for NG+{n}',
  ctrlModeP:'GAMEPAD',ctrlModeT:'TOUCH',ctrlModeK:'KEYBOARD',
  ctrlGoP:'Press {k} to Deploy',ctrlGoT:'Tap anywhere to Deploy',
  ctrlAlias:'※ RT=MG · LT=Shield (defaults) · Remap via OPTION→Pad Map',
@@ -445,7 +451,8 @@ function tbtn(label,ic,css,code,press){
   tbtn('暂停','❚❚',{right:'8px',top:'8px',width:'clamp(40px,9vmin,54px)',height:'clamp(40px,9vmin,54px)'},'KeyP',true);
 })();
 function updOvl(){
-  const show=(SET.touch==='on'||(SET.touch==='auto'&&hasTouch))&&!MENU&&(ST.state==='play'||ST.state==='intro');
+  /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
+  const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');
   const d=show?'block':'none';
   if(OVL.style.display!==d)OVL.style.display=d;
 }
@@ -464,7 +471,7 @@ cv.addEventListener('pointerdown',e=>{
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
     if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl')onKeyPress('Enter');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||ST.state==='win')onKeyPress('Enter');
     else if(ST.state==='over')onKeyPress('KeyR');
   }
 });
@@ -2059,8 +2066,9 @@ function drawOver(){
   uPanel(VW/2-104,72,208,104,PAL.red,0.78);
   txtO(T('overT'),VW/2,80,20,PAL.red,'center');
   txtO(T('overS'),VW/2,110,12,PAL.white,'center');
-  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(T('overR'),VW/2,150,11,PAL.gold,'center');
-  if(ST.overT>0.8)txt(T('overQ'),VW/2,172,9,PAL.white,'center');
+  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
+  const oq=overQDyn();
+  if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
 }
 function drawWinBG(){
   px(0,0,VW,VH,PAL.ink);
@@ -2075,7 +2083,7 @@ function drawWin(){
   txt(TF('winStats',{n:RUN.kills,t:fmtTime(RUN.time),s:RUN.score}),VW/2,64,9,PAL.acid,'center');
   if(ST.best>0)txt(TF('best',{n:ST.best}),VW/2,78,8,PAL.gold,'center');
   txt(TF('upgPts')+': '+RUN.pts,VW/2,94,9,PAL.gold,'center');
-  if(ST.winT>2&&(ST.t%1.2)<0.86)txtO(TF('winOpt',{n:RUN.cycle+2}),VW/2,106,8,PAL.white,'center');
+  if(ST.winT>2&&(ST.t%1.2)<0.86)txtO(winOptDyn(),VW/2,106,8,PAL.white,'center');
   uctx.save(); uctx.beginPath(); uctx.rect(0,118,VW,VH-126); uctx.clip();
   const scroll=ST.winT*13;
   for(let i=0;i<CREDITS.length;i++){
@@ -2429,6 +2437,25 @@ function contDyn(){
   if(m==='touch')return T('contT');
   return T('pressCont');
 }
+/* 失败/通关画面提示: 随输入方式切换 (手柄 A/B/X · 触屏点按 · 键盘 R/Q/Enter) */
+function overRDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('overRP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('overTP');
+  return T('overR');
+}
+function overQDyn(){
+  const m=inMode();
+  if(m==='touch')return '';
+  if(m==='pad')return TF('overQP',{k:padBtnName(SET.pad.back)});
+  return T('overQ');
+}
+function winOptDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('winOptP',{c:padBtnName(SET.pad.confirm),x:padBtnName(SET.pad.cannon),b:padBtnName(SET.pad.back),n:RUN.cycle+2});
+  if(m==='touch')return TF('winOptT',{n:RUN.cycle+2});
+  return TF('winOpt',{n:RUN.cycle+2});
+}
 function menuBack(){
   if(!MENU)return;
   const from=MENU.from;
@@ -2730,7 +2757,7 @@ function drawCtrlPad(hot){
   ctrlBtn(cx-78,cy-14,13,'L',hot==='move');
   /* 十字键 (HAT轴/按钮12-15) */
   const dx=cx-78,dy=cy+34;
-  ctrlKeycap(dx-6,dy-22,12,10,'↑',hot==='move');
+  ctrlKeycap(dx-6,dy-22,12,10,'▲',hot==='move');
   ctrlKeycap(dx-20,dy-5,12,10,'◀',hot==='move');
   ctrlKeycap(dx+8,dy-5,12,10,'▶',hot==='move');
   ctrlKeycap(dx-6,dy+12,12,10,'▼',hot==='move');
@@ -2928,9 +2955,15 @@ function tick(dt){
     ST.shake=Math.max(0,ST.shake-dt*11);
   }
   else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt);
+    if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
-  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); ST.shake=Math.max(0,ST.shake-dt*11); }
+  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); ST.shake=Math.max(0,ST.shake-dt*11);
+    if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
+    else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
+    if(PAD.just.confirm){ RUN.cycle++; RUN.lvl=0; saveRun(); startLevel(); }  /* A=下一周目 */
+    else if(PAD.just.cannon){ refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'}; }  /* X=重分配 */
+    else if(PAD.just.back)toTitle();           /* B=回标题 */
     if(!ST.creditsBgm&&ST.winT>4.8){ ST.creditsBgm=true; BGM.play('credits',true); } }
   else if(ST.state==='title'){ updTitleFx(dt); updParts(dt); }
 }

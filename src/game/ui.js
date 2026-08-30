@@ -23,6 +23,25 @@ function contDyn(){
   if(m==='touch')return T('contT');
   return T('pressCont');
 }
+/* 失败/通关画面提示: 随输入方式切换 (手柄 A/B/X · 触屏点按 · 键盘 R/Q/Enter) */
+function overRDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('overRP',{k:padBtnName(SET.pad.confirm)});
+  if(m==='touch')return T('overTP');
+  return T('overR');
+}
+function overQDyn(){
+  const m=inMode();
+  if(m==='touch')return '';
+  if(m==='pad')return TF('overQP',{k:padBtnName(SET.pad.back)});
+  return T('overQ');
+}
+function winOptDyn(){
+  const m=inMode();
+  if(m==='pad')return TF('winOptP',{c:padBtnName(SET.pad.confirm),x:padBtnName(SET.pad.cannon),b:padBtnName(SET.pad.back),n:RUN.cycle+2});
+  if(m==='touch')return TF('winOptT',{n:RUN.cycle+2});
+  return TF('winOpt',{n:RUN.cycle+2});
+}
 function menuBack(){
   if(!MENU)return;
   const from=MENU.from;
@@ -324,7 +343,7 @@ function drawCtrlPad(hot){
   ctrlBtn(cx-78,cy-14,13,'L',hot==='move');
   /* 十字键 (HAT轴/按钮12-15) */
   const dx=cx-78,dy=cy+34;
-  ctrlKeycap(dx-6,dy-22,12,10,'↑',hot==='move');
+  ctrlKeycap(dx-6,dy-22,12,10,'▲',hot==='move');
   ctrlKeycap(dx-20,dy-5,12,10,'◀',hot==='move');
   ctrlKeycap(dx+8,dy-5,12,10,'▶',hot==='move');
   ctrlKeycap(dx-6,dy+12,12,10,'▼',hot==='move');
