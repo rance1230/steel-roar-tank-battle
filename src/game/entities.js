@@ -590,6 +590,33 @@ function updWingman(dt){
   w.vy+=(dy/dl*wspd-w.vy)*Math.min(1,dt*6);
   w.x+=w.vx*dt; w.y+=w.vy*dt;
   w.x=clamp(w.x,10,WORLDW-10); w.y=clamp(w.y,10,WORLDH-10);
+  /* ---- 玩家↔僚机 实体碰撞: 互不穿模, 相撞互相影响 (僚机质量小, 让位更多) ---- */
+  w.bumpT=Math.max(0,(w.bumpT||0)-dt);
+  {
+    const cdx=w.x-player.x, cdy=w.y-player.y, cd=Math.hypot(cdx,cdy)||0.01;
+    const minD=w.r+player.r+1.5;
+    if(cd<minD){
+      const nx=cdx/cd, ny=cdy/cd, push=minD-cd;
+      const wShare=0.74, pShare=0.26;
+      w.x+=nx*push*wShare; w.y+=ny*push*wShare;
+      player.x-=nx*push*pShare; player.y-=ny*push*pShare;
+      const rvx=w.vx-player.vx, rvy=w.vy-player.vy, rel=rvx*nx+rvy*ny;
+      if(rel<0){
+        const j=-rel;
+        w.vx+=nx*j*0.9; w.vy+=ny*j*0.9;              /* 僚机被弹开 */
+        player.vx-=nx*j*0.35; player.vy-=ny*j*0.35;  /* 玩家受少量推挤 */
+        if(j>55&&w.bumpT<=0){ w.bumpT=0.4;
+          burst((w.x+player.x)/2,(w.y+player.y)/2,4,[PAL.lite,PAL.cyan],50,0.2);
+          SFX.pick(); }
+      }
+    }
+  }
+  /* 僚机↔敌军 实体互斥: 不穿模 (僚机被推出, 不造成伤害) */
+  for(const e of enemies){
+    if(e.dead)continue;
+    const ex=w.x-e.x, ey=w.y-e.y, ed=Math.hypot(ex,ey)||0.01, em=e.r+w.r+1;
+    if(ed<em){ w.x+=ex/ed*(em-ed); w.y+=ey/ed*(em-ed); }
+  }
   /* 开火: 240px 内最近敌人, 机枪弹 ×机型火力系数 */
   w.fireT-=dt;
   if(near&&nd<240*240&&w.fireT<=0){
