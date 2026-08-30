@@ -209,6 +209,26 @@ function drawDecals(){
   ctx.drawImage(decalBuf,0,0);
 }
 /* ---------- 载具绘制 ---------- */
+function drawHullPreview(k,x,y,w,h){
+  const v=HULLS[k].vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
+  ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  px(x,y,w,h,PAL.ink);
+  px(x,y+h-12,w,12,PAL.sand); px(x+4,y+h-12,w-8,2,PAL.brown);
+  const cx=x+w/2, cy=y+h/2-4;
+  const pl=Math.sin(ST.t*1.1)*w*0.12;
+  glow(cx,cy,20,v.glow||PAL.cyan,0.12);
+  drawTank(cx+pl,cy,-Math.PI/2,{s:(v.s||1)*1.05,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,
+    trim:vc(v.trim)||PAL.cyan,turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,
+    hullDk:v.dk,track:v.track,muzzle:v.trim,twin:!!v.twin,antenna:true,core:true,dist:ST.t*24,flash:0});
+  /* 扫描环 + 机型呼号 */
+  const rp=(ST.t*0.5)%1;
+  ctx.strokeStyle=rgba(v.trim||PAL.cyan,0.6*(1-rp)); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,8+rp*22,0,Math.PI*2); ctx.stroke();
+  gtxt(v.callsign||'IRONCLAD-07',x+w-6,y+6,7,v.trim?rgba(v.trim,0.9):PAL.cyan,'right');
+  for(let i=0;i<HULLS[k].mslN;i++)gtxt('➤',x+8+i*10,y+6,8,PAL.gold);
+  ctx.restore();
+  ctx.strokeStyle=PAL.steel; ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+}
 function drawTank(x,y,ang,o){
   const s=o.s===undefined?1:o.s, accent=o.trim||PAL.cyan;   /* s 缺省=1: 修 drawHelpScene 场景 NaN */
   unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
@@ -282,15 +302,19 @@ function drawPlayer(){
   const p=player;
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return;
   const pxp=IPx(p), pyp=IPy(p);
+  const v=hullCfg().vis||{}, hasV=!!v.hull;   /* 机体专属外观 (vis.hull=null=均衡型默认涂装) */
+  const vc=c=>hasV&&c?c:undefined;
   if(p.sprintG<0.95||COMBO.od)glow(pxp,pyp,24,COMBO.od?PAL.gold:PAL.blue,COMBO.od?0.18:0.12);
-  glow(pxp+Math.cos(p.a)*2,pyp+Math.sin(p.a)*2,7+Math.sin(ST.t*5)*1.6,PAL.cyan,0.13);   /* 能量核心脉动光 */
-  drawTank(pxp,pyp,p.a,{s:1,hull:PAL.steel,hi:PAL.white,trim:PAL.cyan,turret:PAL.lite,barrel:PAL.steel,antenna:true,core:true,dist:p.dist,flash:0});
+  glow(pxp+Math.cos(p.a)*2,pyp+Math.sin(p.a)*2,7+Math.sin(ST.t*5)*1.6,v.glow||PAL.cyan,0.13);   /* 能量核心脉动光 */
+  drawTank(pxp,pyp,p.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
+    turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
+    muzzle:v.trim,twin:!!v.twin,antenna:true,core:true,dist:p.dist,flash:0});
   if(p.shieldT>0||p.shieldGrace>0){
     const a=clamp(p.shieldT/0.5,0.25,1);
     glow(pxp,pyp,28,PAL.aqua,0.18*a);
     ctx.save(); ctx.translate(pxp,pyp); ctx.rotate(ST.t*3);
     ctx.globalAlpha=a;
-    ctx.strokeStyle=PAL.aqua; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle=v.ring||PAL.aqua; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.stroke();
     for(let i=0;i<6;i++){ const an=i/6*Math.PI*2;
       px(Math.cos(an)*15-2,Math.sin(an)*15-2,4,4,i%2?PAL.white:PAL.aqua); }
     ctx.globalAlpha=1; ctx.restore();
@@ -394,7 +418,7 @@ function drawWingman(){
   if(!wingman||wingman.downT>0||!player)return;
   const w=wingman;
   const wx=IPx(w), wy=IPy(w);
-  const cols={assault:{hull:'#8a4f2f',hi:PAL.white,trim:PAL.gold,turret:'#b06a3a',barrel:PAL.steel},
+  const cols={assault:{hull:'#a8842f',hi:PAL.white,trim:PAL.gold,turret:'#c9a04a',barrel:PAL.steel},
               guard:{hull:'#2f5a8a',hi:PAL.white,trim:PAL.cyan,turret:'#4a7ab0',barrel:PAL.steel},
               flex:{hull:'#3f7a4f',hi:PAL.white,trim:PAL.lime,turret:'#5aa06a',barrel:PAL.steel}};
   const c=cols[w.type]||cols.flex;
@@ -422,7 +446,7 @@ function drawHUD(){
   const touchOn=(SET.touch==='on'||(SET.touch==='auto'&&hasTouch));
   uctx.globalAlpha=0.38; upx(0,0,VW,62,PAL.shadow); upx(0,VH-50,VW,50,PAL.shadow); uctx.globalAlpha=1;
   uPanel(5,5,135,50,PAL.cyan,0.85);
-  txt('IRONCLAD-07',35,9,9,PAL.white);
+  txt((hullCfg().vis&&hullCfg().vis.callsign)||'IRONCLAD-07',35,9,9,PAL.white);
   txt(T('armor'),35,20,7,PAL.lite);
   uMiniBar(74,21,54,4,p.hp/p.maxHp,p.hp>30?PAL.acid:PAL.red,PAL.panel2);
   txt(Math.ceil(p.hp)+'/'+Math.ceil(p.maxHp),131,18,7,PAL.white,'right');

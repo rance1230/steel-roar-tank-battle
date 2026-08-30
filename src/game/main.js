@@ -206,6 +206,7 @@ function draw(alpha){
   if(ST.state==='title'||ST.state==='ctrl'){
     drawTitleBg();
     if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84);
+    else if(MENU&&MENU.id==='hull'&&HULL_KEYS[MENU.sel])drawHullPreview(HULL_KEYS[MENU.sel],127,96,226,62);
     else if(ST.state==='ctrl'){   /* 速览页实况演示窗: 复用引擎实况小场景 */
       const act=CTRL_ACTS[ST.ctrlIdx%CTRL_ACTS.length];
       if(act.scene>=0)drawHelpScene(act.scene,295,58,170,80);

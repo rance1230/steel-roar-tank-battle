@@ -15,13 +15,19 @@ const VOLS=[0,0.12,0.24,0.36,0.50], SEVOLS=[0,0.20,0.40,0.60,0.85];
 const HULLS={
   assault:{i18n:'hullA',hp:0.90,taken:1.15,spd:1.10,accel:1.12,cannon:1.05,blast:1.00,
     mgDps:1.10,sprint:1.20,breach:1.25,mslN:3,mslCd:0.85,
-    shield:{dur:0.22,perfect:0.08,cd:0.95}},
+    shield:{dur:0.22,perfect:0.08,cd:0.95},
+    vis:{s:0.94,hull:'#c9702a',hi:'#ffe0b0',dk:'#7a4315',trim:'#f6b94e',turret:'#a85a20',
+      barrel:'#3a3f46',track:'#6a4a28',glow:'#f6b94e',ring:'#f6b94e',twin:false,callsign:'STRIDER-03'}},
   balanced:{i18n:'hullB',hp:1.00,taken:1.00,spd:1.00,accel:1.00,cannon:1.00,blast:1.00,
     mgDps:1.00,sprint:1.00,breach:1.00,mslN:1,mslCd:1.00,
-    shield:{dur:0.42,perfect:0.12,cd:0.75}},
+    shield:{dur:0.42,perfect:0.12,cd:0.75},
+    vis:{s:1,hull:null,hi:null,dk:null,trim:null,turret:null,barrel:null,track:null,
+      glow:null,ring:null,twin:false,callsign:'IRONCLAD-07'}},
   heavy:{i18n:'hullC',hp:1.25,taken:0.85,spd:0.88,accel:0.88,cannon:1.18,blast:1.20,
     mgDps:0.90,sprint:0.85,breach:1.10,mslN:1,mslCd:1.25,
-    shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true}}};
+    shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true},
+    vis:{s:1.15,hull:'#3d4652',hi:'#c8d2da',dk:'#252b33',trim:'#f6b94e',turret:'#2f3742',
+      barrel:'#20262e',track:'#2a323c',glow:'#8fd8e8',ring:'#ff7a5c',twin:true,callsign:'BASTION-09'}}};
 const HULL_KEYS=['assault','balanced','heavy'];
 /* §24 默认配对: 突击→防御, 均衡→自适应, 重装→突击 */
 const HULL_M2W={assault:'guard',balanced:'flex',heavy:'assault'};
