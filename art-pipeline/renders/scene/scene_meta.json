@@ -1,0 +1,256 @@
+{
+ "ground": {
+  "img": "ground.png"
+ },
+ "props": [
+  {
+   "name": "big_tank",
+   "img": "prop_big_tank.png",
+   "base": [
+    15.98,
+    -4.48
+   ],
+   "zmax": 17.54
+  },
+  {
+   "name": "chimney",
+   "img": "prop_chimney.png",
+   "base": [
+    15.0,
+    -15.0
+   ],
+   "zmax": 1.07
+  },
+  {
+   "name": "container",
+   "img": "prop_container.png",
+   "base": [
+    14.97,
+    -45.01
+   ],
+   "zmax": 5.78
+  },
+  {
+   "name": "control_terminal",
+   "img": "prop_control_terminal.png",
+   "base": [
+    -75.0,
+    -45.72
+   ],
+   "zmax": 6.14
+  },
+  {
+   "name": "garage",
+   "img": "prop_garage.png",
+   "base": [
+    -45.35,
+    -45.21
+   ],
+   "zmax": 6.57
+  },
+  {
+   "name": "garage_2",
+   "img": "prop_garage_2.png",
+   "base": [
+    -25.04,
+    -45.21
+   ],
+   "zmax": 6.57
+  },
+  {
+   "name": "garage_2_door",
+   "img": "prop_garage_2_door.png",
+   "base": [
+    -27.65,
+    -59.13
+   ],
+   "zmax": 4.07
+  },
+  {
+   "name": "garage_door",
+   "img": "prop_garage_door.png",
+   "base": [
+    -47.91,
+    -59.05
+   ],
+   "zmax": 5.21
+  },
+  {
+   "name": "ladder",
+   "img": "prop_ladder.png",
+   "base": [
+    25.0,
+    -14.99
+   ],
+   "zmax": 1.6
+  },
+  {
+   "name": "ladder_base",
+   "img": "prop_ladder_base.png",
+   "base": [
+    35.0,
+    -14.99
+   ],
+   "zmax": 0.8
+  },
+  {
+   "name": "chimney2",
+   "img": "prop_chimney2.png",
+   "base": [
+    -5.0,
+    -15.0
+   ],
+   "zmax": 1.2
+  },
+  {
+   "name": "roof_thing",
+   "img": "prop_roof_thing.png",
+   "base": [
+    -45.0,
+    -15.0
+   ],
+   "zmax": 0.25
+  },
+  {
+   "name": "smokestack",
+   "img": "prop_smokestack.png",
+   "base": [
+    -65.03,
+    -45.15
+   ],
+   "zmax": 30.98
+  },
+  {
+   "name": "station",
+   "img": "prop_station.png",
+   "base": [
+    -84.9,
+    -44.82
+   ],
+   "zmax": 4.92
+  },
+  {
+   "name": "tank",
+   "img": "prop_tank.png",
+   "base": [
+    -34.98,
+    -5.1
+   ],
+   "zmax": 4.08
+  },
+  {
+   "name": "tank_2",
+   "img": "prop_tank_2.png",
+   "base": [
+    44.51,
+    -5.07
+   ],
+   "zmax": 7.12
+  },
+  {
+   "name": "tank_capsule",
+   "img": "prop_tank_capsule.png",
+   "base": [
+    -5.06,
+    -5.0
+   ],
+   "zmax": 12.29
+  },
+  {
+   "name": "tank_control_panel",
+   "img": "prop_tank_control_panel.png",
+   "base": [
+    -25.55,
+    -3.56
+   ],
+   "zmax": 3.41
+  },
+  {
+   "name": "tank_sphere",
+   "img": "prop_tank_sphere.png",
+   "base": [
+    -15.0,
+    -5.0
+   ],
+   "zmax": 8.29
+  },
+  {
+   "name": "tank_sphere_holder",
+   "img": "prop_tank_sphere_holder.png",
+   "base": [
+    35.0,
+    -5.0
+   ],
+   "zmax": 4.2
+  },
+  {
+   "name": "tower",
+   "img": "prop_tower.png",
+   "base": [
+    35.0,
+    -45.0
+   ],
+   "zmax": 39.53
+  },
+  {
+   "name": "tower_2",
+   "img": "prop_tower_2.png",
+   "base": [
+    -4.86,
+    -44.97
+   ],
+   "zmax": 25.34
+  },
+  {
+   "name": "tower_part",
+   "img": "prop_tower_part.png",
+   "base": [
+    44.66,
+    -45.99
+   ],
+   "zmax": 0.88
+  },
+  {
+   "name": "vent",
+   "img": "prop_vent.png",
+   "base": [
+    -25.04,
+    -15.2
+   ],
+   "zmax": 1.01
+  },
+  {
+   "name": "vent_2",
+   "img": "prop_vent_2.png",
+   "base": [
+    5.24,
+    -15.0
+   ],
+   "zmax": 1.44
+  },
+  {
+   "name": "vent_3",
+   "img": "prop_vent_3.png",
+   "base": [
+    -15.0,
+    -14.99
+   ],
+   "zmax": 1.0
+  },
+  {
+   "name": "wall_thing",
+   "img": "prop_wall_thing.png",
+   "base": [
+    -35.0,
+    -14.94
+   ],
+   "zmax": 3.06
+  }
+ ],
+ "ortho_scale": 55.0,
+ "elev": 55.0,
+ "res": [
+  960,
+  540
+ ]
+}

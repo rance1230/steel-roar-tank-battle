@@ -1,0 +1,22 @@
+# Local/editor/session state
+.DS_Store
+.zcode/
+.codex-backup/
+.codex-backups/
+.playwright-cli/
+
+# Generated Python/runtime cache
+**/__pycache__/
+*.py[cod]
+
+# Local dependencies and environment secrets
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Android local/build/signing state
+android/.gradle/
+android/**/build/
+android/local.properties
+android/keystore/

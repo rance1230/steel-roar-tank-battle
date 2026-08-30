@@ -1,0 +1,62 @@
+[
+ {
+  "name": "assets-ready",
+  "pass": true,
+  "detail": "{\"ok\":true,\"active\":true,\"frameH\":4,\"frameT\":5,\"lights\":0,\"fx\":0,\"draw\":108,\"anchor\":[80,85.9],\"litMs\":0.45,\"props\":27}"
+ },
+ {
+  "name": "tank-dims",
+  "pass": true,
+  "detail": "draw=108 anchor=[80,85.9]"
+ },
+ {
+  "name": "normal-light-left",
+  "pass": true,
+  "detail": "左+8.4 vs 右+-0.2 (爆炸后亮度增量)"
+ },
+ {
+  "name": "light-restores",
+  "pass": true,
+  "detail": "after delta=9.4 vs before=8.1"
+ },
+ {
+  "name": "pointlight-count",
+  "pass": true,
+  "detail": "litMs=0.45ms(逐像素光照在跑)"
+ },
+ {
+  "name": "turret-independent",
+  "pass": true,
+  "detail": "hull=4 turret=7"
+ },
+ {
+  "name": "moves",
+  "pass": true,
+  "detail": "dy=-55.3"
+ },
+ {
+  "name": "fps60",
+  "pass": true,
+  "detail": "fps=80 renderMs=2.71 q=AUTO2"
+ },
+ {
+  "name": "old-renderer-intact",
+  "pass": true,
+  "detail": "consoleErrors=0"
+ },
+ {
+  "name": "gameplay-regression",
+  "pass": true,
+  "detail": "state=play shots=7 enemies=1"
+ },
+ {
+  "name": "no-console-errors",
+  "pass": true,
+  "detail": "clean"
+ },
+ {
+  "name": "dist-boots",
+  "pass": true,
+  "detail": "errors=0"
+ }
+]
