@@ -20,3 +20,6 @@ android/.gradle/
 android/**/build/
 android/local.properties
 android/keystore/
+
+# APK 改走 GitHub Release 发布, 不再入仓库
+output/**/*.apk
