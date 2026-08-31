@@ -33,23 +33,9 @@ TERRAIN_CONTACT_OUT = OUT / "terrain-contact-sheet.png"
 GRID = 4
 UNIT_CELL = 256
 TERRAIN_CELL = 256
-DIRECTIONS = [
-    "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-    "N",
-    "NNE",
-    "NE",
-    "ENE",
+DIRECTIONS = [   # 实测 sheet 从 E 起逆时针 (idx4=N/idx8=W/idx12=S), 2026-08-31 校正
+    "E", "ENE", "NE", "NNE", "N", "NNW", "NW", "WNW",
+    "W", "WSW", "SW", "SSW", "S", "SSE", "SE", "ESE",
 ]
 
 

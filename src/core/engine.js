@@ -117,16 +117,19 @@ function pollPad(){
     if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
     if(act)setInMode('pad');
   }
-  if(!gp){PAD.ax=0;PAD.ay=0;}
+  if(!gp){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}
+  else if(Math.abs(VJ.ax)+Math.abs(VJ.ay)>0.02){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}   /* 触屏摇杆优先于闲置手柄轴 */
   PAD.just={}; for(const k in h)PAD.just[k]=h[k]&&!PAD.prev[k];
   for(const k in PAD.prev)if(!(k in h))PAD.just[k]=false;
   PAD.hold=h; PAD.prev=h;
 }
 addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp){showToast(T('padConn')); setInMode('pad');} });
-/* ---------- 触屏虚拟按键 ---------- */
+/* ---------- 触屏虚拟按键 (v1.5: 圆形玻璃按钮 + 模拟摇杆圆环) ---------- */
 const hasTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches;
 const OVL=document.getElementById('touchovl');
 const TBTNS=[];
+/* 虚拟摇杆轴: [-1,1], 幅度=速度比例; pollPad 无手柄时合入 PAD.ax/ay */
+const VJ={ax:0,ay:0};
 function tbtn(label,ic,css,code,press,parent){
   const el=document.createElement('div'); el.className='tbtn';
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
@@ -141,23 +144,54 @@ function tbtn(label,ic,css,code,press,parent){
   return el;
 }
 (function buildTouch(){
-  /* 双簇布局: 左(方向)与右(动作)各占 40% 屏宽, 物理隔离永不重叠; 中心 20% 留给画面 */
+  /* 双簇布局: 左(摇杆)与右(动作)各占 40% 屏宽, 物理隔离永不重叠; 中心 20% 留给画面 */
   const S='clamp(44px,11vmin,64px)', L='clamp(54px,13vmin,82px)';
   const mkCluster=(css)=>{ const d=document.createElement('div');
     d.style.cssText='position:absolute;bottom:0;height:100%;width:40%;pointer-events:none;'+css;
     OVL.appendChild(d); return d; };
   const cl=mkCluster('left:0;'), cr=mkCluster('right:0;');
   const B=(pa,label,ic,css,code,press)=>tbtn(label,ic,css,code,press,pa);
-  /* ---- 左簇: 方向十字(菱形排布, 以簇中心为轴) ---- */
-  B(cl,'上','▲',{left:'calc(50% - '+S+'/2)',bottom:'calc('+S+' + 10px)',width:S,height:S},'KeyW');
-  B(cl,'下','▼',{left:'calc(50% - '+S+'/2)',bottom:'6px',width:S,height:S},'KeyS');
-  B(cl,'左','◀',{left:'calc(50% - '+S+'*1.55)',bottom:'calc('+S+'/2 + 4px)',width:S,height:S},'KeyA');
-  B(cl,'右','▶',{left:'calc(50% + '+S+'*0.55)',bottom:'calc('+S+'/2 + 4px)',width:S,height:S},'KeyD');
-  /* ---- 右簇: 2列动作网格(贴最右缘) ---- */
+  /* ---- 左簇: 模拟摇杆圆环 (v1.5 替代四方向键; 360°+幅度, 数字方向仅作菜单兼容) ---- */
+  const joy=document.createElement('div'); joy.id='joy';
+  joy.innerHTML='<div class="jstick"></div>'+
+    '<span class="jd jt">▲</span><span class="jd jb">▼</span>'+
+    '<span class="jd jl">◀</span><span class="jd jr">▶</span>';
+  cl.appendChild(joy);
+  const stick=joy.querySelector('.jstick');
+  const setStick=(dx,dy)=>{ stick.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)'; };
+  const jcenter=()=>{ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,max:r.width/2*0.62}; };
+  let jid=null;
+  const DIRS=['KeyW','KeyS','KeyA','KeyD'];
+  const jmove=e=>{
+    if(jid!==e.pointerId)return;
+    const c=jcenter();
+    let dx=e.clientX-c.x, dy=e.clientY-c.y;
+    const d=Math.hypot(dx,dy);
+    if(d>c.max){ dx*=c.max/d; dy*=c.max/d; }
+    setStick(dx,dy);
+    const m=Math.hypot(dx,dy)/c.max;
+    if(m<0.12){ VJ.ax=0; VJ.ay=0; }                 /* 死区 */
+    else { VJ.ax=dx/c.max; VJ.ay=dy/c.max; }
+    DIRS.forEach(k=>VKEYS.delete(k));
+    const on=VJ.ay<-0.38, down=VJ.ay>0.38, lf=VJ.ax<-0.38, rt=VJ.ax>0.38;
+    if(on)VKEYS.add('KeyW'); if(down)VKEYS.add('KeyS'); if(lf)VKEYS.add('KeyA'); if(rt)VKEYS.add('KeyD');
+    joy.classList.toggle('jU',on); joy.classList.toggle('jD',down);
+    joy.classList.toggle('jL',lf); joy.classList.toggle('jR',rt);
+  };
+  joy.addEventListener('pointerdown',e=>{ e.preventDefault(); jid=e.pointerId;
+    try{joy.setPointerCapture(jid);}catch(_){ }
+    joy.classList.add('on'); setInMode('touch'); jmove(e); });
+  joy.addEventListener('pointermove',jmove);
+  const jend=e=>{ if(jid!==e.pointerId)return; jid=null;
+    VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
+    DIRS.forEach(k=>VKEYS.delete(k)); };
+  joy.addEventListener('pointerup',jend); joy.addEventListener('pointercancel',jend);
+  joy.addEventListener('contextmenu',e=>e.preventDefault());
+  /* ---- 右簇: 2列动作网格(贴最右缘, 全圆形玻璃) ---- */
   B(cr,'机枪','●',{right:'4px',bottom:'calc('+S+'/2 + 10px)',width:L,height:L},'KeyJ');
-  B(cr,'主炮','◆',{right:'calc('+L+' + 12px)',bottom:'2px',width:S,height:S},'KeyK');
-  B(cr,'加速','»',{right:'calc('+L+' + 12px)',bottom:'calc('+S+'*1.18)',width:S,height:S},'ShiftLeft');
-  B(cr,'导弹','▲',{right:'calc('+L+' + 12px)',bottom:'calc('+S+'*2.36)',width:S,height:S},'KeyL');
+  B(cr,'主炮','◆',{right:'calc('+L+' + 14px)',bottom:'2px',width:S,height:S},'KeyK');
+  B(cr,'加速','»',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*1.18)',width:S,height:S},'ShiftLeft');
+  B(cr,'导弹','▲',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*2.36)',width:S,height:S},'KeyL');
   B(cr,'护盾','⬡',{right:'4px',bottom:'calc('+L+' + '+S+'*0.95)',width:S,height:S},'Space',true);
   B(cr,'空袭','✈',{right:'4px',bottom:'calc('+L+' + '+S+'*2.15)',width:S,height:S},'KeyU',true);
   /* 暂停: 右上角 */

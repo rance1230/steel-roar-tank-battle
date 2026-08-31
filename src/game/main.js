@@ -15,6 +15,7 @@ newGame(); openMenu('title');
 function startLevel(){
   cfg=LEVELS[RUN.lvl]; genMap();
   player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];
+  if(typeof ghosts!=='undefined')ghosts.length=0;   /* v1.6: 清冲刺残影 */
   spawnWingman();
   clearDecals(); initMotes();
   /* 战场暖光池锚定掩体/岩石 (审查C4): 'lighter' 呼吸暖光 */
@@ -211,8 +212,7 @@ function draw(alpha){
   /* 阶段1: 像素世界 → 离屏缓冲 */
   if(ST.state==='title'||ST.state==='ctrl'){
     drawTitleBg();
-    if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84);
-    else if(MENU&&MENU.id==='wingman'&&WING_KEYS[MENU.sel]&&typeof drawWingPreview==='function')drawWingPreview(WING_KEYS[MENU.sel],127,96,226,62);
+    if(hs)drawHelpScene(MENU.page,VW/2-100,28,200,96);
     else if(ST.state==='ctrl'){   /* 速览页实况演示窗: 复用引擎实况小场景 */
       const act=CTRL_ACTS[ST.ctrlIdx%CTRL_ACTS.length];
       if(act.scene>=0)drawHelpScene(act.scene,295,58,170,80);
@@ -234,7 +234,10 @@ function draw(alpha){
     if(MENU.id==='hull'&&HULL_KEYS[MENU.sel]){
       const k=HULL_KEYS[MENU.sel];
       if(!(window.AIART&&AIART.ok&&drawHullPreviewAI(k,127,200,226,62)))drawHullPreview(k,127,200,226,62);
-    } }
+    }
+    /* 僚机预览在菜单之上绘制 (stage3), 否则被菜单列表遮盖 */
+    if(MENU.id==='wingman'&&WING_KEYS[MENU.sel]&&typeof drawWingPreview==='function')drawWingPreview(WING_KEYS[MENU.sel],127,208,226,56);
+  }
     if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
   if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
@@ -326,6 +329,10 @@ window.G={
     else if(name==='boss'){
       pose('tank',1,95,55,Math.PI*0.8); pose('tank',0,-120,-60,0.2); pose('truck',0,135,-35,Math.PI);
       const b=enemies[0]; applyDamage(b,cfg.bossHp*0.38,'shot');             /* 打到62%: 验证ghost条 */
+      /* v1.6: BOSS 护卫队 (围剿阵位) */
+      for(let i=0;i<4;i++){ const an=i/4*Math.PI*2+0.6;
+        pose(i===2?'truck':'tank',0,Math.cos(an)*136,Math.sin(an)*136,an+Math.PI);
+        const s2=enemies[enemies.length-1]; s2.escort=true; s2.angOff=an; s2.orbDir=1; s2.ph=i*1.3; }
       COMBO.n=12; COMBO.tier=1; COMBO.t=5;
       ST.bossSpawned=true;
     }

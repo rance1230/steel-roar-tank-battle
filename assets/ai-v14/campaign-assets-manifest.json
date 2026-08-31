@@ -2,7 +2,7 @@
   "version": "v1.4-bright-campaign-assets",
   "style": "Japanese Tactical HD-2D bright campaign art",
   "generatedAt": "2026-08-30",
-  "status": "assets-only-not-wired",
+  "status": "wired-via-splash-art",
   "dimensions": {
     "stageIntro": [
       1672,
@@ -164,6 +164,7 @@
   "notes": [
     "Existing assets/stage-intros files are not overwritten.",
     "Stage 1 terrain already exists in the v1.4 AI art slice; this batch adds Stage 2-7 terrain candidates.",
-    "Generated images contain no embedded title, menu, HUD, or UI text; game UI should render all copy."
+    "Generated images contain no embedded title, menu, HUD, or UI text; game UI should render all copy.",
+    "Wired 2026-08-31: bright stage intros converted to WebP into assets/stage-intros/, loaded by SPLASH_ART in src/game/render.js."
   ]
 }

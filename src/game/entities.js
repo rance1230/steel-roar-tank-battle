@@ -39,6 +39,7 @@ function updCombo(dt){
   COMBO.flash=Math.max(0,COMBO.flash-dt);
 }
 let shotsFired=0;
+let ghosts=[];   /* v1.6: 冲刺残影快照 {x,y,a,life,t} */
 
 /* ---------- 玩家 ---------- */
 function makePlayer(){
@@ -115,6 +116,22 @@ function spawnBoss(){
     stun:0,flash:0,ramCd:0,touchCd:0,dist:0,score:800});
   ST.bossSpawned=true; ST.bossWarn=-1;
   floater(player.x,player.y-30,T('bossWarn'),PAL.red,12);
+  floater(player.x,player.y-44,T('bossSquad'),PAL.gold,9);   /* v1.6: 护卫队随行 */
+  /* ---- v1.6: 精英战术护卫队随行围剿 (BOSS 不再单独登场) ----
+     4 + min(周目,2) + (后期关卡+1) 个; 2/3 坦克 + 1/3 压制卡车, 环布 BOSS 周身 */
+  const sqN=4+Math.min(2,RUN.cycle)+(RUN.lvl>=4?1:0);
+  for(let i=0;i<sqN;i++){
+    const kind=(i%3===2)?'truck':'tank';
+    const an=(i/sqN)*Math.PI*2+rnd(0.5);
+    const ex=clamp(p.x+Math.cos(an)*(isTank?88:74),28,WORLDW-28);
+    const ey=clamp(p.y+Math.sin(an)*(isTank?88:74),28,WORLDH-28);
+    spawnEnemyAt(kind,false,ex,ey);
+    const s2=enemies[enemies.length-1];
+    s2.escort=true; s2.angOff=an; s2.orbDir=rnd()<0.5?1:-1; s2.ph=rnd(6);
+    s2.hp=s2.maxHp=Math.round(s2.maxHp*1.25);          /* 精英化 */
+    s2.fireCd*=0.85; s2.speed*=1.08; s2.score=Math.round(s2.score*1.5);
+    s2.a=Math.atan2(player.y-ey,player.x-ex);
+  }
   ST.shake=Math.min(10,ST.shake+5); SFX.horn(); BGM.play('boss',true);
 }
 function hurtEnemy(e,dmg,cause){ return applyDamage(e,dmg,cause); }  /* 兼容旧入口 */
@@ -282,12 +299,13 @@ function updPlayer(dt){
   p.dustT-=dt;
   if(p.moving&&p.dustT<=0){
     p.dustT=sprint?0.03:0.09;
-    const bx=p.x-Math.cos(p.a)*10,by=p.y-Math.sin(p.a)*10;
-    stampTracks(bx,by,p.a,sprint);   /* §7 履带痕迹 decal */
-    if(tid===1||tid===2||tid===5)part(bx,by,rnd(-14,14),rnd(-14,14),rnd(0.3,0.6),PAL.sand,rnd(1,2.5));
-    else if(tid===0)part(bx,by,rnd(-10,10),rnd(-10,10),rnd(0.25,0.5),PAL.lime,1.5);
-    else if(tid===3)part(bx,by,rnd(-16,16),rnd(-16,16),rnd(0.2,0.4),PAL.blue,2);
-    else if(tid===4)part(bx,by,rnd(-6,6),rnd(-14,-4),rnd(0.4,0.8),PAL.dark,rnd(1.5,3));
+    stampTracks(p.x-Math.cos(p.a)*10,p.y-Math.sin(p.a)*10,p.a,sprint);   /* §7 履带痕迹 decal */
+    terrainMoveFx(p.x,p.y,p.a,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
+  }
+  if(sprint&&p.moving){                            /* v1.6: 冲刺残影 (0.07s 间隔, 存活0.28s≈4个) */
+    p.ghostT=(p.ghostT||0)-dt;
+    if(p.ghostT<=0){ p.ghostT=0.07;
+      ghosts.push({x:p.x,y:p.y,a:p.a,life:0.28,t:0.28}); }
   }
   if(sprint&&p.moving&&Math.random()<0.5)part(p.x-Math.cos(p.a)*12,p.y-Math.sin(p.a)*12,-Math.cos(p.a)*30+rnd(-10,10),-Math.sin(p.a)*30+rnd(-10,10),0.25,PAL.gold,2);
   if(COMBO.od&&p.moving&&Math.random()<0.7)part(p.x-Math.cos(p.a)*11,p.y-Math.sin(p.a)*11,-Math.cos(p.a)*45+rnd(-12,12),-Math.sin(p.a)*45+rnd(-12,12),0.3,PAL.gold,rnd(1.5,2.5));
@@ -407,6 +425,16 @@ function updEnemies(dt){
     let wantFar=d>e.prefMax, wantNear=d<e.prefMin;
     if(e.smart>1.05&&e.hp<e.maxHp*0.25){ wantFar=true; wantNear=false; } /* 高难度残血后撤 */
     if(wantFar){mx=nx;my=ny;} else if(wantNear){mx=-nx;my=-ny;} else {mx=-ny*e.orb*e.strafe;my=nx*e.orb*e.strafe;}
+    if(e.escort){   /* v1.6 护卫围剿: 各占玩家环形阵位缓慢旋转移位; Boss蓄力时收口袋, Boss亡则溃散 */
+      const bo=enemies.find(b=>b.boss&&!b.dead);
+      if(bo){
+        e.angOff+=dt*0.3*(e.orbDir||1);
+        const R=(bo.chgPhase==='wind'?86:136)+Math.sin(ST.t*0.7+(e.ph||0))*14;
+        const gx=player.x+Math.cos(e.angOff)*R-e.x, gy=player.y+Math.sin(e.angOff)*R-e.y;
+        const gl=Math.hypot(gx,gy)||1;
+        mx=gx/gl; my=gy/gl;
+      } else e.escort=false;
+    }
     Grid.query(e.x,e.y,e.r+18,_gqSep);
     for(const o of _gqSep){ if(o===e)continue;
       const ddx=e.x-o.x,ddy=e.y-o.y,dd=Math.hypot(ddx,ddy);
@@ -417,8 +445,7 @@ function updEnemies(dt){
     e.dist+=spd*dt;
     if(Math.random()<0.15){ const tid=tileAtPx(e.x,e.y);
       if(Math.random()<0.8)stampTracks(e.x,e.y,e.a,e.boss);   /* §7 敌军履带/轮迹 */
-      if(tid===1||tid===2)part(e.x+rnd(-6,6),e.y+rnd(-6,6),rnd(-8,8),rnd(-8,8),0.4,PAL.sand,1.5);
-      else if(tid===3)part(e.x+rnd(-6,6),e.y+rnd(-6,6),rnd(-8,8),rnd(-8,8),0.3,PAL.blue,1.5); }
+      terrainMoveFx(e.x,e.y,e.a,tid,false,e.boss);            /* v1.6: 主题行进特效 */ }
     e.fireT-=dt;
     const facing=Math.abs(angDiff(e.a,ta))<0.7;
     if(!bossDash&&!bossHold&&d<e.range&&facing){
@@ -570,6 +597,7 @@ function updParts(dt){
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i];
     p.life-=dt; if(p.life<=0){parts.splice(i,1);continue;}
     if(!p.ring){ p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||0)*dt; p.vx*=0.98;p.vy*=0.98; } }
+  for(let i=ghosts.length-1;i>=0;i--){ ghosts[i].life-=dt; if(ghosts[i].life<=0)ghosts.splice(i,1); }
   for(let i=floats.length-1;i>=0;i--){ const f=floats[i];
     f.oy=f.y; f.t-=dt; f.y-=22*dt; if(f.t<=0)floats.splice(i,1); }
 }

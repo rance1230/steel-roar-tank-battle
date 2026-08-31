@@ -99,6 +99,7 @@ AIART.drawUnit=drawUnit;
 
 function drawGroundOverlay(){
   if(!usable()||!cfg||RUN.lvl!==0)return false;
+  if(typeof V15T!=='undefined'&&V15T.ok)return false;   /* v1.5: v15 烘焙地形已全量接管, 停用旧叠图 */
   const key=manifest.environment&&manifest.environment.stage1Ground;
   const im=readyImage(key);
   if(!im)return false;

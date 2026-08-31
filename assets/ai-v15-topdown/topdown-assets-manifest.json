@@ -1,6 +1,6 @@
 {
   "version": "v1.5-topdown-directional-modular-assets",
-  "status": "assets-only-not-wired",
+  "status": "wired-via-v15art",
   "generatedAt": "2026-08-31",
   "style": "Japanese Tactical HD-2D, bright top-down battlefield art",
   "grid": {
@@ -9,21 +9,21 @@
   },
   "directions": [
     "E",
-    "ESE",
-    "SE",
-    "SSE",
-    "S",
-    "SSW",
-    "SW",
-    "WSW",
-    "W",
-    "WNW",
-    "NW",
-    "NNW",
-    "N",
-    "NNE",
+    "ENE",
     "NE",
-    "ENE"
+    "NNE",
+    "N",
+    "NNW",
+    "NW",
+    "WNW",
+    "W",
+    "WSW",
+    "SW",
+    "SSW",
+    "S",
+    "SSE",
+    "SE",
+    "ESE"
   ],
   "unitCellSize": 256,
   "terrainCellSize": 256,
@@ -2682,6 +2682,7 @@
   "notes": [
     "This batch corrects the prior single-angle oblique combat-unit mismatch for a flat top-down map.",
     "Terrain atlases are intended as modular 4x4 tile kits; mixed-terrain levels can assemble multiple tiles from one or more stage sets.",
-    "Existing v1.4 oblique assets and game renderer files are not overwritten by this script."
+    "Existing v1.4 oblique assets and game renderer files are not overwritten by this script.",
+    "Direction labels corrected 2026-08-31: sheets actually run counter-clockwise from E (frame order E,ENE,NE,...); wired into the game by src/game/v15art.js + src/data/v15.data.js."
   ]
 }

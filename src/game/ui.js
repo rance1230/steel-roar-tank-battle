@@ -176,13 +176,13 @@ function drawMenu(){
   const W=id==='title'?196:250, rowH=16, headH=id==='title'?16:24;
   const H=headH+its.length*rowH+20;
   const x=id==='title'?24:(VW-W)/2, y=id==='title'?118:(VH-H)/2+4;
-  uPanel(x-3,y-3,W+6,H+6,id==='pause'?PAL.cyan:PAL.gold,id==='title'?0.55:0.82);   /* 标题选单半透明: 露出封面坦克 (真机反馈) */
+  uPanel(x-3,y-3,W+6,H+6,id==='pause'?PAL.cyan:PAL.gold,id==='title'?0.66:0.82);   /* 标题选单: 低透明露出封面, 但保住玻璃渐变层次 */
   upx(x+7,y+headH-8,W-14,1,PAL.rail);
   const title=id==='option'?'OPTION':T(id==='padmap'?'padmap':id==='pause'?'pauseT':id==='hull'?'hullT':id==='wingman'?'wingT':id==='debug'?'mDebug':id);
   if(id!=='title')txt(title,x+W/2,y+8,10,PAL.gold,'center');
   if(id==='title')txtO(T('gameTitle'),VW/2,18,23,PAL.gold,'center');
   if(id==='title')txtO(T('sub'),VW/2,43,11,PAL.white,'center');
-  if(id==='title')txt(T('tag'),VW/2,58,7,PAL.cyan,'center');
+  if(id==='title')txtO(T('tag'),VW/2,58,7,PAL.cyan,'center');
   if(id==='title'&&ST.best>0)txt(TF('best',{n:ST.best}),VW/2,67,7,PAL.gold,'center');
   const y0=y+headH;
   its.forEach((it,i)=>{
@@ -215,7 +215,7 @@ function drawMenu(){
     let sx=VW/2;
     for(const s of segs)sx-=uctx.measureText(s[0]).width+9;
     for(const [label,mode] of segs){
-      txt(label,sx,VH-22,7,mode===m?PAL.gold:PAL.steel);
+      txt(label,sx,VH-22,7,mode===m?PAL.gold:PAL.lite);
       sx+=uctx.measureText(label).width+9;
     }
   }
@@ -230,14 +230,14 @@ function drawHelp(){
   const kh=keyHint(HELP_ACTS[pg]);
   if(kh)ht+=' ['+kh+']';
   txtO(ht,VW/2,14,13,PAL.gold,'center');
-  const hsx=VW/2-80,hsy=34,hsw=160,hsh=84;
+  const hsx=VW/2-100,hsy=28,hsw=200,hsh=96;   /* v1.5: 场景窗扩大承载 v15 精绘 */
   uctx.imageSmoothingEnabled=false;
   uctx.drawImage(buf,hsx,hsy,hsw,hsh,hsx,hsy,hsw,hsh);
   uctx.strokeStyle=PAL.steel; uctx.lineWidth=1;
   uctx.strokeRect(hsx+0.5,hsy+0.5,hsw-1,hsh-1);
   const lines=wrapTxt(T('h'+pg+'d'),330,9);
-  uPanel(VW/2-172,122,344,lines.length*12+8,PAL.gold,0.55);
-  lines.forEach((l,i)=>txt(l,VW/2,127+i*12,9,PAL.white,'center'));
+  uPanel(VW/2-172,128,344,lines.length*12+8,PAL.gold,0.55);
+  lines.forEach((l,i)=>txt(l,VW/2,133+i*12,9,PAL.white,'center'));
   txt('‹',36,VH/2,16,PAL.gold,'center');
   txt('›',VW-36,VH/2,16,PAL.gold,'center');
   txt((pg+1)+'/13',VW/2,VH-26,8,PAL.lite,'center');
@@ -419,21 +419,50 @@ function drawCtrlPad(hot){
   txt(T('cMove'),cx+62,cy+48,6,PAL.steel,'center');
 }
 /* 触屏布局图解 (对应虚拟按钮实际位置) */
+/* v1.5 触屏布局图解: 摇杆圆环 + 圆形玻璃键 (与实机 #joy/.tbtn 同构) */
+function ctrlGlassBtn(cx,cy,r,label,hot){
+  const g=uctx.createRadialGradient(cx,cy-r*0.3,r*0.2,cx,cy,r);
+  g.addColorStop(0,hot?rgba(PAL.gold,0.34):'rgba(126,158,198,0.15)');
+  g.addColorStop(1,hot?rgba(PAL.ember,0.20):'rgba(5,8,13,0.22)');
+  uctx.fillStyle=g; uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.fill();
+  uctx.strokeStyle=hot?rgba(PAL.gold,0.85):'rgba(255,255,255,0.40)'; uctx.lineWidth=hot?1.5:1;
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.stroke();
+  uctx.strokeStyle='rgba(255,255,255,0.12)'; uctx.lineWidth=1;
+  uctx.beginPath(); uctx.arc(cx,cy,r-1.5,0,Math.PI*2); uctx.stroke();
+  txt(label,cx,cy-3,7,hot?PAL.white:'rgba(243,247,255,0.88)','center');
+  if(hot)ctrlRing(cx,cy,r);
+}
+function ctrlJoy(cx,cy,r,hot){
+  /* 外环: 近透填充感 (只画环线) + 四向箭头 + 摆动演示的摇杆头 */
+  uctx.strokeStyle=hot?rgba(PAL.gold,0.85):'rgba(255,255,255,0.45)'; uctx.lineWidth=1.5;
+  uctx.beginPath(); uctx.arc(cx,cy,r,0,Math.PI*2); uctx.stroke();
+  uctx.strokeStyle='rgba(255,255,255,0.10)'; uctx.lineWidth=1;
+  uctx.beginPath(); uctx.arc(cx,cy,r-2.5,0,Math.PI*2); uctx.stroke();
+  const a=hot?PAL.gold:'rgba(243,247,255,0.60)';
+  txt('▲',cx,cy-r-9,8,a,'center'); txt('▼',cx,cy+r+2,8,a,'center');
+  txt('◀',cx-r-8,cy-4,8,a,'center'); txt('▶',cx+r+1,cy-4,8,a,'center');
+  const an=-Math.PI/2+Math.sin(ST.t*1.3)*1.15, d=r*0.52, kr=r*0.34;
+  const sx=cx+Math.cos(an)*d, sy=cy+Math.sin(an)*d;
+  const g=uctx.createRadialGradient(sx,sy-kr*0.4,kr*0.2,sx,sy,kr);
+  g.addColorStop(0,'rgba(243,247,255,0.28)'); g.addColorStop(1,'rgba(22,34,49,0.30)');
+  uctx.fillStyle=g; uctx.beginPath(); uctx.arc(sx,sy,kr,0,Math.PI*2); uctx.fill();
+  uctx.strokeStyle='rgba(255,255,255,0.45)'; uctx.lineWidth=1;
+  uctx.beginPath(); uctx.arc(sx,sy,kr,0,Math.PI*2); uctx.stroke();
+  if(hot)ctrlRing(cx,cy,r);
+}
 function drawCtrlTouch(hot){
   upx(40,58,240,158,rgba(PAL.panel,0.30));
   uctx.strokeStyle=PAL.steel; uctx.strokeRect(40.5,58.5,239,157);
-  ctrlKeycap(96,96,20,18,'▲',hot==='move');
-  ctrlKeycap(72,120,20,18,'◀',hot==='move');
-  ctrlKeycap(120,120,20,18,'▶',hot==='move');
-  ctrlKeycap(96,144,20,18,'▼',hot==='move');
-  ctrlBtn(238,168,15,T('cMg').slice(0,2),hot==='mg');
-  ctrlBtn(204,190,11,T('cCannon').slice(0,2),hot==='cannon');
-  ctrlBtn(204,108,11,T('cMsl').slice(0,2),hot==='msl');
-  ctrlBtn(238,84,11,T('cStrike').slice(0,2),hot==='strike');
-  ctrlBtn(176,150,11,T('cSprint').slice(0,2),hot==='sprint');
-  ctrlBtn(176,108,11,T('cShield').slice(0,2),hot==='shield');
-  ctrlKeycap(252,66,20,12,'❚❚',hot==='pause');
-  txt('TAP',96,178,6,PAL.steel,'center');
+  ctrlJoy(92,120,32,hot==='move');
+  txt('DRAG',92,166,6,PAL.steel,'center');
+  /* 右簇: 圆形玻璃键, 布局与实机一致 (机枪大键贴右下, 左列主炮/加速/导弹, 右列护盾/空袭) */
+  ctrlGlassBtn(238,166,17,T('cMg').slice(0,2),hot==='mg');
+  ctrlGlassBtn(200,188,12,T('cCannon').slice(0,2),hot==='cannon');
+  ctrlGlassBtn(200,110,12,T('cMsl').slice(0,2),hot==='msl');
+  ctrlGlassBtn(200,149,12,T('cSprint').slice(0,2),hot==='sprint');
+  ctrlGlassBtn(238,88,12,T('cStrike').slice(0,2),hot==='strike');
+  ctrlGlassBtn(238,120,12,T('cShield').slice(0,2),hot==='shield');
+  ctrlGlassBtn(260,68,10,'❚❚',hot==='pause');
 }
 /* 键盘布局图解 */
 function drawCtrlKeys(hot){

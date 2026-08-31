@@ -40,18 +40,39 @@ function burst(x,y,n,cols,sp,life){ n=Math.max(1,Math.round(n*PERF.mul()));
   for(let i=0;i<n;i++){const a=rnd(Math.PI*2),s=rnd(sp*0.3,sp);
   part(x,y,Math.cos(a)*s,Math.sin(a)*s,rnd(life*0.5,life),cols[(rnd(cols.length))|0],rnd(1,2.5)); } }
 
-/* ---------- 环境漂浮微粒 (视觉设计第一版 §8 环境粒子, 屏幕空间) ---------- */
+/* ---------- 环境漂浮微粒 (§8 环境粒子, 屏幕空间; v1.5 改读 THEMES.mote) ---------- */
 let motes=[];
-const MOTE_DEF={ dry:{c:()=>PAL.sand,n:16,v:6}, waste:{c:()=>PAL.ember,n:16,v:8},
-  grass:{c:()=>PAL.lime,n:10,v:4}, swamp:{c:()=>PAL.aqua,n:12,v:5} };
 function initMotes(){
   motes.length=0;
   if(!cfg||cfg.rain)return;                        /* 雨图以雨丝为主, 不叠加微粒 */
-  const d=MOTE_DEF[cfg.ground]||MOTE_DEF.dry;
-  for(let i=0;i<d.n;i++)motes.push({x:rnd(VW),y:rnd(VH),vx:rnd(-d.v,d.v),vy:cfg.ground==='waste'?rnd(-14,-4):rnd(-d.v,d.v),
+  const d=themeCfg().mote||{c:'#b98a4a',n:12,v:6};
+  for(let i=0;i<d.n;i++)motes.push({x:rnd(VW),y:rnd(VH),vx:rnd(-d.v,d.v),
+    vy:d.up?rnd(-d.v*1.8,-d.v*0.5):rnd(-d.v,d.v),
     s:rnd(1,2),a:rnd(0.06,0.16),ph:rnd(6)});
 }
 function floater(x,y,txt,col,size,life){ const l=life||0.9; floats.push({x,y,t:l,tm:l,txt,col,size:size||7}); }
+/* ---------- v1.6: 地形行进特效 (玩家/敌军共用) ----------
+   按行进所在 tile 与关卡主题出粒子: 水面溅花+涟漪 / 减速区搅动 / 地面扬尘(沙·雪·灰随主题) */
+function terrainMoveFx(x,y,ang,tid,sprint,heavy){
+  const fx=themeCfg().fx, sc=(heavy?1.5:1)*(sprint?1.5:1);
+  const bx=x-Math.cos(ang)*10, by=y-Math.sin(ang)*10;
+  if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 扩散涟漪 */
+    const n=Math.max(4,Math.round(4*sc*PERF.mul()));
+    for(let i=0;i<n;i++)part(bx+rnd(-4,4),by+rnd(-4,4),
+      rnd(-20,20)-Math.cos(ang)*24,rnd(-46,-14),rnd(0.28,0.5),i%3?fx.water:PAL.white,rnd(1.2,2.6)*sc,180);
+    const r=part(bx,by,0,0,0.42,fx.water,7*sc,0); r.ring=true; r.a=0.45;
+    if(sprint){ const c=part(bx,by,0,0,0.2,PAL.white,3.5,0); c.core=true; }
+  } else if(tid===4){                            /* 减速区: 油污/能量/熔岩搅动 (亮色火花保证可见度) */
+    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
+    for(let i=0;i<n;i++)part(bx+rnd(-5,5),by+rnd(-5,5),rnd(-10,10),rnd(-30,-12),rnd(0.4,0.8),
+      i%2?fx.slow:PAL.white,rnd(1.4,3)*sc);
+  } else {                                       /* 地面: 扬尘/雪沫, 冲刺拖尾烟团 */
+    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
+    for(let i=0;i<n;i++)part(bx+rnd(-3,3),by+rnd(-3,3),
+      rnd(-14,14)-Math.cos(ang)*16,rnd(-26,-8),rnd(0.3,0.6),i%4===0?PAL.smoke:fx.dust,rnd(1.2,2.4)*sc);
+    if(sprint)part(bx,by,rnd(-8,8)-Math.cos(ang)*10,rnd(-18,-8),rnd(0.5,0.9),fx.dust,rnd(3,4.6),0,0.35);
+  }
+}
 function addLight(x,y,r,col,a,life){
   if(typeof dynLights==='undefined'||!dynLights)return;
   const l={x,y,r:r||28,col:col||PAL.gold,a:a||0.35,life:life||0.18,t:life||0.18};

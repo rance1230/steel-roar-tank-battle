@@ -23,3 +23,7 @@ android/keystore/
 
 # APK 改走 GitHub Release 发布, 不再入仓库
 output/**/*.apk
+
+# 本地 QA / 开发检查产物
+.codex-qa/
+output/screenshots/
