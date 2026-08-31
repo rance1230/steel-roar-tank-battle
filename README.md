@@ -1,6 +1,6 @@
 # 钢铁咆哮·坦克大战
 
-当前版本：v1.3.3。双击 index.html 即可游玩（Chrome/Edge/Firefox/Safari，含手机浏览器）；GitHub Pages 启用后可直接打开 `https://rance1230.github.io/steel-roar-tank-battle/`。
+当前版本：v1.3.3。双击 index.html 即可游玩（Chrome/Edge/Firefox/Safari，含手机浏览器）；HTML 单文件也会随 GitHub Release 发布为 `index.html`。GitHub Pages 当前受私有仓库计划限制，待仓库计划/可见性允许后再启用 `https://rance1230.github.io/steel-roar-tank-battle/`。
 
 最新说明：
 
