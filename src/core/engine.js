@@ -127,7 +127,7 @@ addEventListener('gamepadconnected',()=>{ pollPad(); if(PAD.gp){showToast(T('pad
 const hasTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches;
 const OVL=document.getElementById('touchovl');
 const TBTNS=[];
-function tbtn(label,ic,css,code,press){
+function tbtn(label,ic,css,code,press,parent){
   const el=document.createElement('div'); el.className='tbtn';
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
   for(const k in css)el.style[k]=css[k];
@@ -137,22 +137,30 @@ function tbtn(label,ic,css,code,press){
   el.addEventListener('pointerdown',down);
   el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('pointerleave',up);
   el.addEventListener('contextmenu',e=>e.preventDefault());
-  OVL.appendChild(el); TBTNS.push(el);
+  (parent||OVL).appendChild(el); TBTNS.push(el);
   return el;
 }
 (function buildTouch(){
-  const S='clamp(46px,12vmin,68px)', L='clamp(56px,15vmin,84px)';
-  const pos=(r,b,s)=>({right:'calc('+r+' )',bottom:'calc('+b+')',width:s,height:s});
-  tbtn('上','▲',{left:'clamp(12px,7vmin,96px)',bottom:'clamp(140px,34vmin,220px)',width:S,height:S},'KeyW');
-  tbtn('下','▼',{left:'clamp(12px,7vmin,96px)',bottom:'clamp(8px,4vmin,40px)',width:S,height:S},'KeyS');
-  tbtn('左','◀',{left:'clamp(76px,2vmin,20px)',bottom:'clamp(72px,19vmin,128px)',width:S,height:S},'KeyA');
-  tbtn('右','▶',{left:'calc(clamp(12px,7vmin,96px) + clamp(52px,13vmin,74px))',bottom:'clamp(72px,19vmin,128px)',width:S,height:S},'KeyD');
-  tbtn('机枪','●',{right:'clamp(10px,4vmin,44px)',bottom:'clamp(64px,16vmin,116px)',width:L,height:L},'KeyJ');
-  tbtn('主炮','◆',{right:'clamp(76px,18vmin,128px)',bottom:'clamp(8px,4vmin,40px)',width:S,height:S},'KeyK');
-  tbtn('导弹','▲',{right:'clamp(76px,18vmin,128px)',bottom:'clamp(120px,29vmin,200px)',width:S,height:S},'KeyL');
-  tbtn('空袭','✈',{right:'clamp(10px,4vmin,44px)',bottom:'clamp(148px,36vmin,240px)',width:S,height:S},'KeyU',true);
-  tbtn('加速','»',{right:'clamp(142px,32vmin,220px)',bottom:'clamp(64px,16vmin,116px)',width:S,height:S},'ShiftLeft');
-  tbtn('护盾','⬡',{right:'clamp(142px,32vmin,220px)',bottom:'clamp(148px,36vmin,240px)',width:S,height:S},'Space',true);
+  /* 双簇布局: 左(方向)与右(动作)各占 40% 屏宽, 物理隔离永不重叠; 中心 20% 留给画面 */
+  const S='clamp(44px,11vmin,64px)', L='clamp(54px,13vmin,82px)';
+  const mkCluster=(css)=>{ const d=document.createElement('div');
+    d.style.cssText='position:absolute;bottom:0;height:100%;width:40%;pointer-events:none;'+css;
+    OVL.appendChild(d); return d; };
+  const cl=mkCluster('left:0;'), cr=mkCluster('right:0;');
+  const B=(pa,label,ic,css,code,press)=>tbtn(label,ic,css,code,press,pa);
+  /* ---- 左簇: 方向十字(菱形排布, 以簇中心为轴) ---- */
+  B(cl,'上','▲',{left:'calc(50% - '+S+'/2)',bottom:'calc('+S+' + 10px)',width:S,height:S},'KeyW');
+  B(cl,'下','▼',{left:'calc(50% - '+S+'/2)',bottom:'6px',width:S,height:S},'KeyS');
+  B(cl,'左','◀',{left:'calc(50% - '+S+'*1.55)',bottom:'calc('+S+'/2 + 4px)',width:S,height:S},'KeyA');
+  B(cl,'右','▶',{left:'calc(50% + '+S+'*0.55)',bottom:'calc('+S+'/2 + 4px)',width:S,height:S},'KeyD');
+  /* ---- 右簇: 2列动作网格(贴最右缘) ---- */
+  B(cr,'机枪','●',{right:'4px',bottom:'calc('+S+'/2 + 10px)',width:L,height:L},'KeyJ');
+  B(cr,'主炮','◆',{right:'calc('+L+' + 12px)',bottom:'2px',width:S,height:S},'KeyK');
+  B(cr,'加速','»',{right:'calc('+L+' + 12px)',bottom:'calc('+S+'*1.18)',width:S,height:S},'ShiftLeft');
+  B(cr,'导弹','▲',{right:'calc('+L+' + 12px)',bottom:'calc('+S+'*2.36)',width:S,height:S},'KeyL');
+  B(cr,'护盾','⬡',{right:'4px',bottom:'calc('+L+' + '+S+'*0.95)',width:S,height:S},'Space',true);
+  B(cr,'空袭','✈',{right:'4px',bottom:'calc('+L+' + '+S+'*2.15)',width:S,height:S},'KeyU',true);
+  /* 暂停: 右上角 */
   tbtn('暂停','❚❚',{right:'8px',top:'8px',width:'clamp(40px,9vmin,54px)',height:'clamp(40px,9vmin,54px)'},'KeyP',true);
 })();
 function updOvl(){

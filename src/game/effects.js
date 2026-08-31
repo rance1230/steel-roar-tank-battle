@@ -52,10 +52,53 @@ function initMotes(){
     s:rnd(1,2),a:rnd(0.06,0.16),ph:rnd(6)});
 }
 function floater(x,y,txt,col,size,life){ const l=life||0.9; floats.push({x,y,t:l,tm:l,txt,col,size:size||7}); }
+function addLight(x,y,r,col,a,life){
+  if(typeof dynLights==='undefined'||!dynLights)return;
+  const l={x,y,r:r||28,col:col||PAL.gold,a:a||0.35,life:life||0.18,t:life||0.18};
+  dynLights.push(l);
+  const cap=PERF.qLevel===0?10:26;
+  if(dynLights.length>cap)dynLights.splice(0,dynLights.length-cap);
+  return l;
+}
+function updDynamicLights(dt){
+  if(typeof dynLights==='undefined'||!dynLights)return;
+  for(let i=dynLights.length-1;i>=0;i--){ const l=dynLights[i];
+    l.life-=dt; if(l.life<=0)dynLights.splice(i,1); }
+}
+function cameraKick(power,ang,zoom){
+  if(!cam)return;
+  power=power||1; ang=ang===undefined?rnd(Math.PI*2):ang+Math.PI;
+  ST.shake=Math.min(12,ST.shake+power);
+  cam.kickX=(cam.kickX||0)+Math.cos(ang)*power*0.45;
+  cam.kickY=(cam.kickY||0)+Math.sin(ang)*power*0.45;
+  cam.zoom=Math.min(0.075,(cam.zoom||0)+(zoom===undefined?power*0.003:zoom));
+}
+function updCameraFX(dt){
+  if(!cam)return;
+  const k=Math.max(0,1-dt*8.5), z=Math.max(0,1-dt*5.5);
+  cam.kickX=(cam.kickX||0)*k; cam.kickY=(cam.kickY||0)*k; cam.zoom=(cam.zoom||0)*z;
+  if(Math.abs(cam.kickX)<0.03)cam.kickX=0;
+  if(Math.abs(cam.kickY)<0.03)cam.kickY=0;
+  if(cam.zoom<0.001)cam.zoom=0;
+}
+function hitFx(x,y,kind,ang){
+  const heavy=kind==='armor'||kind==='metal';
+  const col=kind==='mg'?PAL.gold:(kind==='metal'?PAL.white:PAL.orange);
+  addLight(x,y,heavy?22:14,col,heavy?0.24:0.16,heavy?0.12:0.08);
+  const back=ang===undefined?rnd(Math.PI*2):ang+Math.PI;
+  for(let i=0,n=Math.round((heavy?7:4)*PERF.mul());i<n;i++){
+    const a=back+rnd(-0.72,0.72),s=rnd(42,heavy?105:72);
+    const p=part(x,y,Math.cos(a)*s,Math.sin(a)*s,rnd(0.12,heavy?0.28:0.2),i%2?PAL.white:col,rnd(1,heavy?2.5:1.8),heavy?90:0);
+    if(i<Math.max(1,n/2))p.ray=true;
+  }
+  if(heavy)part(x,y,0,0,0.055,PAL.white,5,0).core=true;
+  SFX.hit(kind,x,y);
+}
 /* ---------- 七层爆炸 (视觉设计第一版 §10):
    1白闪 2火球 3冲击波 4火花 5碎片 6烟雾 7地面弹坑(decal) ---------- */
 function explodeAt(x,y,r,dmg,big,cause,chainDepth){
   const q=PERF.mul(), R=big?1.7:1;
+  addLight(x,y,r*(big?4.4:3.2),big?PAL.orange:PAL.gold,big?0.54:0.38,big?0.48:0.32);
   part(x,y,0,0,big?0.09:0.06,PAL.white,r*0.55*R,0).core=true;              /* 1 白闪 */
   for(let i=0,n=Math.round((big?7:4)*q);i<n;i++){ const a=rnd(Math.PI*2),d=rnd(r*0.35);
     part(x+Math.cos(a)*d,y+Math.sin(a)*d,rnd(-24,24),rnd(-24,24),rnd(0.16,0.3),i%2?PAL.orange:PAL.ember,rnd(r*0.26,r*0.42)*R).core=true; } /* 2 火球 */
@@ -70,8 +113,8 @@ function explodeAt(x,y,r,dmg,big,cause,chainDepth){
   for(let i=0,n=Math.round((big?5:3)*q);i<n;i++)                                                    /* 余烬闪烁 */
     part(x+rnd(-r*0.5,r*0.5),y+rnd(-r*0.5,r*0.5),rnd(-6,6),rnd(-20,-8),rnd(0.8,1.6),PAL.ember,rnd(1,1.8));
   stampScorch(x,y,r*(big?1.8:1.2));                                                        /* 7 弹坑 */
-  ST.shake=Math.min(10,ST.shake+(big?7:3));
-  if(big)SFX.bigboom();else SFX.boom();
+  cameraKick(big?7:3,rnd(Math.PI*2),big?0.038:0.014);
+  if(big)SFX.bigboom(x,y);else SFX.boom(x,y);
   chainDepth=chainDepth||0;
   if(dmg>0&&chainDepth<=CHAIN_MAX){ const st=calcStats();   /* 连锁深度上限 */
     Grid.query(x,y,r+24,_gqBoom);
@@ -82,6 +125,7 @@ function explodeAt(x,y,r,dmg,big,cause,chainDepth){
 
 /* 白芯冲击闪光 (Breach炮口/撞击); big=true → 扩散冲击波+白芯+10根放射光线 */
 function flashFx(x,y,r,big){
+  addLight(x,y,r*(big?2.6:1.9),big?PAL.gold:PAL.white,big?0.34:0.24,big?0.16:0.08);
   if(big){
     const w1=part(x,y,0,0,0.2,PAL.white,r*1.7,0); w1.ring=true;
     const w2=part(x,y,0,0,0.14,PAL.gold,r*1.05,0); w2.ring=true;

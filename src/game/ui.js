@@ -98,10 +98,11 @@ function menuItems(id){
   if(id==='option'){
     its.push({label:'lang',choice:1,value:()=>({zh:'中文',ja:'日本語',en:'EN'})[SET.lang],
       delta:d=>{const i=LANGS.indexOf(SET.lang);SET.lang=LANGS[(i+d+3)%3];saveSet();}});
+    /* 触屏点按只会 +1: 选项一律循环 (与语言/虚拟按钮一致), 触屏用户才能往回调 (页面导览实测bug) */
     its.push({label:'diff',choice:1,value:()=>I18N[SET.lang].diffNames[SET.diff],
-      delta:d=>{SET.diff=clamp(SET.diff+d,0,4);saveSet();}});
-    its.push({label:'bgm',choice:1,value:()=>volBlocks(SET.bgm),delta:d=>{SET.bgm=clamp(SET.bgm+d,0,4);applyVolumes();saveSet();}});
-    its.push({label:'se',choice:1,value:()=>volBlocks(SET.se),delta:d=>{SET.se=clamp(SET.se+d,0,4);applyVolumes();saveSet();if(SET.se>0)SFX.pick();}});
+      delta:d=>{SET.diff=(SET.diff+d+5)%5;saveSet();}});
+    its.push({label:'bgm',choice:1,value:()=>volBlocks(SET.bgm),delta:d=>{SET.bgm=(SET.bgm+d+5)%5;applyVolumes();saveSet();}});
+    its.push({label:'se',choice:1,value:()=>volBlocks(SET.se),delta:d=>{SET.se=(SET.se+d+5)%5;applyVolumes();saveSet();if(SET.se>0)SFX.pick();}});
     its.push({label:'vtouch',choice:1,value:()=>SET.touch==='auto'?T('auto'):(SET.touch==='on'?T('on'):T('off')),
       delta:()=>{SET.touch=SET.touch==='auto'?'on':(SET.touch==='on'?'off':'auto');saveSet();}});
     its.push({label:'padmap',enter:()=>openMenu('padmap',MENU.from)});
@@ -175,7 +176,7 @@ function drawMenu(){
   const W=id==='title'?196:250, rowH=16, headH=id==='title'?16:24;
   const H=headH+its.length*rowH+20;
   const x=id==='title'?24:(VW-W)/2, y=id==='title'?118:(VH-H)/2+4;
-  uPanel(x-3,y-3,W+6,H+6,id==='pause'?PAL.cyan:PAL.gold,0.82);
+  uPanel(x-3,y-3,W+6,H+6,id==='pause'?PAL.cyan:PAL.gold,id==='title'?0.55:0.82);   /* 标题选单半透明: 露出封面坦克 (真机反馈) */
   upx(x+7,y+headH-8,W-14,1,PAL.rail);
   const title=id==='option'?'OPTION':T(id==='padmap'?'padmap':id==='pause'?'pauseT':id==='hull'?'hullT':id==='wingman'?'wingT':id==='debug'?'mDebug':id);
   if(id!=='title')txt(title,x+W/2,y+8,10,PAL.gold,'center');
@@ -354,6 +355,9 @@ function drawCtrlIntro(){
   uctx.restore();
   /* 右: 实况演示窗 + 动作说明 */
   const VX=294,VY=44,VW2=172,VH2=88;
+  /* 演示窗区域回绘: 排除压暗遮罩, 与实况游戏画面同等亮度 (真机反馈) */
+  uctx.imageSmoothingEnabled=false;
+  uctx.drawImage(buf,VX,VY,VW2,VH2,VX,VY,VW2,VH2);
   if(act.scene<0){   /* 暂停: 无实况场景, 画暂停样式 */
     upx(VX,VY,VW2,VH2,PAL.ink);
     uctx.globalAlpha=0.35; upx(VX,VY,VW2,VH2,PAL.panel); uctx.globalAlpha=1;
@@ -361,11 +365,12 @@ function drawCtrlIntro(){
     txt(T('pauseT'),VX+VW2/2,VY+56,9,PAL.white,'center');
   }
   ctrlWindow(VX,VY,VW2,VH2);
-  txtO(T(act.t),VX+VW2/2,VY+VH2+8,10,mode===1?PAL.white:PAL.gold,'center');
+  /* 演示窗下方 文案三行分区: 标题/按键/说明 各自独立行带, 互不叠压 (页面导览实测bug) */
+  txtO(T(act.t),VX+VW2/2,VY+VH2+4,10,mode===1?PAL.white:PAL.gold,'center');
   const k=ctrlKeyOf(act.id,mode);
-  if(k)txt('['+k+']',VX+VW2/2,VY+VH2+20,8,PAL.steel,'center');
+  if(k)txt('['+k+']',VX+VW2/2,VY+VH2+17,8,PAL.steel,'center');
   const desc=act.scene>=0?T('h'+act.scene+'d'):T('cPauseD');
-  wrapTxt(desc,VW2-8,6).forEach((l,i)=>txt(l,VX+VW2/2,146+i*10,6,PAL.lite,'center'));
+  wrapTxt(desc,VW2-8,6).forEach((l,i)=>txt(l,VX+VW2/2,VY+VH2+27+i*9,6,PAL.lite,'center'));
   /* 底部动作条: 8项, 当前高亮 */
   uPanel(8,196,VW-16,22,PAL.cyan,0.6);
   CTRL_ACTS.forEach((a,i)=>{

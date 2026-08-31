@@ -1,0 +1,2687 @@
+{
+  "version": "v1.5-topdown-directional-modular-assets",
+  "status": "assets-only-not-wired",
+  "generatedAt": "2026-08-31",
+  "style": "Japanese Tactical HD-2D, bright top-down battlefield art",
+  "grid": {
+    "unitDirections": 16,
+    "terrainTilesPerStage": 16
+  },
+  "directions": [
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+    "N",
+    "NNE",
+    "NE",
+    "ENE"
+  ],
+  "unitCellSize": 256,
+  "terrainCellSize": 256,
+  "units": [
+    {
+      "key": "player_assault_raijin",
+      "source": "player-assault-raijin-16dir.png",
+      "family": "player",
+      "variant": "assault",
+      "display_name": "Raijin assault tank",
+      "role": "fast striker",
+      "accent": "#f6b94e",
+      "fill": 0.78,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/player-assault-raijin-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/player_assault_raijin-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/player_assault_raijin",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/player_assault_raijin/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "player_balanced_ironclad",
+      "source": "player-balanced-ironclad-16dir.png",
+      "family": "player",
+      "variant": "balanced",
+      "display_name": "Ironclad command tank",
+      "role": "all-round command",
+      "accent": "#22c0ff",
+      "fill": 0.8,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/player-balanced-ironclad-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/player_balanced_ironclad/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "player_heavy_genbu",
+      "source": "player-heavy-genbu-16dir.png",
+      "family": "player",
+      "variant": "heavy",
+      "display_name": "Genbu fortress tank",
+      "role": "heavy armor",
+      "accent": "#8fd8e8",
+      "fill": 0.84,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/player-heavy-genbu-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/player_heavy_genbu-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/player_heavy_genbu",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/player_heavy_genbu/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "wingman_assault",
+      "source": "wingman-assault-16dir.png",
+      "family": "wingman",
+      "variant": "assault",
+      "display_name": "Assault wingman",
+      "role": "fire support",
+      "accent": "#f6b94e",
+      "fill": 0.7,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/wingman-assault-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/wingman_assault-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/wingman_assault",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_assault/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "wingman_guard",
+      "source": "wingman-guard-16dir.png",
+      "family": "wingman",
+      "variant": "guard",
+      "display_name": "Guard wingman",
+      "role": "shield support",
+      "accent": "#22c0ff",
+      "fill": 0.72,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/wingman-guard-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/wingman_guard-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/wingman_guard",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_guard/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "wingman_flex",
+      "source": "wingman-flex-16dir.png",
+      "family": "wingman",
+      "variant": "flex",
+      "display_name": "Flex wingman",
+      "role": "adaptive tactical",
+      "accent": "#67f0c0",
+      "fill": 0.7,
+      "quality_note": "Source is landscape format; sliced on native 4x4 cells to avoid losing frames.",
+      "sourcePath": "assets/ai-v15-topdown/source/units/wingman-flex-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/wingman_flex-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/wingman_flex",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/wingman_flex/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "enemy_crimson_tank",
+      "source": "enemy-crimson-tank-16dir.png",
+      "family": "enemy",
+      "variant": "tank",
+      "display_name": "Crimson assault tank",
+      "role": "standard enemy armor",
+      "accent": "#ff4c3f",
+      "fill": 0.78,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/enemy-crimson-tank-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_tank/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "enemy_crimson_carrier",
+      "source": "enemy-crimson-carrier-16dir.png",
+      "family": "enemy",
+      "variant": "carrier",
+      "display_name": "Crimson carrier",
+      "role": "enemy support carrier",
+      "accent": "#ff7144",
+      "fill": 0.78,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/enemy-crimson-carrier-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "boss_crimson_landship",
+      "source": "boss-crimson-landship-16dir.png",
+      "family": "boss",
+      "variant": "landship",
+      "display_name": "Crimson landship boss",
+      "role": "boss armor",
+      "accent": "#ff543f",
+      "fill": 0.88,
+      "quality_note": "Source is landscape format; sliced on native 4x4 cells to preserve the wide hull.",
+      "sourcePath": "assets/ai-v15-topdown/source/units/boss-crimson-landship-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/boss_crimson_landship-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/boss_crimson_landship",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/boss_crimson_landship/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    },
+    {
+      "key": "support_airstrike_plane",
+      "source": "support-airstrike-plane-16dir.png",
+      "family": "support",
+      "variant": "airstrike",
+      "display_name": "Airstrike support aircraft",
+      "role": "support strike aircraft",
+      "accent": "#9bdcff",
+      "fill": 0.78,
+      "quality_note": "",
+      "sourcePath": "assets/ai-v15-topdown/source/units/support-airstrike-plane-16dir.png",
+      "sheetPath": "assets/ai-v15-topdown/processed/units/support_airstrike_plane-sheet.png",
+      "frameDir": "assets/ai-v15-topdown/processed/units/support_airstrike_plane",
+      "frames": [
+        {
+          "index": 0,
+          "direction": "E",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "direction": "ESE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "direction": "SE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "direction": "SSE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "direction": "S",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "direction": "SSW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "direction": "SW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "direction": "WSW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "direction": "W",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "direction": "WNW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "direction": "NW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "direction": "NNW",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "direction": "N",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "direction": "NNE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "direction": "NE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "direction": "ENE",
+          "path": "assets/ai-v15-topdown/processed/units/support_airstrike_plane/frame-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1295,
+        1214
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "directions": [
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE"
+      ]
+    }
+  ],
+  "terrain": [
+    {
+      "key": "stage_01_desert",
+      "source": "stage-01-desert-atlas.png",
+      "display_name": "Stage 01 desert outpost",
+      "theme": "sandstone desert battlefield",
+      "palette": [
+        "sand",
+        "ochre",
+        "warm stone",
+        "turquoise water"
+      ],
+      "tile_roles": [
+        "sand ground A",
+        "sand ground B",
+        "sand road straight",
+        "sand road corner",
+        "road T junction",
+        "road crossing",
+        "oasis water",
+        "water edge transition",
+        "rock obstacle",
+        "brush cover",
+        "burned tank wreck",
+        "crater",
+        "sandbag cover",
+        "wooden fence barrier",
+        "crate debris",
+        "ruined wall debris"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-01-desert-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "sand ground A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "sand ground B",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "sand road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "sand road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "oasis water",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "water edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "rock obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "brush cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "burned tank wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "sandbag cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "wooden fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "ruined wall debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_01_desert/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_02_rain",
+      "source": "stage-02-rain-atlas.png",
+      "display_name": "Stage 02 rain city",
+      "theme": "wet asphalt and canal battlefield",
+      "palette": [
+        "blue gray",
+        "wet asphalt",
+        "green canal",
+        "amber streetlight"
+      ],
+      "tile_roles": [
+        "wet asphalt A",
+        "wet asphalt B",
+        "road straight",
+        "road corner",
+        "road T junction",
+        "road crossing",
+        "shallow water",
+        "water edge transition",
+        "concrete block obstacle",
+        "tire barricade cover",
+        "burned armored wreck",
+        "rain crater",
+        "sandbag cover",
+        "metal fence barrier",
+        "crate debris",
+        "broken wall debris"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-02-rain-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "wet asphalt A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "wet asphalt B",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "shallow water",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "water edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "concrete block obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "tire barricade cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "burned armored wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "rain crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "sandbag cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "metal fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "broken wall debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_02_rain/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_03_forest",
+      "source": "stage-03-forest-atlas.png",
+      "display_name": "Stage 03 forest shrine",
+      "theme": "moss forest battlefield",
+      "palette": [
+        "moss green",
+        "soil",
+        "stone",
+        "warm shrine red"
+      ],
+      "tile_roles": [
+        "forest ground A",
+        "forest ground B",
+        "dirt road straight",
+        "dirt road corner",
+        "dirt road T junction",
+        "dirt road crossing",
+        "pond water",
+        "pond edge transition",
+        "boulder obstacle",
+        "fallen log cover",
+        "burned tank wreck",
+        "mud crater",
+        "sandbag forest cover",
+        "wood fence barrier",
+        "crate debris",
+        "broken shrine wall debris"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-03-forest-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "forest ground A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "forest ground B",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "dirt road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "dirt road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "dirt road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "dirt road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "pond water",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "pond edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "boulder obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "fallen log cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "burned tank wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "mud crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "sandbag forest cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "wood fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "broken shrine wall debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_03_forest/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_04_industrial",
+      "source": "stage-04-industrial-atlas.png",
+      "display_name": "Stage 04 industrial ruins",
+      "theme": "concrete and steel battlefield",
+      "palette": [
+        "light concrete",
+        "rust orange",
+        "graphite steel",
+        "cyan utility light"
+      ],
+      "tile_roles": [
+        "cracked concrete A",
+        "cracked concrete B with dust",
+        "metal road straight",
+        "metal road corner",
+        "road T junction",
+        "road crossing",
+        "oil-stained floor",
+        "grated drain transition",
+        "steel barricade obstacle",
+        "pipe cover",
+        "burned armored wreck",
+        "concrete crater",
+        "sandbag industrial cover",
+        "chain-link fence barrier",
+        "barrel crate debris",
+        "collapsed factory wall debris"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-04-industrial-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "cracked concrete A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "cracked concrete B with dust",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "metal road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "metal road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "oil-stained floor",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "grated drain transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "steel barricade obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "pipe cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "burned armored wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "concrete crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "sandbag industrial cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "chain-link fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "barrel crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "collapsed factory wall debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_04_industrial/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_05_snow",
+      "source": "stage-05-snow-atlas.png",
+      "display_name": "Stage 05 snow battlefield",
+      "theme": "winter snow and ice battlefield",
+      "palette": [
+        "blue white",
+        "pale cyan",
+        "silver gray",
+        "amber glint"
+      ],
+      "tile_roles": [
+        "snow ground A",
+        "snow ground B with stones",
+        "compacted snow road straight",
+        "compacted snow road corner",
+        "compacted snow road T junction",
+        "compacted snow road crossing",
+        "ice patch",
+        "ice edge transition",
+        "frozen boulder obstacle",
+        "snowdrift cover",
+        "frozen armored wreck",
+        "snow crater",
+        "snow-covered sandbag cover",
+        "frosted fence barrier",
+        "supply crate debris",
+        "bunker rubble under snow"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-05-snow-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "snow ground A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "snow ground B with stones",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "compacted snow road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "compacted snow road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "compacted snow road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "compacted snow road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "ice patch",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "ice edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "frozen boulder obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "snowdrift cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "frozen armored wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "snow crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "snow-covered sandbag cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "frosted fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "supply crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "bunker rubble under snow",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_05_snow/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_06_night_fortress",
+      "source": "stage-06-night-fortress-atlas.png",
+      "display_name": "Stage 06 night fortress",
+      "theme": "moonlit fortress battlefield",
+      "palette": [
+        "deep blue",
+        "graphite",
+        "cyan electric",
+        "moon white",
+        "amber hazard"
+      ],
+      "tile_roles": [
+        "dark stone slab A",
+        "wet stone slab B",
+        "fortress road straight",
+        "fortress road corner",
+        "fortress road T junction",
+        "fortress road crossing",
+        "blue-lit energy floor",
+        "energy edge transition",
+        "armored wall block obstacle",
+        "pipe and grate cover",
+        "burned fortress wreck",
+        "blast crater",
+        "steel barricade cover",
+        "electric fence barrier",
+        "barrel crate debris",
+        "broken fortress masonry"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-06-night-fortress-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "dark stone slab A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "wet stone slab B",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "fortress road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "fortress road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "fortress road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "fortress road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "blue-lit energy floor",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "energy edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "armored wall block obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "pipe and grate cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "burned fortress wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "blast crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "steel barricade cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "electric fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "barrel crate debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "broken fortress masonry",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_06_night_fortress/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "key": "stage_07_final_battlefield",
+      "source": "stage-07-final-battlefield-atlas.png",
+      "display_name": "Stage 07 final battlefield",
+      "theme": "scorched final fortress battlefield",
+      "palette": [
+        "charcoal",
+        "crimson",
+        "hot orange",
+        "ember gold",
+        "cyan warning"
+      ],
+      "tile_roles": [
+        "scorched ground A",
+        "scorched ground B with ash",
+        "cracked asphalt road straight",
+        "cracked asphalt road corner",
+        "cracked asphalt road T junction",
+        "cracked asphalt road crossing",
+        "lava crack tile",
+        "lava edge transition",
+        "black rock obstacle",
+        "ember smoke cover",
+        "destroyed boss wreck",
+        "magma crater",
+        "scorched sandbag cover",
+        "spiked metal fence barrier",
+        "burning barrel debris",
+        "broken final fortress debris"
+      ],
+      "sourcePath": "assets/ai-v15-topdown/source/terrain-atlases/stage-07-final-battlefield-atlas.png",
+      "atlasPath": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield-atlas.png",
+      "tileDir": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield",
+      "tiles": [
+        {
+          "index": 0,
+          "role": "scorched ground A",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-00.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 1,
+          "role": "scorched ground B with ash",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-01.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 2,
+          "role": "cracked asphalt road straight",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-02.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 3,
+          "role": "cracked asphalt road corner",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-03.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 4,
+          "role": "cracked asphalt road T junction",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-04.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 5,
+          "role": "cracked asphalt road crossing",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-05.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 6,
+          "role": "lava crack tile",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-06.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 7,
+          "role": "lava edge transition",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-07.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 8,
+          "role": "black rock obstacle",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-08.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 9,
+          "role": "ember smoke cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-09.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 10,
+          "role": "destroyed boss wreck",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-10.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 11,
+          "role": "magma crater",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-11.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 12,
+          "role": "scorched sandbag cover",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-12.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 13,
+          "role": "spiked metal fence barrier",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-13.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 14,
+          "role": "burning barrel debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-14.png",
+          "width": 256,
+          "height": 256
+        },
+        {
+          "index": 15,
+          "role": "broken final fortress debris",
+          "path": "assets/ai-v15-topdown/processed/terrain-atlases/stage_07_final_battlefield/tile-15.png",
+          "width": 256,
+          "height": 256
+        }
+      ],
+      "cellSize": 256,
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1024,
+        1024
+      ]
+    }
+  ],
+  "contactSheets": {
+    "units": "assets/ai-v15-topdown/processed/unit-contact-sheet.png",
+    "terrain": "assets/ai-v15-topdown/processed/terrain-contact-sheet.png"
+  },
+  "notes": [
+    "This batch corrects the prior single-angle oblique combat-unit mismatch for a flat top-down map.",
+    "Terrain atlases are intended as modular 4x4 tile kits; mixed-terrain levels can assemble multiple tiles from one or more stage sets.",
+    "Existing v1.4 oblique assets and game renderer files are not overwritten by this script."
+  ]
+}

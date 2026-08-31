@@ -1,0 +1,233 @@
+{
+  "version": "v1.4-ai-art-slice",
+  "style": "Japanese Tactical HD-2D",
+  "generatedAt": "2026-08-30",
+  "images": {
+    "player_raijin": "assets/ai-v14/processed/player-raijin-cutout.png",
+    "player_balanced": "assets/ai-v14/processed/player-balanced-cutout.png",
+    "player_genbu": "assets/ai-v14/processed/player-genbu-cutout.png",
+    "enemy_crimson_assault": "assets/ai-v14/processed/enemy-crimson-assault-cutout.png",
+    "enemy_crimson_carrier": "assets/ai-v14/processed/enemy-crimson-carrier-cutout.png",
+    "wingman_assault": "assets/ai-v14/processed/wingman-assault-cutout.png",
+    "wingman_guard": "assets/ai-v14/processed/wingman-guardian-cutout.png",
+    "wingman_tactical": "assets/ai-v14/processed/wingman-tactical-cutout.png",
+    "boss_landship": "assets/ai-v14/processed/boss-landship-cutout.png",
+    "fx_explosion_core": "assets/ai-v14/processed/fx-explosion-core-cutout.png",
+    "ui_hud_ornaments": "assets/ai-v14/processed/ui-hud-ornaments.png",
+    "stage1_ground_texture": "assets/ai-v14/processed/stage1-ground-texture.png"
+  },
+  "units": {
+    "player": {
+      "assault": {
+        "image": "player_raijin",
+        "w": 52,
+        "anchor": [
+          0.53,
+          0.56
+        ],
+        "glow": "#f6b94e",
+        "role": "fast striker"
+      },
+      "balanced": {
+        "image": "player_balanced",
+        "w": 50,
+        "anchor": [
+          0.53,
+          0.56
+        ],
+        "glow": "#22c0ff",
+        "role": "all-round command"
+      },
+      "heavy": {
+        "image": "player_genbu",
+        "w": 62,
+        "anchor": [
+          0.54,
+          0.58
+        ],
+        "glow": "#8fd8e8",
+        "role": "fortress armor"
+      }
+    },
+    "wingman": {
+      "assault": {
+        "image": "wingman_assault",
+        "w": 36,
+        "anchor": [
+          0.53,
+          0.56
+        ],
+        "glow": "#f6b94e",
+        "role": "fire support"
+      },
+      "guard": {
+        "image": "wingman_guard",
+        "w": 39,
+        "anchor": [
+          0.54,
+          0.58
+        ],
+        "glow": "#22c0ff",
+        "role": "shield support"
+      },
+      "flex": {
+        "image": "wingman_tactical",
+        "w": 34,
+        "anchor": [
+          0.53,
+          0.57
+        ],
+        "glow": "#67f0c0",
+        "role": "adaptive tactical"
+      }
+    },
+    "enemy": {
+      "tank": {
+        "image": "enemy_crimson_assault",
+        "w": 48,
+        "bossW": 120,
+        "anchor": [
+          0.53,
+          0.57
+        ]
+      },
+      "truck": {
+        "image": "enemy_crimson_carrier",
+        "w": 46,
+        "bossW": 116,
+        "anchor": [
+          0.54,
+          0.58
+        ]
+      },
+      "boss": {
+        "image": "boss_landship",
+        "w": 132,
+        "anchor": [
+          0.55,
+          0.58
+        ]
+      }
+    }
+  },
+  "environment": {
+    "stage1Ground": "stage1_ground_texture"
+  },
+  "fx": {
+    "explosion": "fx_explosion_core"
+  },
+  "ui": {
+    "ornaments": "ui_hud_ornaments"
+  },
+  "contactSheet": "assets/ai-v14/processed/contact-sheet.png",
+  "processed": [
+    {
+      "key": "player_raijin",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/player-raijin-cutout.png",
+      "source": "assets/ai-v14/source/player-raijin.png",
+      "width": 720,
+      "height": 471,
+      "mode": "RGBA"
+    },
+    {
+      "key": "player_balanced",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/player-balanced-cutout.png",
+      "source": "assets/ai-v14/source/player-balanced.png",
+      "width": 720,
+      "height": 492,
+      "mode": "RGBA"
+    },
+    {
+      "key": "player_genbu",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/player-genbu-cutout.png",
+      "source": "assets/ai-v14/source/player-genbu.png",
+      "width": 760,
+      "height": 507,
+      "mode": "RGBA"
+    },
+    {
+      "key": "enemy_crimson_assault",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/enemy-crimson-assault-cutout.png",
+      "source": "assets/ai-v14/source/enemy-crimson-assault.png",
+      "width": 640,
+      "height": 428,
+      "mode": "RGBA"
+    },
+    {
+      "key": "enemy_crimson_carrier",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/enemy-crimson-carrier-cutout.png",
+      "source": "assets/ai-v14/source/enemy-crimson-carrier.png",
+      "width": 640,
+      "height": 585,
+      "mode": "RGBA"
+    },
+    {
+      "key": "wingman_assault",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/wingman-assault-cutout.png",
+      "source": "assets/ai-v14/source/wingman-assault.png",
+      "width": 560,
+      "height": 326,
+      "mode": "RGBA"
+    },
+    {
+      "key": "wingman_guard",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/wingman-guardian-cutout.png",
+      "source": "assets/ai-v14/source/wingman-guardian.png",
+      "width": 580,
+      "height": 453,
+      "mode": "RGBA"
+    },
+    {
+      "key": "wingman_tactical",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/wingman-tactical-cutout.png",
+      "source": "assets/ai-v14/source/wingman-tactical.png",
+      "width": 560,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "key": "boss_landship",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/boss-landship-cutout.png",
+      "source": "assets/ai-v14/source/boss-landship.png",
+      "width": 920,
+      "height": 610,
+      "mode": "RGBA"
+    },
+    {
+      "key": "fx_explosion_core",
+      "kind": "cutout",
+      "path": "assets/ai-v14/processed/fx-explosion-core-cutout.png",
+      "source": "assets/ai-v14/source/fx-explosion-core.png",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "key": "ui_hud_ornaments",
+      "kind": "reference",
+      "path": "assets/ai-v14/processed/ui-hud-ornaments.png",
+      "source": "assets/ai-v14/source/ui-hud-ornaments.png",
+      "width": 960,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "key": "stage1_ground_texture",
+      "kind": "texture",
+      "path": "assets/ai-v14/processed/stage1-ground-texture.png",
+      "source": "assets/ai-v14/source/stage1-ground-texture.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    }
+  ]
+}

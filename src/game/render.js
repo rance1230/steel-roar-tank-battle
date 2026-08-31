@@ -30,11 +30,20 @@ function bar(x,y,w,h,frac,c,bg){
   px(x-1,y-1,w+2,h+2,PAL.ink); px(x,y,w,h,bg||PAL.dark);
   if(frac>0)px(x,y,Math.round(w*clamp(frac,0,1)),h,c);
 }
+const NO_LN_START='，。、·！？；：）】》”’…—~!?%.,;:)/';
+const IS_WORD=/[A-Za-z0-9]/;
 function wrapTxt(s,maxW,size){
   uctx.font='bold '+size+'px '+FONT;
   const out=[]; let line='';
   for(const ch of s){ if(ch==='\n'){out.push(line);line='';continue;}
-    if(uctx.measureText(line+ch).width>maxW){out.push(line);line=ch;} else line+=ch; }
+    if(line&&uctx.measureText(line+ch).width>maxW){
+      if(NO_LN_START.includes(ch)){ line+=ch; out.push(line); line=''; continue; }   /* 标点悬挂行尾, 不做行首 */
+      if(IS_WORD.test(ch)&&IS_WORD.test(line[line.length-1])){                        /* 西文/数字整词换行 */
+        const m=line.match(/[A-Za-z0-9][A-Za-z0-9.%]*$/);
+        if(m&&m[0].length<line.length){ out.push(line.slice(0,line.length-m[0].length)); line=m[0]+ch; continue; }
+      }
+      out.push(line); line=ch;
+    } else line+=ch; }
   out.push(line); return out;
 }
 const _rgbCache={};
@@ -91,13 +100,19 @@ function drawSplashArt(kind,level){
 function drawSplashOverlay(kind){
   ctx.save();
   const shade=ctx.createLinearGradient(0,0,0,VH);
-  shade.addColorStop(0,kind==='title'?'rgba(5,8,13,0.44)':'rgba(5,8,13,0.42)');
-  shade.addColorStop(0.42,'rgba(5,8,13,0.16)');
-  shade.addColorStop(1,'rgba(5,8,13,0.36)');
+  if(kind==='title'){   /* 标题封面: 整体稍亮, 看清画面 (真机反馈), 关卡 intro 维持原氛围 */
+    shade.addColorStop(0,'rgba(5,8,13,0.30)');
+    shade.addColorStop(0.42,'rgba(5,8,13,0.10)');
+    shade.addColorStop(1,'rgba(5,8,13,0.24)');
+  } else {
+    shade.addColorStop(0,'rgba(5,8,13,0.42)');
+    shade.addColorStop(0.42,'rgba(5,8,13,0.16)');
+    shade.addColorStop(1,'rgba(5,8,13,0.36)');
+  }
   ctx.fillStyle=shade; ctx.fillRect(0,0,VW,VH);
   const side=ctx.createLinearGradient(0,0,VW,0);
-  side.addColorStop(0,'rgba(5,8,13,0.30)');
-  side.addColorStop(0.34,'rgba(5,8,13,0.08)');
+  side.addColorStop(0,kind==='title'?'rgba(5,8,13,0.18)':'rgba(5,8,13,0.30)');
+  side.addColorStop(0.34,kind==='title'?'rgba(5,8,13,0.05)':'rgba(5,8,13,0.08)');
   side.addColorStop(1,'rgba(5,8,13,0)');
   ctx.fillStyle=side; ctx.fillRect(0,0,VW,VH);
   ctx.restore();
@@ -122,6 +137,19 @@ function glow(x,y,r,c,a){
   const g=ctx.createRadialGradient(x,y,0,x,y,r);
   g.addColorStop(0,rgba(c,a)); g.addColorStop(0.45,rgba(c,a*0.28)); g.addColorStop(1,rgba(c,0));
   ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2); ctx.restore();
+}
+function drawDynamicLights(){
+  if(PERF.qLevel===0||typeof dynLights==='undefined'||!dynLights||!dynLights.length)return;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(const l of dynLights){
+    const f=clamp(l.life/(l.t||0.2),0,1), r=l.r*(0.76+(1-f)*0.42), a=(l.a||0.24)*f;
+    const g=ctx.createRadialGradient(l.x,l.y,0,l.x,l.y,r);
+    g.addColorStop(0,rgba(l.col||PAL.gold,a));
+    g.addColorStop(0.42,rgba(l.col||PAL.gold,a*0.25));
+    g.addColorStop(1,rgba(l.col||PAL.gold,0));
+    ctx.fillStyle=g; ctx.fillRect(l.x-r,l.y-r,r*2,r*2);
+  }
+  ctx.restore();
 }
 function uPanel(x,y,w,h,c,a){
   uctx.save();
@@ -436,72 +464,79 @@ function drawHudSkill(x,y,w,label,key,frac,c,ready){
   txt(label,x+16,y+3,6,ready?PAL.white:PAL.lite);
   txt(key,x+w-5,y+3,7,ready?c:PAL.steel,'right');
   uMiniBar(x+16,y+11,w-22,2,frac,c,PAL.panel2);
+  if(ready){
+    const sweep=(ST.t*38+x*0.37)%(w-10);
+    uctx.globalAlpha=0.38+0.22*Math.sin(ST.t*7+x);
+    upx(x+5+sweep,y+2,1,12,c);
+    upx(x+2,y+2,3,1,PAL.white); upx(x+w-5,y+13,3,1,PAL.white);
+    uctx.globalAlpha=1;
+  }
 }
 /* BOSS ghost 条状态 (drawHUD用) */
 let _bossRef=null,_bossGhost=1;
 /* 连击段位词 (审查任务8 / §11) */
 const COMBO_WORDS=['','GREAT','SUPERB','DOMINATING','RAMPAGE','UNSTOPPABLE','UNSTOPPABLE'];
+function hudChip(x,y,ch,frac,c,ready){
+  upx(x,y,16,16,rgba(PAL.panel,0.40));
+  const rem=1-clamp(frac,0,1);
+  if(rem>0){ uctx.globalAlpha=0.55; upx(x,y,16,Math.round(16*rem),PAL.ink); uctx.globalAlpha=1; }
+  txt(ch,x+8,y+4,8,ready?c:PAL.steel,'center');
+  uctx.strokeStyle=rgba(ready?c:PAL.steel,0.7); uctx.lineWidth=1;
+  uctx.strokeRect(x+0.5,y+0.5,15,15);
+}
 function drawHUD(){
   const p=player;
   const touchOn=(SET.touch==='on'||(SET.touch==='auto'&&hasTouch));
-  uctx.globalAlpha=0.38; upx(0,0,VW,62,PAL.shadow); upx(0,VH-50,VW,50,PAL.shadow); uctx.globalAlpha=1;
-  uPanel(5,5,135,50,PAL.cyan,0.85);
-  txt((hullCfg().vis&&hullCfg().vis.callsign)||'IRONCLAD-07',35,9,9,PAL.white);
-  txt(T('armor'),35,20,7,PAL.lite);
-  uMiniBar(74,21,54,4,p.hp/p.maxHp,p.hp>30?PAL.acid:PAL.red,PAL.panel2);
-  txt(Math.ceil(p.hp)+'/'+Math.ceil(p.maxHp),131,18,7,PAL.white,'right');
-  txt('ENERGY',35,31,7,PAL.gold);
-  uMiniBar(74,32,54,4,p.sprintG,p.sprintLock?PAL.red:PAL.gold,PAL.panel2);
-  const sReady=p.shieldCd<=0;
-  upx(12,13,16,18,PAL.panel2); upx(14,15,12,2,sReady?PAL.cyan:PAL.rail);
-  upx(15,18,10,8,sReady?PAL.lite:PAL.rail); upx(18,20,4,4,sReady?PAL.white:PAL.panel2);
-  txt(T('ptsLab')+' '+RUN.pts,35,40,7,PAL.gold);
-
-  uPanel(148,5,180,36,PAL.gold,0.8);
-  txt((RUN.cycle>0?('#'+(RUN.lvl+1)+' · '+(RUN.cycle+1)+T('cycle')+' · '):'')+I18N[SET.lang].lvNames[RUN.lvl],238,9,9,PAL.white,'center');
+  const v=hullCfg().vis||{};
+  /* ---- 顶部单行信息条: 轻透明底+发丝线, 文字全部不透明 ---- */
+  uctx.globalAlpha=0.34; upx(0,0,VW,27,PAL.shadow); uctx.globalAlpha=1;
+  upx(0,27,VW,1,rgba(PAL.cyan,0.32));
+  txt(v.callsign||'IRONCLAD-07',6,4,7,PAL.gold);
+  uMiniBar(70,6,54,4,p.hp/p.maxHp,p.hp>30?PAL.acid:PAL.red,PAL.panel2);
+  txt(Math.ceil(p.hp)+'/'+Math.ceil(p.maxHp),132,3,7,PAL.white,'right');
+  txt('EN',138,4,6,PAL.steel);
+  uMiniBar(154,6,38,4,p.sprintG,p.sprintLock?PAL.red:PAL.gold,PAL.panel2);
   const remain=cfg.quota-ST.killsLevel;
-  txt(T('remain')+' '+remain+'  ·  '+fmtTime(ST.levelTime),238,22,8,PAL.lite,'center');
-
-  const rx=touchOn?350:333, rw=touchOn?74:142;
-  uPanel(rx,5,rw,touchOn?36:58,PAL.cyan,0.8);
-  txt(T('score'),rx+7,9,7,PAL.lite);
-  txtO(''+RUN.score,rx+rw-7,8,10,PAL.gold,'right');
-  txt(T('kills')+' '+RUN.kills,rx+7,22,7,PAL.lite);
-  if(!touchOn)drawRadar(rx+62,24,70,30);
-
+  txtO((RUN.cycle>0?'#'+(RUN.cycle+1)+' · ':'')+I18N[SET.lang].lvNames[RUN.lvl],VW/2,3,8,PAL.white,'center');
+  txt(T('remain')+' '+remain+'  ·  '+fmtTime(ST.levelTime),VW/2,15,6,PAL.lite,'center');
+  txt(T('score')+' '+RUN.score,VW-6,3,8,PAL.gold,'right');
+  txt(T('kills')+' '+RUN.kills,VW-6,15,6,PAL.lite,'right');
+  /* ---- 武器状态: 芯片化(触屏时置于顶栏下, 避开底部按钮; 键盘/手柄时置左下角) ---- */
+  const cy=touchOn?31:VH-22;
+  hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
+  hudChip(26,cy,'➤',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:1),PAL.aqua,p.charging||p.charge>0);
+  hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
+  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/0.95,PAL.cyan,p.shieldCd<=0);
+  /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
+  const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
+  if(touchOn)txt('◆ '+RUN.pts+'  EQ '+eqn,VW-6,33,7,PAL.gold,'right');
+  else txt('◆ '+RUN.pts+'   ARM '+RUN.eq.armor+'  TRK '+RUN.eq.track+'  FIR '+RUN.eq.fire+'  EQ '+eqn,VW-6,VH-12,7,PAL.steel,'right');
+  /* ---- 连击 (激活时才出现, 面板更透, 文字不透明) ---- */
   if(COMBO.n>0){
     const tier=COMBO.tier;
-    const col=tier>=4?PAL.red:tier>=1?PAL.gold:PAL.white;   /* 白→金→红, 不与地形色撞车 */
-    const sz=9+tier*2.4+(COMBO.flash>0?2:0)+(COMBO.od?Math.sin(ST.t*8)*1.5:0); /* 段位字号阶梯(每档≥16%)+OD脉动 */
-    const bw=Math.min(148,Math.max(92,sz*5.8));   /* 不越过两侧技能面板(x186/x340) */
-    uPanel(VW/2-bw/2,VH-39,bw,30,col,0.82);
+    const col=tier>=4?PAL.red:tier>=1?PAL.gold:PAL.white;
+    const sz=9+tier*2.4+(COMBO.flash>0?2:0)+(COMBO.od?Math.sin(ST.t*8)*1.5:0);
+    const bw=Math.min(148,Math.max(92,sz*5.8));
+    uctx.globalAlpha=0.58; upx(VW/2-bw/2,VH-39,bw,30,PAL.panel); uctx.globalAlpha=1;
+    uctx.strokeStyle=rgba(col,0.55); uctx.lineWidth=1; uctx.strokeRect(VW/2-bw/2+0.5,VH-38.5,bw-1,29);
     txtO(T('hitsLab')+' x'+COMBO.n,VW/2,VH-36,sz,col,'center');
-    if(tier>=1)txt(COMBO_WORDS[tier],VW/2,VH-47,5,col,'center');   /* 段位词: 面板上方, 不与大字重叠 */
+    if(tier>=1)txt(COMBO_WORDS[tier],VW/2,VH-47,5,col,'center');
     uMiniBar(VW/2-bw/2+8,VH-15,bw-16,4,COMBO.t/5,(COMBO.t<1.25&&(ST.t*6%1<0.6))?PAL.red:col);
   }
+  /* ---- BOSS 血条 (更透, 文字与血条不透明) ---- */
   const boss=enemies.find(e=>e.boss);
   if(boss){
     if(boss!==_bossRef){ _bossRef=boss; _bossGhost=1; }
     const frac=clamp(boss.hp/boss.maxHp,0,1);
-    _bossGhost+=(frac-_bossGhost)*0.015; if(frac>_bossGhost)_bossGhost=frac;   /* 白色ghost滞后条 (~12%/s) */
-    uPanel(160,43,160,15,PAL.red,0.82);
-    txt('BOSS',165,46,7,PAL.gold);
+    _bossGhost+=(frac-_bossGhost)*0.015; if(frac>_bossGhost)_bossGhost=frac;
+    uctx.globalAlpha=0.45; upx(160,44,160,15,PAL.panel); uctx.globalAlpha=1;
+    uctx.strokeStyle=rgba(PAL.red,0.6); uctx.strokeRect(160.5,44.5,159,14);
+    txt('BOSS',165,47,7,PAL.gold);
     upx(188,48,124,5,PAL.panel2);
     upx(188,48,Math.round(124*_bossGhost),5,'rgba(243,247,255,0.75)');
     upx(188,48,Math.round(124*frac),5,PAL.red);
-    upx(188+31,48,1,5,PAL.ink); upx(188+62,48,1,5,PAL.ink); upx(188+93,48,1,5,PAL.ink);   /* 25% 分段刻度 */
+    upx(188+31,48,1,5,PAL.ink); upx(188+62,48,1,5,PAL.ink); upx(188+93,48,1,5,PAL.ink);
   }
-  drawHudSkill(6,VH-47,92,T('skStrike'),keyHint('strike')||'—',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  drawHudSkill(6,VH-29,92,T('skMsl'),keyHint('msl')||'—',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:0),p.charge>=0.45?PAL.white:PAL.aqua,p.charging||p.charge>0);
-  drawHudSkill(102,VH-47,84,T('skTurbo'),keyHint('sprint')||'—',p.sprintG,p.sprintLock?PAL.red:PAL.acid,!p.sprintLock);
-  uPanel(VW-134,VH-47,128,42,PAL.gold,0.78);
-  txt('LOADOUT',VW-126,VH-42,7,PAL.lite);
-  const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
-  txt(T('ptsLab')+' '+RUN.pts,VW-66,VH-42,7,PAL.gold,'right');
-  txt('ARM '+RUN.eq.armor,VW-126,VH-29,7,PAL.steel);
-  txt('TRK '+RUN.eq.track,VW-86,VH-29,7,PAL.cyan);
-  txt('FIR '+RUN.eq.fire,VW-46,VH-29,7,PAL.red);
-  txt('EQ '+eqn,VW-66,VH-16,8,PAL.white,'right');
 }
 function drawWorldGrade(mode){
   ctx.save();
@@ -515,20 +550,41 @@ function drawWorldGrade(mode){
   else if(g==='grass'){ tint='40,96,52'; a=0.04; }
   if(tint){ ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=a; ctx.fillStyle='rgb('+tint+')'; ctx.fillRect(0,0,VW,VH); }
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
-  /* 顶部远景压暗 (审查C4): 空气透视 */
+  /* 顶部远景压暗 (审查C4): 空气透视; 标题画面稍亮 */
   const tg=ctx.createLinearGradient(0,0,0,44);
-  tg.addColorStop(0,'rgba(0,0,0,0.30)'); tg.addColorStop(1,'rgba(0,0,0,0)');
+  tg.addColorStop(0,mode==='title'?'rgba(0,0,0,0.18)':'rgba(0,0,0,0.30)'); tg.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=tg; ctx.fillRect(0,0,VW,44);
-  /* 暗角: 加强明暗对比 (0.68) */
+  /* 暗角: 加强明暗对比; 标题画面减弱, 封面看得更清 */
   const g2=ctx.createRadialGradient(VW*0.52,VH*0.48,36,VW*0.52,VH*0.48,VW*0.72);
   g2.addColorStop(0,'rgba(255,255,255,0)');
   g2.addColorStop(0.6,'rgba(5,8,13,0.10)');
-  g2.addColorStop(1,'rgba(0,0,0,0.68)');
+  g2.addColorStop(1,mode==='title'?'rgba(0,0,0,0.50)':'rgba(0,0,0,0.68)');
   ctx.fillStyle=g2; ctx.fillRect(0,0,VW,VH);
   ctx.globalAlpha=0.05; ctx.fillStyle=PAL.white;
   for(let y=(Math.floor(ST.t*20)%4);y<VH;y+=4)ctx.fillRect(0,y,VW,1);
   ctx.globalAlpha=0.08; ctx.fillStyle=PAL.gold; ctx.fillRect(0,VH-38,VW,38);
   ctx.restore();
+}
+function drawScreenFX(){
+  if(ST.state!=='play')return;
+  ctx.save();
+  if(COMBO.od){
+    ctx.globalCompositeOperation='lighter';
+    const a=0.08+0.04*Math.sin(ST.t*10);
+    ctx.globalAlpha=a; ctx.strokeStyle=PAL.gold; ctx.lineWidth=2;
+    ctx.strokeRect(3.5,3.5,VW-7,VH-7);
+    ctx.globalAlpha=a*0.8; ctx.fillStyle=PAL.gold;
+    for(let i=0;i<8;i++){ const y=(ST.t*90+i*37)%VH; ctx.fillRect(0,y,VW,1); }
+  }
+  if(ST.bossWarn>0){
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.15+0.08*Math.sin(ST.t*18);
+    ctx.fillStyle=PAL.red; ctx.fillRect(0,0,VW,VH);
+    ctx.globalAlpha=0.38; ctx.fillStyle=PAL.gold;
+    const y=(ST.t*130)%VH; ctx.fillRect(0,y,VW,2);
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
 }
 /* ---------- 环境漂浮微粒 (§8 环境粒子): 干旱沙尘/荒原余烬/绿野萤光/沼泽湿气 ---------- */
 function drawMotes(){
@@ -542,8 +598,10 @@ function drawMotes(){
 }
 function drawWorld(){
   ctx.save();
-  const shx=ST.shake>0?rnd(-ST.shake,ST.shake):0, shy=ST.shake>0?rnd(-ST.shake,ST.shake):0;
-  ctx.translate(-Math.round(IPx(cam)+shx),-Math.round(IPy(cam)+shy));
+  const shx=ST._shx=ST.shake>0?rnd(-ST.shake,ST.shake):0, shy=ST._shy=ST.shake>0?rnd(-ST.shake,ST.shake):0;
+  const z=1+(cam&&cam.zoom?cam.zoom:0), kx=cam&&cam.kickX?cam.kickX:0, ky=cam&&cam.kickY?cam.kickY:0;
+  ctx.translate(VW/2,VH/2); ctx.scale(z,z); ctx.translate(-VW/2,-VH/2);
+  ctx.translate(-Math.round(IPx(cam)+shx-kx),-Math.round(IPy(cam)+shy-ky));
   drawTerrain();
   drawDecals();
   for(const lp of lightPools)glow(lp.x,lp.y,lp.r+Math.sin(ST.t*1.3+lp.ph)*3,PAL.orange,0.10);   /* 战场暖光池 */
@@ -555,6 +613,7 @@ function drawWorld(){
   for(const b of bombs){ glow(IPx(b),IPy(b),12,PAL.ember,0.18); px(IPx(b)-2,IPy(b)-2,4,4,PAL.dark); px(IPx(b)-1,IPy(b)-4,2,3,PAL.red); }
   for(const pl of planes)drawPlaneI(pl);
   drawParts();
+  drawDynamicLights();
   ctx.restore();
   if(cfg&&cfg.rain){
     ctx.globalAlpha=0.35;
@@ -576,13 +635,20 @@ function drawWorld(){
   }
   drawWorldGrade();
   drawMotes();
+  drawScreenFX();
   if(ST.flash>0){ ctx.globalAlpha=clamp(ST.flash,0,0.5); px(0,0,VW,VH,PAL.white); ctx.globalAlpha=1; }
   if(player&&player.flash>0&&ST.state==='play'){ ctx.globalAlpha=0.25*player.flash/0.25; px(0,0,VW,VH,PAL.red); ctx.globalAlpha=1; }
 }
 /* ---------- 帮助页小场景 ---------- */
 function drawHelpScene(pg,x,y,w,h){
   ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
-  px(x,y,w,h,PAL.ink);
+  /* 明亮背景: 天空+土层与战斗画面同级亮度, 替换原近黑底 (真机反馈: 示例画面太暗) */
+  px(x,y,w,h,'#2c3d54');
+  px(x,y,w,Math.round(h*0.18),'#3a4a5e');
+  const gy=y+Math.round(h*0.68);
+  px(x,gy,w,y+h-gy,'#8a6f4a');
+  px(x,gy,w,2,'#a5875c');
+  px(x,y+h-5,w,5,'#6b4730');
   const cx=x+w/2, cy=y+h/2;
   const P=(dx,dy)=>{ctx.save();ctx.translate(cx+dx,cy+dy);ctx.scale(0.9,0.9);ctx.restore();};
   const tankAt=(dx,dy,ang,o)=>{ctx.save();ctx.translate(cx+dx,cy+dy);ctx.scale(0.85,0.85);
@@ -643,6 +709,31 @@ function drawHelpScene(pg,x,y,w,h){
   else if(pg===9){ drawPickupMini(cx-46,cy,'heal');drawPickupMini(cx,cy,'part');drawPickupMini(cx+46,cy,'eq');
     gtxt('x3.2',cx+52,cy-26,8,PAL.gold,'center');
     drawEnemyMiniTank(cx+62,cy+18); gtxt('BIG!',cx+62,cy-2,8,PAL.red,'center');
+  }
+  else if(pg===11){ /* 我方机体: 三机体实车预览, 各自涂装与体型 */
+    px(x+4,y+h-13,w-8,13,'rgba(5,8,13,0.55)');
+    const hx=[-50,0,50];
+    ['assault','balanced','heavy'].forEach((k,i)=>{
+      const v=HULLS[k].vis||{};
+      ctx.save(); ctx.translate(cx+hx[i],cy+2);
+      const sc=0.62*(v.s||1); ctx.scale(sc,sc);
+      drawTank(0,0,-Math.PI/2,{s:1,hull:v.hull||PAL.lite,hi:v.hi||PAL.white,dk:v.dk,trim:v.trim||PAL.cyan,
+        turret:v.turret||PAL.steel,barrel:v.barrel||PAL.steel,twin:v.twin,antenna:true,dist:ST.t*40,flash:0});
+      ctx.restore();
+      gtxt(T(HULLS[k].i18n).split(' ')[0],cx+hx[i],y+h-7,7,PAL.gold,'center');
+    });
+  }
+  else if(pg===12){ /* 僚机系统: 僚机护航拦截示意 */
+    truckAt(-50,-2,Math.PI*0.92);
+    tankAt(-8,14,-Math.PI/2);
+    ctx.save(); ctx.translate(cx+36,cy-14); ctx.scale(0.55,0.55);
+    drawTank(0,0,Math.PI*0.78,{s:1,hull:'#2f5a8a',hi:PAL.white,trim:PAL.cyan,turret:'#4a7ab0',barrel:PAL.steel,
+      antenna:true,dist:0,flash:0}); ctx.restore();
+    drawRingMini(cx+36,cy-14,15);                                  /* 防御僚机: 拦截光环 */
+    px(cx-34,cy-16,7,3,PAL.red); px(cx-24,cy-19,5,3,PAL.gold);     /* 来袭弹被挡 */
+    for(let i=0;i<3;i++)px(cx+20-i*10,cy-8+i*3,7,2,PAL.gold);      /* 僚机机枪曳光 */
+    px(cx+36-12,cy-26,24,2,PAL.panel2);
+    px(cx+36-12,cy-26,20,2,PAL.cyan);                              /* 僚机血条 */
   }
   else { px(x+8,y+8,w-16,h-40,PAL.dark);
     gtxt(T('upgPts')+' 12',cx,y+12,8,PAL.gold,'center');

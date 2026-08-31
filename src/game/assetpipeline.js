@@ -169,9 +169,10 @@ AP.explode=function(x,y,r,big){
   const sc=AP.imgs.fx_scorch, sw=r*2.9;                                               /* 7 地面焦痕 */
   dctx.globalAlpha=0.8; dctx.drawImage(sc,x-sw/2,y-sw*0.31,sw,sw*0.62); dctx.globalAlpha=1;
   AP.lights.push({x,y,r:r*4.4,color:[1,0.55,0.22],i:big?2.1:1.5,ttl:big?0.55:0.42,t:0});
+  addLight(x,y,r*(big?4.4:3.2),big?PAL.orange:PAL.gold,big?0.46:0.32,big?0.42:0.28);
   part(x,y,0,0,0.4,PAL.orange,r*1.8,0).pool=true;
-  ST.shake=Math.min(10,ST.shake+(big?7:3));
-  if(big)SFX.bigboom();else SFX.boom();
+  cameraKick(big?7:3,rnd(Math.PI*2),big?0.036:0.012);
+  if(big)SFX.bigboom(x,y);else SFX.boom(x,y);
 };
 AP.updFx=function(dt){
   for(let i=AP.fx.length-1;i>=0;i--){ const f=AP.fx[i];
@@ -227,7 +228,9 @@ AP.drawScenePropsAt=function(front){
 function drawWorldAP(){
   ctx.save();
   const shx=ST.shake>0?rnd(-ST.shake,ST.shake):0, shy=ST.shake>0?rnd(-ST.shake,ST.shake):0;
-  ctx.translate(-Math.round(IPx(cam)+shx),-Math.round(IPy(cam)+shy));
+  const z=1+(cam&&cam.zoom?cam.zoom:0), kx=cam&&cam.kickX?cam.kickX:0, ky=cam&&cam.kickY?cam.kickY:0;
+  ctx.translate(VW/2,VH/2); ctx.scale(z,z); ctx.translate(-VW/2,-VH/2);
+  ctx.translate(-Math.round(IPx(cam)+shx-kx),-Math.round(IPy(cam)+shy-ky));
   drawTerrain();
   drawDecals();
   AP.drawSceneLow();
@@ -241,10 +244,12 @@ function drawWorldAP(){
   for(const pl of planes)drawPlaneI(pl);
   drawParts();
   AP.drawFx();
+  drawDynamicLights();
   AP.drawScenePropsAt(true);             /* 玩家身前(y靠下)的道具 → 遮挡 */
   ctx.restore();
   drawWorldGrade();
   drawMotes();
+  drawScreenFX();
   if(ST.flash>0){ ctx.globalAlpha=clamp(ST.flash,0,0.5); px(0,0,VW,VH,PAL.white); ctx.globalAlpha=1; }
 }
 

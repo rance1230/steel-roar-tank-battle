@@ -1,20 +1,20 @@
 "use strict";
 /* game/main — 状态机/流程/调试钩子/引导 */
 /* ---------- 全局状态 ---------- */
-let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam,lightPools=[];
+let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam,dynLights=[],lightPools=[];
 let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
   bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
   shake:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
   upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
-  enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];cam={x:0,y:0}; }
+  enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];cam={x:0,y:0,kickX:0,kickY:0,zoom:0}; }
 newGame(); openMenu('title');
 
 /* ---------- 关卡流程 ---------- */
 function startLevel(){
   cfg=LEVELS[RUN.lvl]; genMap();
-  player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];
+  player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];
   spawnWingman();
   clearDecals(); initMotes();
   /* 战场暖光池锚定掩体/岩石 (审查C4): 'lighter' 呼吸暖光 */
@@ -24,7 +24,7 @@ function startLevel(){
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
   ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;
   ST.shake=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
-  cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH)};
+  cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
   COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;   /* vNext: 连击重置 */
   MENU=null; ST.state='intro'; ST.introT=2.4;
@@ -120,7 +120,7 @@ function onKeyPress(code){
       break;
     case 'play':
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
-      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=sc.cd; player.shieldAge=0; SFX.pick(); } }
+      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=sc.cd; player.shieldAge=0; SFX.shield(player.x,player.y); } }
       if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5; callAirstrike(); }
       break;
   }
@@ -162,15 +162,20 @@ function tick(dt){
     updCombo(dt);
     ST.levelTime+=dt;
     if(PAD.just.pause){ openMenu('pause'); return; }
-    updPlayer(dt); updWingman(dt); updEnemies(dt); updShots(dt); updPlanes(dt); updPickups(dt); updParts(dt); updWeather(dt);
-    cam.x+=((clamp(player.x-VW/2,0,WORLDW-VW))-cam.x)*Math.min(1,dt*5);
-    cam.y+=((clamp(player.y-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
+    updPlayer(dt); updWingman(dt); updEnemies(dt); updShots(dt); updPlanes(dt); updPickups(dt); updParts(dt); updWeather(dt); updDynamicLights(dt);
+    /* BOSS 战镜头向 BOSS 方向偏移 18%, 让 BOSS 保持在画面内 */
+    let ctx0=player.x,cty0=player.y;
+    const bo=enemies.find(e=>e.boss&&!e.dead);
+    if(bo){ ctx0+=(bo.x-player.x)*0.18; cty0+=(bo.y-player.y)*0.18; }
+    cam.x+=((clamp(ctx0-VW/2,0,WORLDW-VW))-cam.x)*Math.min(1,dt*5);
+    cam.y+=((clamp(cty0-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
     ST.shake=Math.max(0,ST.shake-dt*11);
+    updCameraFX(dt);
   }
-  else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt);
+  else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
-  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); ST.shake=Math.max(0,ST.shake-dt*11);
+  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); ST.shake=Math.max(0,ST.shake-dt*11); updCameraFX(dt);
     if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
     else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
@@ -201,12 +206,13 @@ function updTitleFx(dt){
 function draw(alpha){
   gAlpha=alpha||0;
   TAP_RECTS=[];
+  if(!MENU)MENU_RECTS=[];   /* 菜单关闭后旧命中区立即失效, 防残留死区+TypeError (页面导览实测bug) */
   const hs=(MENU&&MENU.id==='help');
   /* 阶段1: 像素世界 → 离屏缓冲 */
   if(ST.state==='title'||ST.state==='ctrl'){
     drawTitleBg();
     if(hs)drawHelpScene(MENU.page,VW/2-80,34,160,84);
-    else if(MENU&&MENU.id==='hull'&&HULL_KEYS[MENU.sel])drawHullPreview(HULL_KEYS[MENU.sel],127,96,226,62);
+    else if(MENU&&MENU.id==='wingman'&&WING_KEYS[MENU.sel]&&typeof drawWingPreview==='function')drawWingPreview(WING_KEYS[MENU.sel],127,96,226,62);
     else if(ST.state==='ctrl'){   /* 速览页实况演示窗: 复用引擎实况小场景 */
       const act=CTRL_ACTS[ST.ctrlIdx%CTRL_ACTS.length];
       if(act.scene>=0)drawHelpScene(act.scene,295,58,170,80);
@@ -221,8 +227,15 @@ function draw(alpha){
   uctx.drawImage(buf,0,0,cv.width,cv.height);
   uctx.setTransform(cv.width/VW,0,0,cv.height/VH,0,0);
   uctx.textBaseline='top';
+  /* v14 高清单位层: 玩家/僚机立绘在高清分辨率绘制, 相机与像素层同步 */
+  if(window.AIART&&AIART.ok)AIART.flushHd(Math.round(IPx(cam)+(ST._shx||0)),Math.round(IPy(cam)+(ST._shy||0)));
   /* 阶段3: 高清UI层 */
-  if(ST.state==='title'){ if(MENU)drawMenu(); if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
+  if(ST.state==='title'){ if(MENU){ drawMenu();
+    if(MENU.id==='hull'&&HULL_KEYS[MENU.sel]){
+      const k=HULL_KEYS[MENU.sel];
+      if(!(window.AIART&&AIART.ok&&drawHullPreviewAI(k,127,200,226,62)))drawHullPreview(k,127,200,226,62);
+    } }
+    if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
   if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
   if(ST.state==='play'||ST.state==='clear')drawHUD();
@@ -232,6 +245,10 @@ function draw(alpha){
   if(ST.state==='over')drawOver();
   if(ST.state==='win'){ drawWin(); if(MENU)drawMenu(); return; }
   if(MENU){ uctx.globalAlpha=0.35; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1; drawMenu();
+    if(MENU.id==='hull'&&HULL_KEYS[MENU.sel]){
+      const k=HULL_KEYS[MENU.sel];
+      if(!(window.AIART&&AIART.ok&&drawHullPreviewAI(k,127,200,226,62)))drawHullPreview(k,127,200,226,62);
+    }
     if(MENU.id==='pause')drawPauseHint(); }
   if(errStr){ txt('ERR:'+errStr,4,VH-30,7,PAL.red); }
 }

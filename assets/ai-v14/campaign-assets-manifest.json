@@ -1,0 +1,169 @@
+{
+  "version": "v1.4-bright-campaign-assets",
+  "style": "Japanese Tactical HD-2D bright campaign art",
+  "generatedAt": "2026-08-30",
+  "status": "assets-only-not-wired",
+  "dimensions": {
+    "stageIntro": [
+      1672,
+      941
+    ],
+    "terrain": [
+      768,
+      768
+    ]
+  },
+  "title": {
+    "key": "title_bright",
+    "stage": null,
+    "theme": "Bright Campaign Title",
+    "source": "assets/ai-v14/source/bright-stage-intros/title-bright.png",
+    "path": "assets/ai-v14/processed/bright-stage-intros/title-bright.png",
+    "width": 1672,
+    "height": 941,
+    "mode": "RGB"
+  },
+  "stageIntros": [
+    {
+      "key": "stage_01_desert_bright",
+      "stage": 1,
+      "theme": "Warm Desert",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-01-desert-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-01-desert-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_02_rain_bright",
+      "stage": 2,
+      "theme": "Cold Rain Battlefield",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-02-rain-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-02-rain-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_03_forest_bright",
+      "stage": 3,
+      "theme": "Deep Green Forest",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-03-forest-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-03-forest-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_04_industrial_bright",
+      "stage": 4,
+      "theme": "Industrial Ruins",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-04-industrial-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-04-industrial-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_05_snow_bright",
+      "stage": 5,
+      "theme": "Snow Battlefield",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-05-snow-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-05-snow-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_06_fortress_bright",
+      "stage": 6,
+      "theme": "Night Fortress",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-06-fortress-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-06-fortress-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_07_final_bright",
+      "stage": 7,
+      "theme": "Dark Red Final Battlefield",
+      "source": "assets/ai-v14/source/bright-stage-intros/stage-07-final-bright.png",
+      "path": "assets/ai-v14/processed/bright-stage-intros/stage-07-final-bright.png",
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB"
+    }
+  ],
+  "terrainOverlays": [
+    {
+      "key": "stage_02_rain_ground",
+      "stage": 2,
+      "theme": "Cold Rain Battlefield",
+      "source": "assets/ai-v14/source/terrain-v2/stage-02-rain-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-02-rain-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_03_forest_ground",
+      "stage": 3,
+      "theme": "Deep Green Forest",
+      "source": "assets/ai-v14/source/terrain-v2/stage-03-forest-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-03-forest-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_04_industrial_ground",
+      "stage": 4,
+      "theme": "Industrial Ruins",
+      "source": "assets/ai-v14/source/terrain-v2/stage-04-industrial-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-04-industrial-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_05_snow_ground",
+      "stage": 5,
+      "theme": "Snow Battlefield",
+      "source": "assets/ai-v14/source/terrain-v2/stage-05-snow-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-05-snow-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_06_fortress_ground",
+      "stage": 6,
+      "theme": "Night Fortress",
+      "source": "assets/ai-v14/source/terrain-v2/stage-06-fortress-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-06-fortress-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    },
+    {
+      "key": "stage_07_final_ground",
+      "stage": 7,
+      "theme": "Dark Red Final Battlefield",
+      "source": "assets/ai-v14/source/terrain-v2/stage-07-final-ground.png",
+      "path": "assets/ai-v14/processed/terrain-v2/stage-07-final-ground.png",
+      "width": 768,
+      "height": 768,
+      "mode": "RGB"
+    }
+  ],
+  "contactSheets": {
+    "stageIntros": "assets/ai-v14/processed/bright-stage-intros/contact-sheet.png",
+    "terrain": "assets/ai-v14/processed/terrain-v2/contact-sheet.png"
+  },
+  "notes": [
+    "Existing assets/stage-intros files are not overwritten.",
+    "Stage 1 terrain already exists in the v1.4 AI art slice; this batch adds Stage 2-7 terrain candidates.",
+    "Generated images contain no embedded title, menu, HUD, or UI text; game UI should render all copy."
+  ]
+}
