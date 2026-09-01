@@ -48,10 +48,9 @@ function enterBreach(e){
   p.vx*=0.05; p.vy*=0.05;
   e.stun=Math.max(e.stun,0.5);
   STATS.breachLocks++;
-  ST.shake=Math.min(10,ST.shake+3);
   burst((p.x+e.x)/2,(p.y+e.y)/2,10,[PAL.white,PAL.gold],90,0.3);
   SFX.ram((p.x+e.x)/2,(p.y+e.y)/2);
-  cameraKick(3,Math.atan2(e.y-p.y,e.x-p.x),0.01);
+  kickTier(1,Math.atan2(e.y-p.y,e.x-p.x));   /* v1.7: 顶入→轻档 */
   floater(e.x,e.y-e.r-10,T('breachMsg'),PAL.gold,8,0.35);
 }
 function breachFire(e,stagger){
@@ -60,11 +59,10 @@ function breachFire(e,stagger){
   const dmg=24*st.atk*1.35*hullCfg().breach;   /* 零距离炮击 ×1.35 ×机型Breach倍率 */
   HITSTOP=0.05;
   STATS.breachFires++;
-  ST.shake=Math.min(12,ST.shake+7);
   const fx=p.x+Math.cos(p.a)*(p.r+10), fy=p.y+Math.sin(p.a)*(p.r+10);   /* 特效前移到接触点, 不糊玩家 */
   flashFx(fx,fy,26,true);
   burst(fx,fy,12,[PAL.gold,PAL.white,PAL.red],130,0.45);
-  cameraKick(7,p.a,0.032);
+  kickTier(2,p.a);   /* v1.7: 零距炮击→中档; 若击杀由 onEnemyDead 补最大档 */
   SFX.cannon(fx,fy); SFX.bigboom(fx,fy);
   const ev=applyDamage(e,dmg,'breach');
   if(stagger||e.boss){                          /* Fortress: 不可击飞, 大幅硬直 */
@@ -94,7 +92,7 @@ function parryFeedback(perfect,s){
       const p2=part(cx+Math.cos(an+0.78)*6,cy+Math.sin(an+0.78)*6,Math.cos(an+0.78)*90,Math.sin(an+0.78)*90,0.15,PAL.lite,3.5); p2.ray=true; }
     burst(cx,cy,8,[PAL.white,PAL.lite],110,0.3);
     addLight(cx,cy,34,PAL.white,0.34,0.16);
-    cameraKick(2.6,s.ang,0.012);
+    kickTier(2,s.ang);   /* v1.7: Perfect弹反→中档 */
     SFX.reflect(cx,cy,true);
   }else{
     STATS.parryN++;
@@ -102,7 +100,7 @@ function parryFeedback(perfect,s){
     for(let i=0;i<6;i++){ const a=rnd(Math.PI*2);   /* 小型白蓝接触环 */
       part(cx+Math.cos(a)*5,cy+Math.sin(a)*5,Math.cos(a)*46,Math.sin(a)*46,0.12,i%2?PAL.white:PAL.lite,2); }
     addLight(cx,cy,22,PAL.aqua,0.22,0.1);
-    cameraKick(1.4,s.ang,0.006);
+    kickTier(0,s.ang);   /* v1.7: 普通弹反→微档 */
     SFX.reflect(cx,cy,false);
   }
 }

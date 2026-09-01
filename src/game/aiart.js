@@ -119,24 +119,6 @@ function drawGroundOverlay(){
   return true;
 }
 
-function drawShieldRing(x,y,r,col,alpha){
-  glow(x,y,r+11,PAL.aqua,0.18*alpha);
-  ctx.save();
-  ctx.translate(x,y);
-  ctx.rotate(ST.t*3);
-  ctx.globalAlpha=alpha;
-  ctx.strokeStyle=col||PAL.aqua;
-  ctx.lineWidth=1.5;
-  ctx.beginPath();
-  ctx.arc(0,0,r,0,Math.PI*2);
-  ctx.stroke();
-  for(let i=0;i<6;i++){
-    const an=i/6*Math.PI*2;
-    px(Math.cos(an)*r-2,Math.sin(an)*r-2,4,4,i%2?PAL.white:PAL.aqua);
-  }
-  ctx.restore();
-}
-
 /* 玩家/僚机走高清层(小尺寸立绘在像素buf中细节全失), 敌军/BOSS/爆炸留在像素层与场地统一 */
 AIART.queue=[];
 function drawPlayerAI(){
@@ -145,9 +127,10 @@ function drawPlayerAI(){
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
   const spec=unitSpec('player',RUN.hull||'balanced');
   if(!spec||!readyImage(spec.image))return false;
-  const v=hullCfg().vis||{};
+  const v=hullCfg().vis||{}, sc2=hullCfg().shield;
   AIART.queue.push({spec,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
+    shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||spec.glow||PAL.aqua,od:COMBO.od,sprintG:p.sprintG,kind:'player'});
   return true;
 }
@@ -202,9 +185,11 @@ AIART.flushHd=function(ox,oy){
       uctx.beginPath(); uctx.ellipse(0,0,w*0.36,h*0.30,0,0,Math.PI*2); uctx.fill(); }
     uctx.restore();
     if(q.kind==='player'){
-      if(q.shield){ uctx.save(); uctx.translate(q.x,q.y); uctx.rotate(ST.t*3);
-        uctx.globalAlpha=q.shieldA; uctx.strokeStyle=q.ringCol; uctx.lineWidth=1.5;
-        uctx.beginPath(); uctx.arc(0,0,Math.max(17,w*0.34),0,Math.PI*2); uctx.stroke(); uctx.restore(); }
+      if(q.shield){   /* v1.7: 3D 等离子护罩球 (随机体适配) */
+        const vv=(HULLS[RUN.hull]||HULLS.balanced).vis||{};
+        drawShieldOrb(uctx,q.x,q.y,shieldOrbR(vv.s,w),q.ringCol,q.shieldA,
+          {age:q.shieldAge,flash:q.shieldFlash,fortress:q.fortress});
+      }
     } else if(q.kind==='wing'){
       uctx.globalAlpha=1; uctx.fillStyle=PAL.panel2; uctx.fillRect(q.x-10,q.y-h*0.52,20,2);
       uctx.fillStyle=spec.glow||PAL.cyan; uctx.fillRect(q.x-10,q.y-h*0.52,Math.max(1,Math.round(20*q.hp)),2);

@@ -20,3 +20,12 @@ addEventListener('resize',fit);fit();
 let gAlpha=0; /* 当前渲染处于两个逻辑步之间的比例(0~1) */
 function IPx(o){ return o.ox===undefined?o.x:o.ox+(o.x-o.ox)*gAlpha; }
 function IPy(o){ return o.oy===undefined?o.y:o.oy+(o.y-o.oy)*gAlpha; }
+
+/* v1.7: 颜色压暗 — 向深蓝黑 #0d121c 混合 (k=保留原色比例), 冲刺残影剪影用 */
+function shade(c,k){
+  if(typeof c!=='string'||c[0]!=='#')return c;
+  const h=c.slice(1), n=h.length===3?h.split('').map(x=>x+x).join(''):h;
+  const r=parseInt(n.slice(0,2),16),g=parseInt(n.slice(2,4),16),b=parseInt(n.slice(4,6),16);
+  const m=(v,d)=>Math.round(v*k+d*(1-k));
+  return '#'+[m(r,13),m(g,18),m(b,28)].map(v=>('0'+v.toString(16)).slice(-2)).join('');
+}

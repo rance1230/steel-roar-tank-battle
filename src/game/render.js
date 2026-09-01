@@ -130,6 +130,87 @@ function glow(x,y,r,c,a){
   g.addColorStop(0,rgba(c,a)); g.addColorStop(0.45,rgba(c,a*0.28)); g.addColorStop(1,rgba(c,0));
   ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2); ctx.restore();
 }
+/* ---------- v1.7: 3D 等离子护罩球 (纯代码, 三渲染路径共用; g=目标ctx) ----------
+   分层: 接地影 → 球心等离子底光 → 方向性明暗(左上受光/右下阴影=体积感) →
+   左上镜面高光 → 边缘增亮环 → 球面弧线(要塞盾三向/标准盾经纬) → 环绕能量点
+   (带彗尾) → 闪现电丝 → 外缘描边+左上高光弧 → 弹反白闪+扩散环。 */
+function drawShieldOrb(g,x,y,r,col,alpha,o){
+  o=o||{};
+  const t=ST.t, rc=rgb(col);
+  let rr=r*(1+0.035*Math.sin(t*6));               /* 呼吸脉动 */
+  if(o.age!==undefined&&o.age<0.12)rr*=1.3-(o.age/0.12)*0.3;   /* 展开收缩入场 */
+  rr=Math.max(6,rr);
+  alpha=alpha*(0.9+0.1*Math.sin(t*9));
+  g.save();
+  g.globalAlpha=alpha*0.32; g.fillStyle=PAL.shadow;   /* 地面接触影 */
+  g.beginPath(); g.ellipse(x,y+rr*0.62,rr*0.78,rr*0.2,0,0,Math.PI*2); g.fill();
+  g.globalAlpha=1;
+  g.globalCompositeOperation='lighter';
+  const bg2=g.createRadialGradient(x,y,rr*0.1,x,y,rr);   /* 球心等离子底光 */
+  bg2.addColorStop(0,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.22*alpha).toFixed(3)+')');
+  bg2.addColorStop(0.7,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.1*alpha).toFixed(3)+')');
+  bg2.addColorStop(1,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.3*alpha).toFixed(3)+')');   /* 边缘增亮 */
+  g.fillStyle=bg2; g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.fill();
+  const sp=g.createRadialGradient(x-rr*0.34,y-rr*0.38,0,x-rr*0.34,y-rr*0.38,rr*0.34);   /* 左上镜面高光 */
+  sp.addColorStop(0,'rgba(243,247,255,'+(0.55*alpha).toFixed(3)+')');
+  sp.addColorStop(1,'rgba(243,247,255,0)');
+  g.fillStyle=sp; g.beginPath(); g.arc(x-rr*0.34,y-rr*0.38,rr*0.34,0,Math.PI*2); g.fill();
+  g.globalCompositeOperation='source-over';
+  g.save();   /* 方向性明暗: 光源左上 → 右下渐暗, 球体体积感的关键 */
+  g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.clip();
+  const sh=g.createRadialGradient(x-rr*0.4,y-rr*0.44,rr*0.15,x-rr*0.4,y-rr*0.44,rr*1.7);
+  sh.addColorStop(0,'rgba(2,4,7,0)');
+  sh.addColorStop(0.52,'rgba(2,4,7,'+(0.08*alpha).toFixed(3)+')');
+  sh.addColorStop(1,'rgba(2,4,7,'+(0.42*alpha).toFixed(3)+')');
+  g.fillStyle=sh; g.fillRect(x-rr,y-rr,rr*2,rr*2);
+  g.restore();
+  g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.32*alpha).toFixed(3)+')';   /* 球面弧线 */
+  g.lineWidth=1.2;
+  if(o.fortress){ for(let i=0;i<3;i++){ const a0=t*0.5+i*Math.PI/3;
+    g.beginPath(); g.ellipse(x,y,rr*0.94,rr*0.4,a0,0,Math.PI*2); g.stroke(); } }
+  else { g.beginPath(); g.ellipse(x,y,rr*0.94,rr*0.32,t*0.35,0,Math.PI*2); g.stroke();
+    g.beginPath(); g.ellipse(x,y,rr*0.58,rr*0.94,t*0.35+Math.PI/2,0,Math.PI*2); g.stroke(); }
+  g.globalCompositeOperation='lighter';
+  for(let i=0;i<2;i++){   /* 环绕能量点+彗尾 (球面椭圆轨道) */
+    const a1=t*2.4+i*2.4, ex=x+Math.cos(a1)*rr*0.82, ey=y+Math.sin(a1)*rr*0.45*Math.cos(t*0.9+i);
+    g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.4*alpha).toFixed(3)+')';
+    g.lineWidth=2;
+    g.beginPath(); g.arc(x,y,rr*0.82,a1-0.45,a1); g.stroke();
+    const bg=g.createRadialGradient(ex,ey,0,ex,ey,4.2);
+    bg.addColorStop(0,'rgba(243,247,255,'+(0.75*alpha).toFixed(3)+')');
+    bg.addColorStop(0.5,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.5*alpha).toFixed(3)+')');
+    bg.addColorStop(1,'rgba('+rc[0]+','+rc[1]+','+rc[2]+',0)');
+    g.fillStyle=bg; g.beginPath(); g.arc(ex,ey,4.2,0,Math.PI*2); g.fill();
+  }
+  const sd=Math.floor(t*8);   /* 闪现电丝 (8Hz 换种子防高频抖动) */
+  for(let i=0;i<3;i++){
+    const h1=hsh(sd+i*7,i*13+3);
+    if(h1>0.5)continue;
+    const a2=h1*12.56, a3=a2+0.5+hsh(sd,i)*0.9;
+    g.strokeStyle='rgba(243,247,255,'+(0.38*alpha).toFixed(3)+')'; g.lineWidth=1.2;
+    g.beginPath(); g.arc(x,y,rr*(0.72+h1*0.22),a2,a3); g.stroke();
+  }
+  g.globalCompositeOperation='source-over';
+  g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.9*alpha).toFixed(3)+')';   /* 外缘 */
+  g.lineWidth=1.5;
+  g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.stroke();
+  g.strokeStyle='rgba(243,247,255,'+(0.55*alpha).toFixed(3)+')';   /* 左上受光弧 (与光源一致) */
+  g.lineWidth=2;
+  g.beginPath(); g.arc(x,y,rr-0.5,Math.PI*1.06,Math.PI*1.48); g.stroke();
+  if(o.flash>0){   /* 弹反白闪 + 扩散环 */
+    const f=Math.min(1,o.flash/0.12);
+    g.globalCompositeOperation='lighter';
+    g.globalAlpha=0.75*f; g.fillStyle=PAL.white;
+    g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.fill();
+    g.globalAlpha=0.8*f; g.strokeStyle=PAL.white; g.lineWidth=2;
+    g.beginPath(); g.arc(x,y,rr*(1+(1-f)*0.5),0,Math.PI*2); g.stroke();
+  }
+  g.restore();
+}
+function shieldOrbR(visS,unitW){   /* v1.7: 护罩半径随机体缩放: 突击16.5/均衡18/重装21.9 (放大差异保证肉眼可辨) */
+  const s=visS||1;
+  return 11*s+7*s*s;
+}
 function drawDynamicLights(){
   if(PERF.qLevel===0||typeof dynLights==='undefined'||!dynLights||!dynLights.length)return;
   ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -263,8 +344,10 @@ function drawHullPreview(k,x,y,w,h){
 }
 function drawTank(x,y,ang,o){
   const s=o.s===undefined?1:o.s, accent=o.trim||PAL.cyan;   /* s 缺省=1: 修 drawHelpScene 场景 NaN */
-  unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
-  glow(x+Math.cos(ang+Math.PI)*9*s,y+Math.sin(ang+Math.PI)*9*s,12*s,accent,0.13);
+  if(!o.ghost){   /* v1.7: 残影剪影无落影无辉光 */
+    unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
+    glow(x+Math.cos(ang+Math.PI)*9*s,y+Math.sin(ang+Math.PI)*9*s,12*s,accent,0.13);
+  }
   ctx.save(); ctx.translate(Math.round(x),Math.round(y));
   ctx.rotate(Math.round(ang/(Math.PI/24))*(Math.PI/24));
   px(-11*s,-9*s,22*s,5*s,PAL.shadow); px(-11*s,4*s,22*s,5*s,PAL.shadow);
@@ -341,15 +424,10 @@ function drawPlayer(){
   drawTank(pxp,pyp,p.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
     turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
     muzzle:v.trim,twin:!!v.twin,antenna:true,core:true,dist:p.dist,flash:0});
-  if(p.shieldT>0||p.shieldGrace>0){
-    const a=clamp(p.shieldT/0.5,0.25,1);
-    glow(pxp,pyp,28,PAL.aqua,0.18*a);
-    ctx.save(); ctx.translate(pxp,pyp); ctx.rotate(ST.t*3);
-    ctx.globalAlpha=a;
-    ctx.strokeStyle=v.ring||PAL.aqua; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.stroke();
-    for(let i=0;i<6;i++){ const an=i/6*Math.PI*2;
-      px(Math.cos(an)*15-2,Math.sin(an)*15-2,4,4,i%2?PAL.white:PAL.aqua); }
-    ctx.globalAlpha=1; ctx.restore();
+  if(p.shieldT>0||p.shieldGrace>0){   /* v1.7: 3D 等离子护罩球, 半径随机体适配 */
+    const a=clamp(p.shieldT/0.5,0.25,1), sc2=hullCfg().shield;
+    drawShieldOrb(ctx,pxp,pyp,shieldOrbR(v.s),0,v.ring||PAL.aqua,a,
+      {age:p.shieldAge,flash:p.shieldFlash||0,fortress:!!sc2.fortress});
   }
 }
 function drawShots(){
@@ -446,16 +524,20 @@ function drawRadar(x,y,w,h){
   if(player){ upx(sx(player)-1,sy(player)-1,3,3,PAL.cyan); }
   uctx.restore();
 }
-/* v1.6: 冲刺残影 — v15 生效时由 v15art 随 HD 队列输出, 此处为像素回退 */
+/* v1.7: 冲刺残影 — 3条深色同形剪影 (0.09/0.17/0.25s 历史位), v15 生效时走 HD 队列 */
 function drawGhosts(){
-  if(!ghosts||!ghosts.length)return;
   if(typeof V15!=='undefined'&&V15.ok&&V15.spec&&V15.spec('player',RUN.hull||'balanced'))return;
+  if(!player||!player.ghostA||player.ghostA<0.02)return;
   const v=hullCfg().vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
-  for(const g of ghosts){
-    ctx.save(); ctx.globalAlpha=0.30*(g.life/g.t);
-    drawTank(g.x,g.y,g.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
-      turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
-      muzzle:v.trim,twin:!!v.twin,antenna:false,core:true,dist:0,flash:0});
+  const ds=[40,80,120], al=[0.92,0.78,0.62], dk=[0.5,0.42,0.34];
+  for(let i=0;i<3;i++){
+    const e=trailAtDist(player,ds[i]); if(!e)continue;
+    ctx.save(); ctx.globalAlpha=al[i]*player.ghostA;
+    drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk[i]),hi:shade(vc(v.hi)||PAL.white,dk[i]),
+      trim:shade(vc(v.trim)||PAL.cyan,dk[i]),turret:shade(vc(v.turret)||PAL.lite,dk[i]),
+      barrel:shade(vc(v.barrel)||PAL.steel,dk[i]),hullDk:shade(v.dk||PAL.dark,dk[i]*0.7),
+      track:shade(v.track||PAL.steel,dk[i]),muzzle:shade(v.trim||PAL.cyan,dk[i]),
+      twin:!!v.twin,antenna:false,core:false,dist:0,flash:0,ghost:true});
     ctx.restore();
   }
 }
@@ -522,7 +604,7 @@ function drawHUD(){
   hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
   hudChip(26,cy,'➤',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:1),PAL.aqua,p.charging||p.charge>0);
   hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
-  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/0.95,PAL.cyan,p.shieldCd<=0);
+  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
   /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
   const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
   if(touchOn)txt('◆ '+RUN.pts+'  EQ '+eqn,VW-6,33,7,PAL.gold,'right');
@@ -737,9 +819,7 @@ function drawHelpScene(pg,x,y,w,h){
     bar(cx-20,cy+18,60,4,0.6+Math.sin(t*3)*0.3,PAL.lime);
   }
   else if(pg===6){ if(!vTank(0,-2,Math.PI/2,'balanced'))tankAt(0,-2,Math.PI/2);
-    ctx.save();ctx.translate(cx,cy-2);ctx.rotate(t*3);
-    for(let i=0;i<6;i++){const an=i/6*Math.PI*2;px(Math.cos(an)*15-2,Math.sin(an)*15-2,4,4,i%2?PAL.white:PAL.lite);}
-    ctx.restore();
+    drawShieldOrb(ctx,cx,cy-2,13,PAL.aqua,0.92,{});   /* v1.7: 护盾页示意=等离子球 */
     px(cx-38,cy-4,7,3,PAL.red); px(cx-30,cy-4,6,3,PAL.gold); px(cx-24,cy-5,2,5,PAL.gold);
   }
   else if(pg===7){ if(!vTruck(34,6,-0.5))truckAt(34,6,-0.5);

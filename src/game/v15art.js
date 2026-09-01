@@ -62,6 +62,27 @@ function v15Glow(x,y,r,c,a){
   uctx.save(); uctx.globalCompositeOperation='lighter'; uctx.fillStyle=g;
   uctx.fillRect(x-r,y-r,r*2,r*2); uctx.restore();
 }
+/* ---------- v1.7: 残影实心剪影帧缓存 ----------
+   帧图 source-in 填深色 → 纯色坦克剪影(轮廓100%可读, 不依赖帧内明暗细节);
+   三档色深随距离递减, 懒生成后缓存。绘制尺寸与本体一致 → 形象完全一致。 */
+const GHOST_COL=['#141b2b','#1e2940','#2a3852'];   /* 深蓝黑系三档: 越靠后越浅 */
+V15.ghostFrame=function(sp,idx,lv){
+  if(!V15._gh)V15._gh=new Map();
+  const key=sp.img+':'+idx+':'+lv;
+  if(V15._gh.has(key))return V15._gh.get(key);
+  const im=v15Image(sp.img); if(!im)return null;
+  const cw=im.naturalWidth/4, ch=im.naturalHeight/4;
+  const cv2=document.createElement('canvas');
+  cv2.width=Math.max(2,Math.ceil(cw)); cv2.height=Math.max(2,Math.ceil(ch));
+  const g2=cv2.getContext('2d');
+  g2.imageSmoothingEnabled=true;
+  g2.drawImage(im,(idx%4)*cw,(idx>>2)*ch,cw,ch,0,0,cv2.width,cv2.height);
+  g2.globalCompositeOperation='source-in';
+  g2.fillStyle=GHOST_COL[lv]||GHOST_COL[0];
+  g2.fillRect(0,0,cv2.width,cv2.height);
+  V15._gh.set(key,cv2);
+  return cv2;
+};
 /* ---------- 高清层输出: 队列在像素阶段收集, main.js 抬升像素层后统一绘制 ---------- */
 V15.flushHd=function(ox,oy){
   if(!V15.queue.length)return;
@@ -72,7 +93,14 @@ V15.flushHd=function(ox,oy){
     for(const q of V15.queue){
       if(!isFinite(q.x)||!isFinite(q.y))continue;
       const sp=q.spec, w=q.w||sp.w;
-      if(q.kind==='ghost'){ v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha); continue; }   /* v1.6 残影: 无影无光 */
+      if(q.kind==='ghost'){   /* v1.7: 深色剪影帧, 无影无光, 关平滑保轮廓锐利 */
+        const f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
+        uctx.save(); uctx.imageSmoothingEnabled=false;
+        uctx.globalAlpha=q.alpha!==undefined?q.alpha:0.8;
+        if(f)uctx.drawImage(f,Math.round(q.x-w/2),Math.round(q.y-w/2),w,w);
+        else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha);
+        uctx.restore(); continue;
+      }
       if(!v15Image(sp.img))continue;
       /* 落影: 俯视单位椭圆影贴脚 (小而淡, 别压过暖光池) */
       uctx.save(); uctx.globalAlpha=q.boss?0.36:0.26; uctx.fillStyle=PAL.shadow;
@@ -90,13 +118,11 @@ V15.flushHd=function(ox,oy){
         uctx.globalAlpha=Math.min(0.5,q.flash*1.7); uctx.fillStyle=PAL.white;
         uctx.beginPath(); uctx.ellipse(q.x,q.y,w*0.36,w*0.36,0,0,Math.PI*2); uctx.fill(); uctx.restore(); }
       if(q.kind==='player'){
-        if(q.shield){ uctx.save(); uctx.translate(q.x,q.y); uctx.rotate(ST.t*3);
-          uctx.globalAlpha=q.shieldA; uctx.strokeStyle=q.ringCol; uctx.lineWidth=1.5;
-          uctx.beginPath(); uctx.arc(0,0,Math.max(17,w*0.34),0,Math.PI*2); uctx.stroke();
-          for(let i=0;i<6;i++){ const an=i/6*Math.PI*2;
-            uctx.fillStyle=i%2?PAL.white:PAL.aqua;
-            uctx.fillRect(Math.cos(an)*Math.max(15,w*0.30)-2,Math.sin(an)*Math.max(15,w*0.30)-2,4,4); }
-          uctx.restore(); }
+        if(q.shield){   /* v1.7: 3D 等离子护罩球 (随机体适配) */
+          const vv=(HULLS[RUN.hull]||HULLS.balanced).vis||{};
+          drawShieldOrb(uctx,q.x,q.y,shieldOrbR(vv.s,w),q.ringCol,q.shieldA,
+            {age:q.shieldAge,flash:q.shieldFlash,fortress:q.fortress});
+        }
       } else if(q.kind==='wing'){
         uctx.globalAlpha=1; uctx.fillStyle=PAL.panel2; uctx.fillRect(q.x-10,q.y-Math.max(14,w*0.42),20,2);
         uctx.fillStyle=sp.glow||PAL.cyan; uctx.fillRect(q.x-10,q.y-Math.max(14,w*0.42),Math.max(1,Math.round(20*q.hp)),2);
@@ -122,14 +148,18 @@ function v15Player(){
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
   const sp=v15Spec('player',RUN.hull||'balanced');
   if(!sp||!v15Image(sp.img))return false;
-  /* v1.6: 冲刺残影先于本体入队 (flushHd 按序绘制), 渐隐+微缩强化速度感 */
-  if(typeof ghosts!=='undefined'&&ghosts.length){
-    for(const g of ghosts)V15.queue.push({kind:'ghost',spec:sp,x:g.x,y:g.y,ang:g.a,
-      w:sp.w*(0.94-0.08*(1-g.life/g.t)),alpha:0.32*(g.life/g.t)});
+  /* v1.7: 冲刺残影 — 按距离回溯采样 3 条实心深色剪影 (40/80/120px = 1~3 车身长, 保证互不遮挡), 先于本体入队 */
+  if(player.ghostA>0.02&&player.trail&&player.trail.length>4){
+    const ds=[40,80,120], al=[0.92,0.78,0.62];
+    for(let i=0;i<3;i++){
+      const e=trailAtDist(player,ds[i]); if(!e)continue;
+      V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,alpha:al[i]*player.ghostA,lv:i});
+    }
   }
-  const v=hullCfg().vis||{};
+  const v=hullCfg().vis||{}, sc2=hullCfg().shield;
   V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
+    shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||sp.glow||PAL.aqua,od:COMBO.od,sprint:p.sprintG<0.95});
   return true;
 }

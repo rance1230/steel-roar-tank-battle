@@ -381,6 +381,15 @@ addEventListener('resize',fit);fit();
 let gAlpha=0; /* 当前渲染处于两个逻辑步之间的比例(0~1) */
 function IPx(o){ return o.ox===undefined?o.x:o.ox+(o.x-o.ox)*gAlpha; }
 function IPy(o){ return o.oy===undefined?o.y:o.oy+(o.y-o.oy)*gAlpha; }
+
+/* v1.7: 颜色压暗 — 向深蓝黑 #0d121c 混合 (k=保留原色比例), 冲刺残影剪影用 */
+function shade(c,k){
+  if(typeof c!=='string'||c[0]!=='#')return c;
+  const h=c.slice(1), n=h.length===3?h.split('').map(x=>x+x).join(''):h;
+  const r=parseInt(n.slice(0,2),16),g=parseInt(n.slice(2,4),16),b=parseInt(n.slice(4,6),16);
+  const m=(v,d)=>Math.round(v*k+d*(1-k));
+  return '#'+[m(r,13),m(g,18),m(b,28)].map(v=>('0'+v.toString(16)).slice(-2)).join('');
+}
 </script>
 <script>
 "use strict";
@@ -393,7 +402,7 @@ const PERF={
   show:false,fps:60,_frames:0,_ft:0,updateMs:0,renderMs:0,updates:0,
   quality:'AUTO',qLevel:2,_qT:0,
   mul(){ return [0.4,0.7,1][this.qLevel]; },
-  maxParts(){ return [200,320,420][this.qLevel]; },
+  maxParts(){ return [240,380,560][this.qLevel]; },   /* v1.7: 地形特效增强后上调 */
 };
 const STEP=1000/60;
 let _last=0,_acc=0,_UPDATE=null,_RENDER=null;
@@ -911,25 +920,61 @@ function initMotes(){
 }
 function floater(x,y,txt,col,size,life){ const l=life||0.9; floats.push({x,y,t:l,tm:l,txt,col,size:size||7}); }
 /* ---------- v1.6: 地形行进特效 (玩家/敌军共用) ----------
-   按行进所在 tile 与关卡主题出粒子: 水面溅花+涟漪 / 减速区搅动 / 地面扬尘(沙·雪·灰随主题) */
+   v1.7 增强: 粒子量/尺寸/寿命上调, 涟漪双圈错峰, 减速区涡旋搅动, 冲刺速度线;
+   河面语义随关卡分化: L3雨=水花 L5雪=冰晶 L7终战=熔岩 (tid3), 按 RUN.lvl 区分 */
+let _rippleTgl=false;   /* 涟漪错峰: 相邻两次触发交替内圈/外圈, 避免高频叠加成涂抹 */
 function terrainMoveFx(x,y,ang,tid,sprint,heavy){
-  const fx=themeCfg().fx, sc=(heavy?1.5:1)*(sprint?1.5:1);
+  const fx=themeCfg().fx, sc=(heavy?1.6:1)*(sprint?1.6:1), m=PERF.mul();
   const bx=x-Math.cos(ang)*10, by=y-Math.sin(ang)*10;
-  if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 扩散涟漪 */
-    const n=Math.max(4,Math.round(4*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-4,4),by+rnd(-4,4),
-      rnd(-20,20)-Math.cos(ang)*24,rnd(-46,-14),rnd(0.28,0.5),i%3?fx.water:PAL.white,rnd(1.2,2.6)*sc,180);
-    const r=part(bx,by,0,0,0.42,fx.water,7*sc,0); r.ring=true; r.a=0.45;
-    if(sprint){ const c=part(bx,by,0,0,0.2,PAL.white,3.5,0); c.core=true; }
-  } else if(tid===4){                            /* 减速区: 油污/能量/熔岩搅动 (亮色火花保证可见度) */
-    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-5,5),by+rnd(-5,5),rnd(-10,10),rnd(-30,-12),rnd(0.4,0.8),
-      i%2?fx.slow:PAL.white,rnd(1.4,3)*sc);
-  } else {                                       /* 地面: 扬尘/雪沫, 冲刺拖尾烟团 */
-    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-3,3),by+rnd(-3,3),
-      rnd(-14,14)-Math.cos(ang)*16,rnd(-26,-8),rnd(0.3,0.6),i%4===0?PAL.smoke:fx.dust,rnd(1.2,2.4)*sc);
-    if(sprint)part(bx,by,rnd(-8,8)-Math.cos(ang)*10,rnd(-18,-8),rnd(0.5,0.9),fx.dust,rnd(3,4.6),0,0.35);
+  const cB=-Math.cos(ang), sB=-Math.sin(ang);   /* 车尾方向单位向量 */
+  if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 双圈涟漪 */
+    const lava=RUN.lvl===6, ice=RUN.lvl===4;
+    const n=Math.max(5,Math.round((ice?5:7)*sc*m));
+    for(let i=0;i<n;i++){
+      const p=part(bx+rnd(-5,5),by+rnd(-5,5),
+        cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+(ice?rnd(-18,-5):rnd(lava?-54:-80,lava?-26:-32)),
+        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.4,3.2)*sc, ice?140:(lava?90:240));
+      if(i%5===0)p.core=true;                    /* 亮芯水珠/岩浆滴 */
+      if(ice&&i%4===0)p.ray=true;                /* 冰晶闪光拖尾 */
+    }
+    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.55,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.7; }   /* 涟漪双圈: 错峰发射保圆环可读 */
+    else { const r2=part(bx,by,0,0,0.38,fx.water,14*sc,0); r2.ring=true; r2.a=0.6; }
+    if(sprint&&Math.random()<0.4){ const r3=part(bx,by,0,0,0.44,PAL.white,11*sc,0); r3.ring=true; r3.a=0.45;
+      const c=part(bx,by,0,0,0.22,PAL.white,4*sc,0); c.core=true; }
+    if(lava){ addLight(bx,by,17,PAL.ember,0.34,0.22);                      /* 岩浆橙光 */
+      for(let i=0;i<3;i++){ const e=part(bx+rnd(-6,6),by+rnd(-6,6),rnd(-10,10),rnd(-52,-24),rnd(0.6,1.2),
+        i%2?PAL.white:PAL.gold,rnd(1.4,2.4)*sc,-26); e.core=true; } }      /* 余烬白金芯 */
+  } else if(tid===4){                            /* 减速区: 油污/能量/熔岩涡旋搅动 + 亮色火花(白/金保对比) */
+    const n=Math.max(5,Math.round(5*sc*m));
+    for(let i=0;i<n;i++){
+      const a=rnd(Math.PI*2), rr=rnd(6,15);      /* 绕车尾切向速度 → 涡旋感 */
+      const p=part(bx+Math.cos(a)*rr,by+Math.sin(a)*rr,
+        -Math.sin(a)*rnd(30,70), Math.cos(a)*rnd(30,70)-rnd(12,36),
+        rnd(0.5,1), [fx.slow,PAL.white,PAL.gold][i%3], rnd(1.6,3.4)*sc, -22);
+      if(i%3===0)p.core=true;
+    }
+    const r0=part(bx,by,0,0,0.4,fx.slow,7*sc,0); r0.ring=true; r0.a=0.45;   /* 搅动光环 */
+    if(sprint){ const r=part(bx,by,0,0,0.36,PAL.white,9*sc,0); r.ring=true; r.a=0.5; }
+    addLight(bx,by,15,RUN.lvl===3?PAL.gold:fx.slow,0.3,0.22);
+  } else {                                       /* 地面: 扬尘/雪沫/灰烬, 冲刺烟团+速度线 */
+    const snow=RUN.lvl===4, ash=RUN.lvl===6;
+    const n=Math.max(3,Math.round(4*sc*m));
+    for(let i=0;i<n;i++){
+      const p=part(bx+rnd(-4,4),by+rnd(-4,4),
+        cB*rnd(14,34)+rnd(-16,16), sB*rnd(14,34)+(snow?rnd(-18,-6):rnd(-30,-10)),
+        rnd(snow?0.5:0.4,snow?0.95:0.8), i%4===0?PAL.smoke:fx.dust,
+        (snow?rnd(1.8,3.4):rnd(1.4,3))*sc, snow?36:0);
+      if(snow&&i%4===1)p.core=true;              /* 雪沫白芯 */
+      if(ash&&i%5===0){ p.col=PAL.ember; p.core=true; p.grav=-14; }   /* 灰烬火星 */
+      if(RUN.lvl===0&&i%3===0)p.col='#d9a860';   /* 沙漠暖色高光 */
+    }
+    if(sprint){
+      for(let i=0;i<2;i++)part(bx+rnd(-5,5),by+rnd(-5,5),cB*rnd(20,44)+rnd(-10,10),sB*rnd(20,44)-rnd(6,16),
+        rnd(0.7,1.1),i?fx.dust:PAL.smoke,rnd(3.6,6)*sc,0,0.42);      /* 大烟团 ×2 */
+      for(let i=0;i<2;i++){ const p=part(bx,by,cB*rnd(90,150),sB*rnd(90,150),0.16,fx.dust,rnd(1.6,2.4));
+        p.ray=true; }                                                /* 冲刺速度线 */
+      if(Math.random()<0.3)part(bx,by,cB*rnd(40,80)+rnd(-20,20),sB*rnd(40,80)-rnd(10,40),0.4,PAL.lite,rnd(1,1.8),260); /* 碎石 */
+    }
   }
 }
 function addLight(x,y,r,col,a,life){
@@ -953,8 +998,26 @@ function cameraKick(power,ang,zoom){
   cam.kickY=(cam.kickY||0)+Math.sin(ang)*power*0.45;
   cam.zoom=Math.min(0.075,(cam.zoom||0)+(zoom===undefined?power*0.003:zoom));
 }
+/* ---------- v1.7: 震动分级 ----------
+   原普通爆炸强度(kick 3)=最大档, 仅战斗单位击破触发; 命中按弹药分级:
+   T0机枪命中 < T1主炮命中/冲撞 < T2导弹/空袭/受伤 < T3单位击破(封顶)。
+   shakeHold: 击破瞬间暂停衰减(延长不增强), BOSS击破/玩家阵亡用。 */
+const SHAKE_T=[
+  {p:0.35,z:0},       /* T0 微 */
+  {p:0.9, z:0.004},   /* T1 轻 */
+  {p:1.8, z:0.009},   /* T2 中 */
+  {p:3.0, z:0.014},   /* T3 最大 = 原爆炸档 */
+];
+function kickTier(t,ang){
+  const d=SHAKE_T[clamp(t|0,0,3)];
+  cameraKick(d.p,ang,d.z);
+  return d.p;
+}
+function shakeHold(sec){ ST.shakeHold=Math.max(ST.shakeHold||0,sec); }
 function updCameraFX(dt){
   if(!cam)return;
+  if(ST.shakeHold>0)ST.shakeHold-=dt;            /* hold 期间震动不衰减 */
+  else ST.shake=Math.max(0,ST.shake-dt*11);
   const k=Math.max(0,1-dt*8.5), z=Math.max(0,1-dt*5.5);
   cam.kickX=(cam.kickX||0)*k; cam.kickY=(cam.kickY||0)*k; cam.zoom=(cam.zoom||0)*z;
   if(Math.abs(cam.kickX)<0.03)cam.kickX=0;
@@ -976,7 +1039,7 @@ function hitFx(x,y,kind,ang){
 }
 /* ---------- 七层爆炸 (视觉设计第一版 §10):
    1白闪 2火球 3冲击波 4火花 5碎片 6烟雾 7地面弹坑(decal) ---------- */
-function explodeAt(x,y,r,dmg,big,cause,chainDepth){
+function explodeAt(x,y,r,dmg,big,cause,chainDepth,kick){
   const q=PERF.mul(), R=big?1.7:1;
   addLight(x,y,r*(big?4.4:3.2),big?PAL.orange:PAL.gold,big?0.54:0.38,big?0.48:0.32);
   part(x,y,0,0,big?0.09:0.06,PAL.white,r*0.55*R,0).core=true;              /* 1 白闪 */
@@ -993,7 +1056,7 @@ function explodeAt(x,y,r,dmg,big,cause,chainDepth){
   for(let i=0,n=Math.round((big?5:3)*q);i<n;i++)                                                    /* 余烬闪烁 */
     part(x+rnd(-r*0.5,r*0.5),y+rnd(-r*0.5,r*0.5),rnd(-6,6),rnd(-20,-8),rnd(0.8,1.6),PAL.ember,rnd(1,1.8));
   stampScorch(x,y,r*(big?1.8:1.2));                                                        /* 7 弹坑 */
-  cameraKick(big?7:3,rnd(Math.PI*2),big?0.038:0.014);
+  kickTier(kick===undefined?(big?3:1):kick,rnd(Math.PI*2));   /* v1.7: 震动按档位, 命中轻/击破重 */
   if(big)SFX.bigboom(x,y);else SFX.boom(x,y);
   chainDepth=chainDepth||0;
   if(dmg>0&&chainDepth<=CHAIN_MAX){ const st=calcStats();   /* 连锁深度上限 */
@@ -1071,10 +1134,9 @@ function enterBreach(e){
   p.vx*=0.05; p.vy*=0.05;
   e.stun=Math.max(e.stun,0.5);
   STATS.breachLocks++;
-  ST.shake=Math.min(10,ST.shake+3);
   burst((p.x+e.x)/2,(p.y+e.y)/2,10,[PAL.white,PAL.gold],90,0.3);
   SFX.ram((p.x+e.x)/2,(p.y+e.y)/2);
-  cameraKick(3,Math.atan2(e.y-p.y,e.x-p.x),0.01);
+  kickTier(1,Math.atan2(e.y-p.y,e.x-p.x));   /* v1.7: 顶入→轻档 */
   floater(e.x,e.y-e.r-10,T('breachMsg'),PAL.gold,8,0.35);
 }
 function breachFire(e,stagger){
@@ -1083,11 +1145,10 @@ function breachFire(e,stagger){
   const dmg=24*st.atk*1.35*hullCfg().breach;   /* 零距离炮击 ×1.35 ×机型Breach倍率 */
   HITSTOP=0.05;
   STATS.breachFires++;
-  ST.shake=Math.min(12,ST.shake+7);
   const fx=p.x+Math.cos(p.a)*(p.r+10), fy=p.y+Math.sin(p.a)*(p.r+10);   /* 特效前移到接触点, 不糊玩家 */
   flashFx(fx,fy,26,true);
   burst(fx,fy,12,[PAL.gold,PAL.white,PAL.red],130,0.45);
-  cameraKick(7,p.a,0.032);
+  kickTier(2,p.a);   /* v1.7: 零距炮击→中档; 若击杀由 onEnemyDead 补最大档 */
   SFX.cannon(fx,fy); SFX.bigboom(fx,fy);
   const ev=applyDamage(e,dmg,'breach');
   if(stagger||e.boss){                          /* Fortress: 不可击飞, 大幅硬直 */
@@ -1117,7 +1178,7 @@ function parryFeedback(perfect,s){
       const p2=part(cx+Math.cos(an+0.78)*6,cy+Math.sin(an+0.78)*6,Math.cos(an+0.78)*90,Math.sin(an+0.78)*90,0.15,PAL.lite,3.5); p2.ray=true; }
     burst(cx,cy,8,[PAL.white,PAL.lite],110,0.3);
     addLight(cx,cy,34,PAL.white,0.34,0.16);
-    cameraKick(2.6,s.ang,0.012);
+    kickTier(2,s.ang);   /* v1.7: Perfect弹反→中档 */
     SFX.reflect(cx,cy,true);
   }else{
     STATS.parryN++;
@@ -1125,7 +1186,7 @@ function parryFeedback(perfect,s){
     for(let i=0;i<6;i++){ const a=rnd(Math.PI*2);   /* 小型白蓝接触环 */
       part(cx+Math.cos(a)*5,cy+Math.sin(a)*5,Math.cos(a)*46,Math.sin(a)*46,0.12,i%2?PAL.white:PAL.lite,2); }
     addLight(cx,cy,22,PAL.aqua,0.22,0.1);
-    cameraKick(1.4,s.ang,0.006);
+    kickTier(0,s.ang);   /* v1.7: 普通弹反→微档 */
     SFX.reflect(cx,cy,false);
   }
 }
@@ -1161,7 +1222,7 @@ function addCombo(v){
   if(COMBO.tier>before){
     floater(player.x,player.y-34,TF('comboUp',{n:COMBO.tier*10}),COMBO.tier>=4?PAL.red:PAL.gold,10);
     SFX.combo(COMBO.tier);
-    if(COMBO.tier>=2)ST.shake=Math.min(10,ST.shake+2+COMBO.tier*0.5);
+    if(COMBO.tier>=2)kickTier(1);   /* v1.7: 连击升段→轻档震动 */
     burst(player.x,player.y,12+COMBO.tier*4,[PAL.gold,PAL.white],80+COMBO.tier*15,0.4);
   }
 }
@@ -1172,7 +1233,20 @@ function updCombo(dt){
   COMBO.flash=Math.max(0,COMBO.flash-dt);
 }
 let shotsFired=0;
-let ghosts=[];   /* v1.6: 冲刺残影快照 {x,y,a,life,t} */
+/* v1.7: 冲刺残影 — 位置历史环(60Hz采样, 留~1s), 冲刺时恒显3条深色同形剪影;
+   按距离回溯采样(不受河道减速影响), 空间间距恒定 ≈ 一车身长 */
+function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.a}); if(p.trail.length>90)p.trail.shift(); }
+function trailAtDist(p,distBack){
+  const t=p.trail; if(!t||t.length<2)return null;
+  let need=distBack;
+  for(let i=t.length-1;i>0;i--){
+    const dx=t[i].x-t[i-1].x, dy=t[i].y-t[i-1].y, d=Math.hypot(dx,dy);
+    if(d>0&&need<=d){ const k=need/d;
+      return {x:t[i].x+(t[i-1].x-t[i].x)*k, y:t[i].y+(t[i-1].y-t[i].y)*k, a:t[i].a}; }
+    need-=d;
+  }
+  return t[0];
+}
 
 /* ---------- 玩家 ---------- */
 function makePlayer(){
@@ -1180,8 +1254,8 @@ function makePlayer(){
   return {x:WORLDW/2,y:WORLDH/2,ox:WORLDW/2,oy:WORLDH/2,a:-Math.PI/2,hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
-    shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,
-    sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0};
+    shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
+    sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,trail:[]};
 }
 function shieldActive(){ return player.shieldT>0||player.shieldGrace>0; }
 
@@ -1265,23 +1339,23 @@ function spawnBoss(){
     s2.fireCd*=0.85; s2.speed*=1.08; s2.score=Math.round(s2.score*1.5);
     s2.a=Math.atan2(player.y-ey,player.x-ex);
   }
-  ST.shake=Math.min(10,ST.shake+5); SFX.horn(); BGM.play('boss',true);
+  kickTier(2); SFX.horn(); BGM.play('boss',true);   /* v1.7: BOSS登场→中档 */
 }
 function hurtEnemy(e,dmg,cause){ return applyDamage(e,dmg,cause); }  /* 兼容旧入口 */
 function onEnemyDead(e,cause,ev){
   ev=ev||{chainDepth:0,id:0};
   addCombo(e.boss?5:1);
   STATS.kills++;
-  explodeAt(e.x,e.y,e.boss?34:16,0,e.boss,cause);
+  explodeAt(e.x,e.y,e.boss?34:16,0,e.boss,cause,0,3);   /* v1.7: 击破=最大档震动(封顶) */
   if((cause==='breach'||cause==='knockback'||cause==='collision'||cause==='chainExplosion')&&ev.chainDepth<CHAIN_MAX){
     const stc=calcStats();
     STATS.chainBoom++;
-    explodeAt(e.x,e.y,30,16*stc.atk,true,'chainExplosion',ev.chainDepth+1);
+    explodeAt(e.x,e.y,30,16*stc.atk,true,'chainExplosion',ev.chainDepth+1,2);
   }
   burst(e.x,e.y,e.boss?24:10,[PAL.steel,PAL.dark,PAL.lite],e.boss?120:70,0.6);
   RUN.score+=Math.round(e.score*rewardMul()); RUN.kills++; ST.killsLevel++;
   floater(e.x,e.y-24,'+'+Math.round(e.score*rewardMul()),e.boss?PAL.gold:PAL.lite,e.boss?12:8);
-  if(e.boss){ ST.shake=Math.min(12,ST.shake+6); floater(e.x,e.y-30,'BOSS DOWN!',PAL.gold,13); }
+  if(e.boss){ shakeHold(0.35); floater(e.x,e.y-30,'BOSS DOWN!',PAL.gold,13); }   /* 震动延长不增强 */
   rollDrops(e,cause);
 }
 /* ---------- 掉落 ---------- */
@@ -1330,10 +1404,9 @@ function fireCannon(){ const st=calcStats(); const a=player.a+rnd(-0.02,0.02);
   const mx=player.x+Math.cos(player.a)*17,my=player.y+Math.sin(player.a)*17;
   shot(mx,my,a,320,24*st.atk,true,'shell',{cause:'shot'});
   player.x-=Math.cos(a)*1.5;player.y-=Math.sin(a)*1.5;
-  ST.shake=Math.min(10,ST.shake+1.2);
   flashFx(mx,my,9);                                   /* 炮口火光 (§VFX) */
   addLight(mx,my,22,PAL.gold,0.28,0.11);
-  cameraKick(1.5,a,0.006);
+  cameraKick(0.5,a,0.0015);                           /* v1.7: 后坐力仅微踢, 不再震屏 */
   part(mx,my,Math.cos(a)*40,Math.sin(a)*40,0.09,PAL.gold,3); SFX.cannon(mx,my); }
 function fireMissile(){
   const st=calcStats(), h=hullCfg();
@@ -1349,7 +1422,7 @@ function fireMissile(){
     part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
     addLight(mx,my,18,PAL.white,0.24,0.1);
   }
-  cameraKick(1.0,player.a,0.004);
+  cameraKick(0.45,player.a,0.0015);   /* v1.7: 发射微踢 */
   SFX.missile(player.x,player.y);
 }
 function callAirstrike(){
@@ -1384,6 +1457,7 @@ function updPlayer(dt){
         p.inv=Math.max(0,p.inv-dt); p.flash=Math.max(0,p.flash-dt);
         p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt); p.shieldAge+=dt;
         p.strikeCd=Math.max(0,p.strikeCd-dt);
+        p.ghostA=Math.max(0,(p.ghostA||0)-dt*4);   /* v1.7: 锁定期间残影淡出 */
         return;   /* 锁定期间只等待主炮指令 */
       }
     }
@@ -1417,6 +1491,8 @@ function updPlayer(dt){
   p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt);
   p.shieldAge+=dt;
   p.shieldGrace=Math.max(0,p.shieldGrace-dt);
+  if(p.shieldFlash>1)p.shieldFlash=Math.max(1,p.shieldFlash);   /* >1=摆拍冻结 */ 
+  else p.shieldFlash=Math.max(0,p.shieldFlash-dt);
   if(p.shieldT===0&&p.shieldGrace===0&&p.lastShieldWasActive){p.shieldGrace=0.18;p.lastShieldWasActive=false;}
   if(p.shieldT>0)p.lastShieldWasActive=true;
   p.strikeCd=Math.max(0,p.strikeCd-dt);
@@ -1435,13 +1511,12 @@ function updPlayer(dt){
     stampTracks(p.x-Math.cos(p.a)*10,p.y-Math.sin(p.a)*10,p.a,sprint);   /* §7 履带痕迹 decal */
     terrainMoveFx(p.x,p.y,p.a,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
   }
-  if(sprint&&p.moving){                            /* v1.6: 冲刺残影 (0.07s 间隔, 存活0.28s≈4个) */
-    p.ghostT=(p.ghostT||0)-dt;
-    if(p.ghostT<=0){ p.ghostT=0.07;
-      ghosts.push({x:p.x,y:p.y,a:p.a,life:0.28,t:0.28}); }
-  }
+  /* v1.7: 冲刺残影 — 冲刺中恒显3条深色剪影(见 v15art/render), 松开 0.25s 淡出 */
+  if(sprint&&p.moving)p.ghostA=Math.min(1,p.ghostA+dt*8);
+  else p.ghostA=Math.max(0,p.ghostA-dt*4);
   if(sprint&&p.moving&&Math.random()<0.5)part(p.x-Math.cos(p.a)*12,p.y-Math.sin(p.a)*12,-Math.cos(p.a)*30+rnd(-10,10),-Math.sin(p.a)*30+rnd(-10,10),0.25,PAL.gold,2);
   if(COMBO.od&&p.moving&&Math.random()<0.7)part(p.x-Math.cos(p.a)*11,p.y-Math.sin(p.a)*11,-Math.cos(p.a)*45+rnd(-12,12),-Math.sin(p.a)*45+rnd(-12,12),0.3,PAL.gold,rnd(1.5,2.5));
+  trailRec(p);   /* v1.7: 残影位置历史 */
 }
 
 /* 接触/Breach 判定(对被晕单位同样生效) */
@@ -1463,11 +1538,10 @@ function tryContact(e){
         const kb=e.boss?4:26;
         e.x+=nx2/nl*kb; e.y+=ny2/nl*kb;
         pl.x-=nx2/nl*(e.boss?10:6); pl.y-=ny2/nl*(e.boss?10:6);
-        ST.shake=Math.min(10,ST.shake+(crit?8:4));
         burst((e.x+pl.x)/2,(e.y+pl.y)/2,crit?16:8,[PAL.gold,PAL.white,PAL.lite],crit?110:70,0.4);
         if(crit)RUN.score+=25;
         SFX.ram((e.x+pl.x)/2,(e.y+pl.y)/2);
-        cameraKick(crit?6:3,Math.atan2(e.y-pl.y,e.x-pl.x),crit?0.02:0.01);
+        kickTier(crit?2:1,Math.atan2(e.y-pl.y,e.x-pl.x));   /* v1.7: 冲撞分级 */
       } else if(e.touchCd<=0&&pl.inv<=0){
         e.touchCd=1.2; damagePlayer(6,Math.atan2(ny2,nx2),true);
       }
@@ -1514,7 +1588,7 @@ function updEnemies(dt){
             const sdx=(o.x-e.x),sdy=(o.y-e.y),sl=Math.hypot(sdx,sdy)||1;
             o.x+=sdx/sl*12; o.y+=sdy/sl*12; o.ox=o.x; o.oy=o.y;
             e.x-=sdx/sl*8; e.y-=sdy/sl*8;
-            ST.shake=Math.min(10,ST.shake+4); SFX.ram(mx2,my2); cameraKick(4,Math.atan2(o.y-e.y,o.x-e.x),0.012);
+            SFX.ram(mx2,my2); kickTier(1,Math.atan2(o.y-e.y,o.x-e.x));   /* v1.7: 连撞→轻档 */
             endFlight(e);
             break;
           } }
@@ -1532,7 +1606,7 @@ function updEnemies(dt){
         if(e.windT<=0){ e.chgPhase='dash'; e.dashT=0.9;
           const a2=Math.atan2(player.y-e.y,player.x-e.x); e.a=a2;
           e.dashVx=Math.cos(a2)*e.speed*3.2; e.dashVy=Math.sin(a2)*e.speed*3.2;
-          SFX.horn(); ST.shake=Math.min(8,ST.shake+2); }
+          SFX.horn(); kickTier(0); }   /* v1.7: 起跑微震 */
       } else if(e.chgPhase==='dash'){
         bossDash=true; e.dashT-=dt;
         const nx=e.x+e.dashVx*dt, ny=e.y+e.dashVy*dt;
@@ -1540,7 +1614,7 @@ function updEnemies(dt){
         else e.dashT=0;
         if(Math.random()<0.6)part(e.x,e.y,rnd(-24,24),rnd(-24,24),0.35,PAL.dark,rnd(2,4));
         tryContact(e);
-        if(e.dashT<=0){ e.chgPhase=null; e.chg=rnd(5,8); ST.shake=Math.min(10,ST.shake+3); }
+        if(e.dashT<=0){ e.chgPhase=null; e.chg=rnd(5,8); kickTier(1); }
       } else {
         e.chg=(e.chg===undefined?rnd(3,5):e.chg)-dt;
         if(e.chg<=0&&d2p(e)<420&&d2p(e)>150){ e.chgPhase='wind'; e.windT=0.7;
@@ -1617,17 +1691,19 @@ function damagePlayer(dmg,ang,noShield){
   /* §19 要塞盾: 冲撞/地雷/AOE/Boss近战(noShield类)不能完全免疫, 持盾期间减伤60% */
   if(noShield&&shieldActive()&&sc.fortress&&player.shieldAge>sc.perfect)dmg*=0.4;
   if(!noShield&&shieldActive()){
+    player.shieldFlash=0.12;   /* v1.7: 护罩弹反白闪 */
     floater(player.x,player.y-22,T('parry'),PAL.lite,9); SFX.reflect(player.x,player.y,false); return;
   }
   const st=calcStats();
-  player.hp-=dmg*(1-st.def)*h.taken; player.flash=0.25; ST.shake=Math.min(10,ST.shake+2.5); SFX.hurt(player.x,player.y);
+  player.hp-=dmg*(1-st.def)*h.taken; player.flash=0.25; SFX.hurt(player.x,player.y);
   addLight(player.x,player.y,26,PAL.red,0.16,0.18);
-  cameraKick(2.5,ang,0.012);
+  kickTier(2,ang);            /* v1.7: 受伤→中档 */
   burst(player.x,player.y,6,[PAL.red,PAL.white],60,0.3);
   if(player.hp<=0){ player.hp=0; playerDie(); }
 }
 function playerDie(){
-  explodeAt(player.x,player.y,40,0,true);
+  explodeAt(player.x,player.y,40,0,true,'shot',0,3);   /* v1.7: 最大档+延长 */
+  shakeHold(0.35);
   burst(player.x,player.y,30,[PAL.steel,PAL.dark,PAL.red,PAL.gold],140,0.9);
   ST.state='over'; ST.overT=0;
   BGM.play('lose',false);
@@ -1651,16 +1727,16 @@ function updShots(dt){
     let dead=false;
     if(s.life<=0||s.x<0||s.y<0||s.x>WORLDW||s.y>WORLDH)dead=true;
     else if(tileAtPx(s.x,s.y)===5){ dead=true;
-      if(s.kind==='mg')hitFx(s.x,s.y,'metal',s.ang);
-      else explodeAt(s.x,s.y,s.kind==='missile'?30:16,s.friendly?s.dmg:0,false,s.cause); }
+      if(s.kind==='mg'){ hitFx(s.x,s.y,'metal',s.ang); kickTier(0); }
+      else explodeAt(s.x,s.y,s.kind==='missile'?30:16,s.friendly?s.dmg:0,false,s.cause,0,s.kind==='missile'?2:1); }
     if(!dead){
       if(s.friendly){
         Grid.query(s.x,s.y,s.r+22,_gqShot);
         for(const e of _gqShot){
           if(!e.dead&&dist2(s.x,s.y,e.x,e.y)<(e.r+s.r)*(e.r+s.r)){
-            if(s.kind==='mg'){ applyDamage(e,s.dmg,'machinegun'); hitFx(s.x,s.y,'mg',s.ang); burst(s.x,s.y,3,[PAL.gold,PAL.white],50,0.2); }
-            else if(s.kind==='shell'){ hitFx(s.x,s.y,'armor',s.ang); explodeAt(s.x,s.y,18*hullCfg().blast,s.dmg,false,'cannon'); }
-            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30,s.dmg,false,s.refl?'reflect':'missile',0,s.para?{extraCombo:1}:null); }
+            if(s.kind==='mg'){ applyDamage(e,s.dmg,'machinegun'); hitFx(s.x,s.y,'mg',s.ang); burst(s.x,s.y,3,[PAL.gold,PAL.white],50,0.2); kickTier(0); }
+            else if(s.kind==='shell'){ hitFx(s.x,s.y,'armor',s.ang); explodeAt(s.x,s.y,18*hullCfg().blast,s.dmg,false,'cannon',0,1); }
+            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30,s.dmg,false,s.refl?'reflect':'missile',0,2); }
             dead=true; break;
           } }
       } else {
@@ -1679,12 +1755,12 @@ function updShots(dt){
             }
             s.vx=Math.cos(na)*s.spd; s.vy=Math.sin(na)*s.spd; s.life=1.6;
             RUN.score+=30;
-            ST.shake=Math.min(10,ST.shake+(perfect?2.5:1.5));
+            player.shieldFlash=0.12;   /* v1.7: 弹反护罩白闪 */
             parryFeedback(perfect,s);
           } else if(player.inv<=0){
             hitFx(s.x,s.y,'armor',s.ang);
             damagePlayer(s.dmg,s.ang);
-            if(s.kind!=='mg')explodeAt(s.x,s.y,12,0,false);
+            if(s.kind!=='mg')explodeAt(s.x,s.y,12,0,false,null,0,1);
             dead=true;
           }
         }
@@ -1709,7 +1785,7 @@ function updPlanes(dt){
     if(pl.x<-60||pl.x>WORLDW+60)planes.splice(i,1);
   }
   for(let i=bombs.length-1;i>=0;i--){ const b=bombs[i]; b.ox=b.x; b.oy=b.y; b.t-=dt;
-    if(b.t<=0){ explodeAt(b.x,b.y,30,34,false,'shot'); bombs.splice(i,1); } }
+    if(b.t<=0){ explodeAt(b.x,b.y,30,34,false,'shot',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档 */
 }
 function updPickups(dt){
   for(let i=pickups.length-1;i>=0;i--){ const pk=pickups[i];
@@ -1729,8 +1805,7 @@ function updPickups(dt){
 function updParts(dt){
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i];
     p.life-=dt; if(p.life<=0){parts.splice(i,1);continue;}
-    if(!p.ring){ p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||0)*dt; p.vx*=0.98;p.vy*=0.98; } }
-  for(let i=ghosts.length-1;i>=0;i--){ ghosts[i].life-=dt; if(ghosts[i].life<=0)ghosts.splice(i,1); }
+    if(!p.ring){ p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||0)*dt;p.vx*=0.98;p.vy*=0.98; } }
   for(let i=floats.length-1;i>=0;i--){ const f=floats[i];
     f.oy=f.y; f.t-=dt; f.y-=22*dt; if(f.t<=0)floats.splice(i,1); }
 }
@@ -1742,7 +1817,7 @@ function updWeather(dt){
       if(r.y>VH+8){r.y=-8;r.x=rnd(-20,VW+40);} if(r.x<-24)r.x+=VW+48; }
     ST.lightT-=dt;
     if(ST.lightT<=0){ ST.lightT=rnd(4,9);
-      ST.flash=0.25; ST.bolt=genBolt(); ST.shake=Math.min(10,ST.shake+3); SFX.thunder();
+      ST.flash=0.25; ST.bolt=genBolt(); kickTier(1); SFX.thunder();   /* v1.7: 落雷→轻档 */
       if(ST.bolt&&Math.random()<0.6){ const bx=ST.bolt.gx+cam.x,by=ST.bolt.gy+cam.y;
         let best=null,bd=90*90;
         for(const e of enemies){const d=dist2(bx,by,e.x,e.y);if(d<bd){bd=d;best=e;}}
@@ -1989,6 +2064,87 @@ function glow(x,y,r,c,a){
   g.addColorStop(0,rgba(c,a)); g.addColorStop(0.45,rgba(c,a*0.28)); g.addColorStop(1,rgba(c,0));
   ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2); ctx.restore();
 }
+/* ---------- v1.7: 3D 等离子护罩球 (纯代码, 三渲染路径共用; g=目标ctx) ----------
+   分层: 接地影 → 球心等离子底光 → 方向性明暗(左上受光/右下阴影=体积感) →
+   左上镜面高光 → 边缘增亮环 → 球面弧线(要塞盾三向/标准盾经纬) → 环绕能量点
+   (带彗尾) → 闪现电丝 → 外缘描边+左上高光弧 → 弹反白闪+扩散环。 */
+function drawShieldOrb(g,x,y,r,col,alpha,o){
+  o=o||{};
+  const t=ST.t, rc=rgb(col);
+  let rr=r*(1+0.035*Math.sin(t*6));               /* 呼吸脉动 */
+  if(o.age!==undefined&&o.age<0.12)rr*=1.3-(o.age/0.12)*0.3;   /* 展开收缩入场 */
+  rr=Math.max(6,rr);
+  alpha=alpha*(0.9+0.1*Math.sin(t*9));
+  g.save();
+  g.globalAlpha=alpha*0.32; g.fillStyle=PAL.shadow;   /* 地面接触影 */
+  g.beginPath(); g.ellipse(x,y+rr*0.62,rr*0.78,rr*0.2,0,0,Math.PI*2); g.fill();
+  g.globalAlpha=1;
+  g.globalCompositeOperation='lighter';
+  const bg2=g.createRadialGradient(x,y,rr*0.1,x,y,rr);   /* 球心等离子底光 */
+  bg2.addColorStop(0,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.22*alpha).toFixed(3)+')');
+  bg2.addColorStop(0.7,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.1*alpha).toFixed(3)+')');
+  bg2.addColorStop(1,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.3*alpha).toFixed(3)+')');   /* 边缘增亮 */
+  g.fillStyle=bg2; g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.fill();
+  const sp=g.createRadialGradient(x-rr*0.34,y-rr*0.38,0,x-rr*0.34,y-rr*0.38,rr*0.34);   /* 左上镜面高光 */
+  sp.addColorStop(0,'rgba(243,247,255,'+(0.55*alpha).toFixed(3)+')');
+  sp.addColorStop(1,'rgba(243,247,255,0)');
+  g.fillStyle=sp; g.beginPath(); g.arc(x-rr*0.34,y-rr*0.38,rr*0.34,0,Math.PI*2); g.fill();
+  g.globalCompositeOperation='source-over';
+  g.save();   /* 方向性明暗: 光源左上 → 右下渐暗, 球体体积感的关键 */
+  g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.clip();
+  const sh=g.createRadialGradient(x-rr*0.4,y-rr*0.44,rr*0.15,x-rr*0.4,y-rr*0.44,rr*1.7);
+  sh.addColorStop(0,'rgba(2,4,7,0)');
+  sh.addColorStop(0.52,'rgba(2,4,7,'+(0.08*alpha).toFixed(3)+')');
+  sh.addColorStop(1,'rgba(2,4,7,'+(0.42*alpha).toFixed(3)+')');
+  g.fillStyle=sh; g.fillRect(x-rr,y-rr,rr*2,rr*2);
+  g.restore();
+  g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.32*alpha).toFixed(3)+')';   /* 球面弧线 */
+  g.lineWidth=1.2;
+  if(o.fortress){ for(let i=0;i<3;i++){ const a0=t*0.5+i*Math.PI/3;
+    g.beginPath(); g.ellipse(x,y,rr*0.94,rr*0.4,a0,0,Math.PI*2); g.stroke(); } }
+  else { g.beginPath(); g.ellipse(x,y,rr*0.94,rr*0.32,t*0.35,0,Math.PI*2); g.stroke();
+    g.beginPath(); g.ellipse(x,y,rr*0.58,rr*0.94,t*0.35+Math.PI/2,0,Math.PI*2); g.stroke(); }
+  g.globalCompositeOperation='lighter';
+  for(let i=0;i<2;i++){   /* 环绕能量点+彗尾 (球面椭圆轨道) */
+    const a1=t*2.4+i*2.4, ex=x+Math.cos(a1)*rr*0.82, ey=y+Math.sin(a1)*rr*0.45*Math.cos(t*0.9+i);
+    g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.4*alpha).toFixed(3)+')';
+    g.lineWidth=2;
+    g.beginPath(); g.arc(x,y,rr*0.82,a1-0.45,a1); g.stroke();
+    const bg=g.createRadialGradient(ex,ey,0,ex,ey,4.2);
+    bg.addColorStop(0,'rgba(243,247,255,'+(0.75*alpha).toFixed(3)+')');
+    bg.addColorStop(0.5,'rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.5*alpha).toFixed(3)+')');
+    bg.addColorStop(1,'rgba('+rc[0]+','+rc[1]+','+rc[2]+',0)');
+    g.fillStyle=bg; g.beginPath(); g.arc(ex,ey,4.2,0,Math.PI*2); g.fill();
+  }
+  const sd=Math.floor(t*8);   /* 闪现电丝 (8Hz 换种子防高频抖动) */
+  for(let i=0;i<3;i++){
+    const h1=hsh(sd+i*7,i*13+3);
+    if(h1>0.5)continue;
+    const a2=h1*12.56, a3=a2+0.5+hsh(sd,i)*0.9;
+    g.strokeStyle='rgba(243,247,255,'+(0.38*alpha).toFixed(3)+')'; g.lineWidth=1.2;
+    g.beginPath(); g.arc(x,y,rr*(0.72+h1*0.22),a2,a3); g.stroke();
+  }
+  g.globalCompositeOperation='source-over';
+  g.strokeStyle='rgba('+rc[0]+','+rc[1]+','+rc[2]+','+(0.9*alpha).toFixed(3)+')';   /* 外缘 */
+  g.lineWidth=1.5;
+  g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.stroke();
+  g.strokeStyle='rgba(243,247,255,'+(0.55*alpha).toFixed(3)+')';   /* 左上受光弧 (与光源一致) */
+  g.lineWidth=2;
+  g.beginPath(); g.arc(x,y,rr-0.5,Math.PI*1.06,Math.PI*1.48); g.stroke();
+  if(o.flash>0){   /* 弹反白闪 + 扩散环 */
+    const f=Math.min(1,o.flash/0.12);
+    g.globalCompositeOperation='lighter';
+    g.globalAlpha=0.75*f; g.fillStyle=PAL.white;
+    g.beginPath(); g.arc(x,y,rr,0,Math.PI*2); g.fill();
+    g.globalAlpha=0.8*f; g.strokeStyle=PAL.white; g.lineWidth=2;
+    g.beginPath(); g.arc(x,y,rr*(1+(1-f)*0.5),0,Math.PI*2); g.stroke();
+  }
+  g.restore();
+}
+function shieldOrbR(visS,unitW){   /* v1.7: 护罩半径随机体缩放: 突击16.5/均衡18/重装21.9 (放大差异保证肉眼可辨) */
+  const s=visS||1;
+  return 11*s+7*s*s;
+}
 function drawDynamicLights(){
   if(PERF.qLevel===0||typeof dynLights==='undefined'||!dynLights||!dynLights.length)return;
   ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -2122,8 +2278,10 @@ function drawHullPreview(k,x,y,w,h){
 }
 function drawTank(x,y,ang,o){
   const s=o.s===undefined?1:o.s, accent=o.trim||PAL.cyan;   /* s 缺省=1: 修 drawHelpScene 场景 NaN */
-  unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
-  glow(x+Math.cos(ang+Math.PI)*9*s,y+Math.sin(ang+Math.PI)*9*s,12*s,accent,0.13);
+  if(!o.ghost){   /* v1.7: 残影剪影无落影无辉光 */
+    unitShadow(x,y,(o.boss?20:13)*s,(o.boss?8:5)*s,o.boss?0.55:0.38);
+    glow(x+Math.cos(ang+Math.PI)*9*s,y+Math.sin(ang+Math.PI)*9*s,12*s,accent,0.13);
+  }
   ctx.save(); ctx.translate(Math.round(x),Math.round(y));
   ctx.rotate(Math.round(ang/(Math.PI/24))*(Math.PI/24));
   px(-11*s,-9*s,22*s,5*s,PAL.shadow); px(-11*s,4*s,22*s,5*s,PAL.shadow);
@@ -2200,15 +2358,10 @@ function drawPlayer(){
   drawTank(pxp,pyp,p.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
     turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
     muzzle:v.trim,twin:!!v.twin,antenna:true,core:true,dist:p.dist,flash:0});
-  if(p.shieldT>0||p.shieldGrace>0){
-    const a=clamp(p.shieldT/0.5,0.25,1);
-    glow(pxp,pyp,28,PAL.aqua,0.18*a);
-    ctx.save(); ctx.translate(pxp,pyp); ctx.rotate(ST.t*3);
-    ctx.globalAlpha=a;
-    ctx.strokeStyle=v.ring||PAL.aqua; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.stroke();
-    for(let i=0;i<6;i++){ const an=i/6*Math.PI*2;
-      px(Math.cos(an)*15-2,Math.sin(an)*15-2,4,4,i%2?PAL.white:PAL.aqua); }
-    ctx.globalAlpha=1; ctx.restore();
+  if(p.shieldT>0||p.shieldGrace>0){   /* v1.7: 3D 等离子护罩球, 半径随机体适配 */
+    const a=clamp(p.shieldT/0.5,0.25,1), sc2=hullCfg().shield;
+    drawShieldOrb(ctx,pxp,pyp,shieldOrbR(v.s),0,v.ring||PAL.aqua,a,
+      {age:p.shieldAge,flash:p.shieldFlash||0,fortress:!!sc2.fortress});
   }
 }
 function drawShots(){
@@ -2305,16 +2458,20 @@ function drawRadar(x,y,w,h){
   if(player){ upx(sx(player)-1,sy(player)-1,3,3,PAL.cyan); }
   uctx.restore();
 }
-/* v1.6: 冲刺残影 — v15 生效时由 v15art 随 HD 队列输出, 此处为像素回退 */
+/* v1.7: 冲刺残影 — 3条深色同形剪影 (0.09/0.17/0.25s 历史位), v15 生效时走 HD 队列 */
 function drawGhosts(){
-  if(!ghosts||!ghosts.length)return;
   if(typeof V15!=='undefined'&&V15.ok&&V15.spec&&V15.spec('player',RUN.hull||'balanced'))return;
+  if(!player||!player.ghostA||player.ghostA<0.02)return;
   const v=hullCfg().vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
-  for(const g of ghosts){
-    ctx.save(); ctx.globalAlpha=0.30*(g.life/g.t);
-    drawTank(g.x,g.y,g.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
-      turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
-      muzzle:v.trim,twin:!!v.twin,antenna:false,core:true,dist:0,flash:0});
+  const ds=[40,80,120], al=[0.92,0.78,0.62], dk=[0.5,0.42,0.34];
+  for(let i=0;i<3;i++){
+    const e=trailAtDist(player,ds[i]); if(!e)continue;
+    ctx.save(); ctx.globalAlpha=al[i]*player.ghostA;
+    drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk[i]),hi:shade(vc(v.hi)||PAL.white,dk[i]),
+      trim:shade(vc(v.trim)||PAL.cyan,dk[i]),turret:shade(vc(v.turret)||PAL.lite,dk[i]),
+      barrel:shade(vc(v.barrel)||PAL.steel,dk[i]),hullDk:shade(v.dk||PAL.dark,dk[i]*0.7),
+      track:shade(v.track||PAL.steel,dk[i]),muzzle:shade(v.trim||PAL.cyan,dk[i]),
+      twin:!!v.twin,antenna:false,core:false,dist:0,flash:0,ghost:true});
     ctx.restore();
   }
 }
@@ -2381,7 +2538,7 @@ function drawHUD(){
   hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
   hudChip(26,cy,'➤',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:1),PAL.aqua,p.charging||p.charge>0);
   hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
-  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/0.95,PAL.cyan,p.shieldCd<=0);
+  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
   /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
   const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
   if(touchOn)txt('◆ '+RUN.pts+'  EQ '+eqn,VW-6,33,7,PAL.gold,'right');
@@ -2596,9 +2753,7 @@ function drawHelpScene(pg,x,y,w,h){
     bar(cx-20,cy+18,60,4,0.6+Math.sin(t*3)*0.3,PAL.lime);
   }
   else if(pg===6){ if(!vTank(0,-2,Math.PI/2,'balanced'))tankAt(0,-2,Math.PI/2);
-    ctx.save();ctx.translate(cx,cy-2);ctx.rotate(t*3);
-    for(let i=0;i<6;i++){const an=i/6*Math.PI*2;px(Math.cos(an)*15-2,Math.sin(an)*15-2,4,4,i%2?PAL.white:PAL.lite);}
-    ctx.restore();
+    drawShieldOrb(ctx,cx,cy-2,13,PAL.aqua,0.92,{});   /* v1.7: 护盾页示意=等离子球 */
     px(cx-38,cy-4,7,3,PAL.red); px(cx-30,cy-4,6,3,PAL.gold); px(cx-24,cy-5,2,5,PAL.gold);
   }
   else if(pg===7){ if(!vTruck(34,6,-0.5))truckAt(34,6,-0.5);
@@ -3242,24 +3397,6 @@ function drawGroundOverlay(){
   return true;
 }
 
-function drawShieldRing(x,y,r,col,alpha){
-  glow(x,y,r+11,PAL.aqua,0.18*alpha);
-  ctx.save();
-  ctx.translate(x,y);
-  ctx.rotate(ST.t*3);
-  ctx.globalAlpha=alpha;
-  ctx.strokeStyle=col||PAL.aqua;
-  ctx.lineWidth=1.5;
-  ctx.beginPath();
-  ctx.arc(0,0,r,0,Math.PI*2);
-  ctx.stroke();
-  for(let i=0;i<6;i++){
-    const an=i/6*Math.PI*2;
-    px(Math.cos(an)*r-2,Math.sin(an)*r-2,4,4,i%2?PAL.white:PAL.aqua);
-  }
-  ctx.restore();
-}
-
 /* 玩家/僚机走高清层(小尺寸立绘在像素buf中细节全失), 敌军/BOSS/爆炸留在像素层与场地统一 */
 AIART.queue=[];
 function drawPlayerAI(){
@@ -3268,9 +3405,10 @@ function drawPlayerAI(){
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
   const spec=unitSpec('player',RUN.hull||'balanced');
   if(!spec||!readyImage(spec.image))return false;
-  const v=hullCfg().vis||{};
+  const v=hullCfg().vis||{}, sc2=hullCfg().shield;
   AIART.queue.push({spec,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
+    shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||spec.glow||PAL.aqua,od:COMBO.od,sprintG:p.sprintG,kind:'player'});
   return true;
 }
@@ -3325,9 +3463,11 @@ AIART.flushHd=function(ox,oy){
       uctx.beginPath(); uctx.ellipse(0,0,w*0.36,h*0.30,0,0,Math.PI*2); uctx.fill(); }
     uctx.restore();
     if(q.kind==='player'){
-      if(q.shield){ uctx.save(); uctx.translate(q.x,q.y); uctx.rotate(ST.t*3);
-        uctx.globalAlpha=q.shieldA; uctx.strokeStyle=q.ringCol; uctx.lineWidth=1.5;
-        uctx.beginPath(); uctx.arc(0,0,Math.max(17,w*0.34),0,Math.PI*2); uctx.stroke(); uctx.restore(); }
+      if(q.shield){   /* v1.7: 3D 等离子护罩球 (随机体适配) */
+        const vv=(HULLS[RUN.hull]||HULLS.balanced).vis||{};
+        drawShieldOrb(uctx,q.x,q.y,shieldOrbR(vv.s,w),q.ringCol,q.shieldA,
+          {age:q.shieldAge,flash:q.shieldFlash,fortress:q.fortress});
+      }
     } else if(q.kind==='wing'){
       uctx.globalAlpha=1; uctx.fillStyle=PAL.panel2; uctx.fillRect(q.x-10,q.y-h*0.52,20,2);
       uctx.fillStyle=spec.glow||PAL.cyan; uctx.fillRect(q.x-10,q.y-h*0.52,Math.max(1,Math.round(20*q.hp)),2);
@@ -3579,6 +3719,27 @@ function v15Glow(x,y,r,c,a){
   uctx.save(); uctx.globalCompositeOperation='lighter'; uctx.fillStyle=g;
   uctx.fillRect(x-r,y-r,r*2,r*2); uctx.restore();
 }
+/* ---------- v1.7: 残影实心剪影帧缓存 ----------
+   帧图 source-in 填深色 → 纯色坦克剪影(轮廓100%可读, 不依赖帧内明暗细节);
+   三档色深随距离递减, 懒生成后缓存。绘制尺寸与本体一致 → 形象完全一致。 */
+const GHOST_COL=['#141b2b','#1e2940','#2a3852'];   /* 深蓝黑系三档: 越靠后越浅 */
+V15.ghostFrame=function(sp,idx,lv){
+  if(!V15._gh)V15._gh=new Map();
+  const key=sp.img+':'+idx+':'+lv;
+  if(V15._gh.has(key))return V15._gh.get(key);
+  const im=v15Image(sp.img); if(!im)return null;
+  const cw=im.naturalWidth/4, ch=im.naturalHeight/4;
+  const cv2=document.createElement('canvas');
+  cv2.width=Math.max(2,Math.ceil(cw)); cv2.height=Math.max(2,Math.ceil(ch));
+  const g2=cv2.getContext('2d');
+  g2.imageSmoothingEnabled=true;
+  g2.drawImage(im,(idx%4)*cw,(idx>>2)*ch,cw,ch,0,0,cv2.width,cv2.height);
+  g2.globalCompositeOperation='source-in';
+  g2.fillStyle=GHOST_COL[lv]||GHOST_COL[0];
+  g2.fillRect(0,0,cv2.width,cv2.height);
+  V15._gh.set(key,cv2);
+  return cv2;
+};
 /* ---------- 高清层输出: 队列在像素阶段收集, main.js 抬升像素层后统一绘制 ---------- */
 V15.flushHd=function(ox,oy){
   if(!V15.queue.length)return;
@@ -3589,7 +3750,14 @@ V15.flushHd=function(ox,oy){
     for(const q of V15.queue){
       if(!isFinite(q.x)||!isFinite(q.y))continue;
       const sp=q.spec, w=q.w||sp.w;
-      if(q.kind==='ghost'){ v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha); continue; }   /* v1.6 残影: 无影无光 */
+      if(q.kind==='ghost'){   /* v1.7: 深色剪影帧, 无影无光, 关平滑保轮廓锐利 */
+        const f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
+        uctx.save(); uctx.imageSmoothingEnabled=false;
+        uctx.globalAlpha=q.alpha!==undefined?q.alpha:0.8;
+        if(f)uctx.drawImage(f,Math.round(q.x-w/2),Math.round(q.y-w/2),w,w);
+        else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha);
+        uctx.restore(); continue;
+      }
       if(!v15Image(sp.img))continue;
       /* 落影: 俯视单位椭圆影贴脚 (小而淡, 别压过暖光池) */
       uctx.save(); uctx.globalAlpha=q.boss?0.36:0.26; uctx.fillStyle=PAL.shadow;
@@ -3607,13 +3775,11 @@ V15.flushHd=function(ox,oy){
         uctx.globalAlpha=Math.min(0.5,q.flash*1.7); uctx.fillStyle=PAL.white;
         uctx.beginPath(); uctx.ellipse(q.x,q.y,w*0.36,w*0.36,0,0,Math.PI*2); uctx.fill(); uctx.restore(); }
       if(q.kind==='player'){
-        if(q.shield){ uctx.save(); uctx.translate(q.x,q.y); uctx.rotate(ST.t*3);
-          uctx.globalAlpha=q.shieldA; uctx.strokeStyle=q.ringCol; uctx.lineWidth=1.5;
-          uctx.beginPath(); uctx.arc(0,0,Math.max(17,w*0.34),0,Math.PI*2); uctx.stroke();
-          for(let i=0;i<6;i++){ const an=i/6*Math.PI*2;
-            uctx.fillStyle=i%2?PAL.white:PAL.aqua;
-            uctx.fillRect(Math.cos(an)*Math.max(15,w*0.30)-2,Math.sin(an)*Math.max(15,w*0.30)-2,4,4); }
-          uctx.restore(); }
+        if(q.shield){   /* v1.7: 3D 等离子护罩球 (随机体适配) */
+          const vv=(HULLS[RUN.hull]||HULLS.balanced).vis||{};
+          drawShieldOrb(uctx,q.x,q.y,shieldOrbR(vv.s,w),q.ringCol,q.shieldA,
+            {age:q.shieldAge,flash:q.shieldFlash,fortress:q.fortress});
+        }
       } else if(q.kind==='wing'){
         uctx.globalAlpha=1; uctx.fillStyle=PAL.panel2; uctx.fillRect(q.x-10,q.y-Math.max(14,w*0.42),20,2);
         uctx.fillStyle=sp.glow||PAL.cyan; uctx.fillRect(q.x-10,q.y-Math.max(14,w*0.42),Math.max(1,Math.round(20*q.hp)),2);
@@ -3639,14 +3805,18 @@ function v15Player(){
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
   const sp=v15Spec('player',RUN.hull||'balanced');
   if(!sp||!v15Image(sp.img))return false;
-  /* v1.6: 冲刺残影先于本体入队 (flushHd 按序绘制), 渐隐+微缩强化速度感 */
-  if(typeof ghosts!=='undefined'&&ghosts.length){
-    for(const g of ghosts)V15.queue.push({kind:'ghost',spec:sp,x:g.x,y:g.y,ang:g.a,
-      w:sp.w*(0.94-0.08*(1-g.life/g.t)),alpha:0.32*(g.life/g.t)});
+  /* v1.7: 冲刺残影 — 按距离回溯采样 3 条实心深色剪影 (40/80/120px = 1~3 车身长, 保证互不遮挡), 先于本体入队 */
+  if(player.ghostA>0.02&&player.trail&&player.trail.length>4){
+    const ds=[40,80,120], al=[0.92,0.78,0.62];
+    for(let i=0;i<3;i++){
+      const e=trailAtDist(player,ds[i]); if(!e)continue;
+      V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,alpha:al[i]*player.ghostA,lv:i});
+    }
   }
-  const v=hullCfg().vis||{};
+  const v=hullCfg().vis||{}, sc2=hullCfg().shield;
   V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
+    shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||sp.glow||PAL.aqua,od:COMBO.od,sprint:p.sprintG<0.95});
   return true;
 }
@@ -4309,7 +4479,7 @@ let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam
 let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
   bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
-  shake:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
+  shake:0,shakeHold:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
   upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
   enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];cam={x:0,y:0,kickX:0,kickY:0,zoom:0}; }
@@ -4319,7 +4489,6 @@ newGame(); openMenu('title');
 function startLevel(){
   cfg=LEVELS[RUN.lvl]; genMap();
   player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];
-  if(typeof ghosts!=='undefined')ghosts.length=0;   /* v1.6: 清冲刺残影 */
   spawnWingman();
   clearDecals(); initMotes();
   /* 战场暖光池锚定掩体/岩石 (审查C4): 'lighter' 呼吸暖光 */
@@ -4328,7 +4497,7 @@ function startLevel(){
     for(let t=0;t<30&&!ok;t++){ bx=rnd(2,MAPW-2)|0; by=rnd(2,MAPH-2)|0; if(tileAt(bx,by)===5)ok=true; }
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
   ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;
-  ST.shake=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
+  ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
   COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;   /* vNext: 连击重置 */
@@ -4474,13 +4643,12 @@ function tick(dt){
     if(bo){ ctx0+=(bo.x-player.x)*0.18; cty0+=(bo.y-player.y)*0.18; }
     cam.x+=((clamp(ctx0-VW/2,0,WORLDW-VW))-cam.x)*Math.min(1,dt*5);
     cam.y+=((clamp(cty0-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
-    ST.shake=Math.max(0,ST.shake-dt*11);
-    updCameraFX(dt);
+    updCameraFX(dt);   /* v1.7: shake 衰减并入 (含 shakeHold 门控) */
   }
   else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
-  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); ST.shake=Math.max(0,ST.shake-dt*11); updCameraFX(dt);
+  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
     else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
@@ -4584,11 +4752,24 @@ window.G={
     player.shieldT=0.42; player.shieldAge=0; player.shieldCd=0; return s; },
   stats(){ return Object.assign({},STATS,{maxCombo:STATS.maxCombo,dmg:Object.assign({},STATS.dmg)}); },
   dummy(kind,x,y){ spawnEnemyAt(kind||'tank',false,x,y); return enemies[enemies.length-1]; },
+  hull(k){ if(HULLS[k]){ RUN.hull=k; if(player){ player.maxHp=calcStats().maxHp; player.hp=Math.min(player.hp,player.maxHp); } } return RUN.hull; },   /* v1.7: 摆拍切机体 */
+  findTile(id){   /* v1.7: 从地图中心向外找指定 tile 的世界坐标, 供地形特效摆拍 */
+    const cx=MAPW>>1, cy=MAPH>>1;
+    for(let r=0;r<Math.max(MAPW,MAPH);r++){
+      for(let ty=Math.max(0,cy-r);ty<=Math.min(MAPH-1,cy+r);ty++)
+        for(let tx=Math.max(0,cx-r);tx<=Math.min(MAPW-1,cx+r);tx++)
+          if(terr.m[ty*MAPW+tx]===id)return {x:tx*TS+TS/2,y:ty*TS+TS/2,tx,ty};
+    }
+    return null;
+  },
   checkReflected(){ return shots.some(s=>s.refl&&s.friendly); },
   tp(x,y){ player.x=clamp(x,24,WORLDW-24); player.y=clamp(y,24,WORLDH-24); player.ox=player.x; player.oy=player.y;
+    player.trail=[]; player.ghostA=0;   /* v1.7: 传送清残影历史 */
     cam.x=clamp(player.x-VW/2,0,WORLDW-VW); cam.y=clamp(player.y-VH/2,0,WORLDH-VH); cam.ox=cam.x; cam.oy=cam.y; },
   perf(){ return {fps:PERF.fps,updateMs:+PERF.updateMs.toFixed(2),renderMs:+PERF.renderMs.toFixed(2),
     updates:PERF.updates,quality:PERF.quality,qLevel:PERF.qLevel,
+    ghost:player?+(player.ghostA||0).toFixed(2):0,          /* v1.7: 残影可见度 0~1 */
+    trail:player&&player.trail?player.trail.length:0,
     counts:{enemies:enemies.length,shots:shots.length,parts:parts.length,pickups:pickups.length}}; },
   set(k,v){ SET[k]=v; applyVolumes(); saveSet(); },
   dropTest(kind,eqk){ pickups.push({x:player.x+30,y:player.y,kind:kind||'part',eqk:eqk||'armor',val:1,t:30,bob:0}); },
@@ -4601,11 +4782,12 @@ window.G={
     DBG.lab=true;
     if(name==='asset-pipeline')return AP.setupScene();   /* P3.5 资产管线验证场景 */
     if(name==='title'){ toTitle(); return 'title'; }
-    const LV={combat:4,boss:0,units:4,explosion:4,hud:4,weather:2}[name];
+    const LV={combat:4,boss:0,units:4,explosion:4,hud:4,weather:2,shield:4,shieldHit:4,free:-1}[name];
     if(LV===undefined)return 'unknown:'+name;
-    if(ST.state!=='play'||!cfg||RUN.lvl!==LV){ RUN.lvl=LV; startLevel(); }
+    if(LV>=0){ if(ST.state!=='play'||!cfg||RUN.lvl!==LV){ RUN.lvl=LV; startLevel(); } }
+    else if(ST.state!=='play'||!cfg){ startLevel(); }   /* free: 保留当前关卡 */
     MENU=null; ST.state='play'; ST.introT=0; ST.spawnT=1e9; ST.spawnedN=cfg.quota-1;
-    ST.shake=0; ST.flash=0; ST.bolt=null; ST.bossWarn=0; ST.bossSpawned=false;
+    ST.shake=0; ST.shakeHold=0; ST.flash=0; ST.bolt=null; ST.bossWarn=0; ST.bossSpawned=false;
     enemies.length=0; pickups.length=0; parts.length=0; floats.length=0; planes.length=0; bombs.length=0; shots.length=0;
     COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;
     const CX=WORLDW/2, CY=WORLDH/2;
@@ -4666,6 +4848,13 @@ window.G={
       drop(-55,35,'heal');
       ST.lightT=0.3;
     }
+    else if(name==='shield'||name==='shieldHit'){   /* v1.7: 护罩等离子球 (当前机体), shieldHit=弹反白闪帧 */
+      player.shieldT=99; player.shieldCd=0; player.shieldAge=0.3;
+      if(name==='shieldHit')player.shieldFlash=9;   /* >1 = 摆拍冻结常亮 */
+      pose('tank',0,-118,-72,Math.PI/2);            /* 静默敌车衬托护罩比例 */
+      drop(-64,64,'heal');
+    }
+    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍) */
     cam.ox=cam.x; cam.oy=cam.y;
     return name+' lvl'+RUN.lvl+' enemies:'+enemies.length;
   },

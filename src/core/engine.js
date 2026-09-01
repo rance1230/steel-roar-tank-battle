@@ -8,7 +8,7 @@ const PERF={
   show:false,fps:60,_frames:0,_ft:0,updateMs:0,renderMs:0,updates:0,
   quality:'AUTO',qLevel:2,_qT:0,
   mul(){ return [0.4,0.7,1][this.qLevel]; },
-  maxParts(){ return [200,320,420][this.qLevel]; },
+  maxParts(){ return [240,380,560][this.qLevel]; },   /* v1.7: 地形特效增强后上调 */
 };
 const STEP=1000/60;
 let _last=0,_acc=0,_UPDATE=null,_RENDER=null;

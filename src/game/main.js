@@ -5,7 +5,7 @@ let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam
 let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
   bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
-  shake:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
+  shake:0,shakeHold:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
   upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
   enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];cam={x:0,y:0,kickX:0,kickY:0,zoom:0}; }
@@ -15,7 +15,6 @@ newGame(); openMenu('title');
 function startLevel(){
   cfg=LEVELS[RUN.lvl]; genMap();
   player=makePlayer(); enemies=[];shots=[];bombs=[];planes=[];pickups=[];parts=[];floats=[];rains=[];dynLights=[];
-  if(typeof ghosts!=='undefined')ghosts.length=0;   /* v1.6: 清冲刺残影 */
   spawnWingman();
   clearDecals(); initMotes();
   /* 战场暖光池锚定掩体/岩石 (审查C4): 'lighter' 呼吸暖光 */
@@ -24,7 +23,7 @@ function startLevel(){
     for(let t=0;t<30&&!ok;t++){ bx=rnd(2,MAPW-2)|0; by=rnd(2,MAPH-2)|0; if(tileAt(bx,by)===5)ok=true; }
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
   ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;
-  ST.shake=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
+  ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
   COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;   /* vNext: 连击重置 */
@@ -170,13 +169,12 @@ function tick(dt){
     if(bo){ ctx0+=(bo.x-player.x)*0.18; cty0+=(bo.y-player.y)*0.18; }
     cam.x+=((clamp(ctx0-VW/2,0,WORLDW-VW))-cam.x)*Math.min(1,dt*5);
     cam.y+=((clamp(cty0-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
-    ST.shake=Math.max(0,ST.shake-dt*11);
-    updCameraFX(dt);
+    updCameraFX(dt);   /* v1.7: shake 衰减并入 (含 shakeHold 门控) */
   }
   else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
-  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); ST.shake=Math.max(0,ST.shake-dt*11); updCameraFX(dt);
+  else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
     else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
@@ -280,11 +278,24 @@ window.G={
     player.shieldT=0.42; player.shieldAge=0; player.shieldCd=0; return s; },
   stats(){ return Object.assign({},STATS,{maxCombo:STATS.maxCombo,dmg:Object.assign({},STATS.dmg)}); },
   dummy(kind,x,y){ spawnEnemyAt(kind||'tank',false,x,y); return enemies[enemies.length-1]; },
+  hull(k){ if(HULLS[k]){ RUN.hull=k; if(player){ player.maxHp=calcStats().maxHp; player.hp=Math.min(player.hp,player.maxHp); } } return RUN.hull; },   /* v1.7: 摆拍切机体 */
+  findTile(id){   /* v1.7: 从地图中心向外找指定 tile 的世界坐标, 供地形特效摆拍 */
+    const cx=MAPW>>1, cy=MAPH>>1;
+    for(let r=0;r<Math.max(MAPW,MAPH);r++){
+      for(let ty=Math.max(0,cy-r);ty<=Math.min(MAPH-1,cy+r);ty++)
+        for(let tx=Math.max(0,cx-r);tx<=Math.min(MAPW-1,cx+r);tx++)
+          if(terr.m[ty*MAPW+tx]===id)return {x:tx*TS+TS/2,y:ty*TS+TS/2,tx,ty};
+    }
+    return null;
+  },
   checkReflected(){ return shots.some(s=>s.refl&&s.friendly); },
   tp(x,y){ player.x=clamp(x,24,WORLDW-24); player.y=clamp(y,24,WORLDH-24); player.ox=player.x; player.oy=player.y;
+    player.trail=[]; player.ghostA=0;   /* v1.7: 传送清残影历史 */
     cam.x=clamp(player.x-VW/2,0,WORLDW-VW); cam.y=clamp(player.y-VH/2,0,WORLDH-VH); cam.ox=cam.x; cam.oy=cam.y; },
   perf(){ return {fps:PERF.fps,updateMs:+PERF.updateMs.toFixed(2),renderMs:+PERF.renderMs.toFixed(2),
     updates:PERF.updates,quality:PERF.quality,qLevel:PERF.qLevel,
+    ghost:player?+(player.ghostA||0).toFixed(2):0,          /* v1.7: 残影可见度 0~1 */
+    trail:player&&player.trail?player.trail.length:0,
     counts:{enemies:enemies.length,shots:shots.length,parts:parts.length,pickups:pickups.length}}; },
   set(k,v){ SET[k]=v; applyVolumes(); saveSet(); },
   dropTest(kind,eqk){ pickups.push({x:player.x+30,y:player.y,kind:kind||'part',eqk:eqk||'armor',val:1,t:30,bob:0}); },
@@ -297,11 +308,12 @@ window.G={
     DBG.lab=true;
     if(name==='asset-pipeline')return AP.setupScene();   /* P3.5 资产管线验证场景 */
     if(name==='title'){ toTitle(); return 'title'; }
-    const LV={combat:4,boss:0,units:4,explosion:4,hud:4,weather:2}[name];
+    const LV={combat:4,boss:0,units:4,explosion:4,hud:4,weather:2,shield:4,shieldHit:4,free:-1}[name];
     if(LV===undefined)return 'unknown:'+name;
-    if(ST.state!=='play'||!cfg||RUN.lvl!==LV){ RUN.lvl=LV; startLevel(); }
+    if(LV>=0){ if(ST.state!=='play'||!cfg||RUN.lvl!==LV){ RUN.lvl=LV; startLevel(); } }
+    else if(ST.state!=='play'||!cfg){ startLevel(); }   /* free: 保留当前关卡 */
     MENU=null; ST.state='play'; ST.introT=0; ST.spawnT=1e9; ST.spawnedN=cfg.quota-1;
-    ST.shake=0; ST.flash=0; ST.bolt=null; ST.bossWarn=0; ST.bossSpawned=false;
+    ST.shake=0; ST.shakeHold=0; ST.flash=0; ST.bolt=null; ST.bossWarn=0; ST.bossSpawned=false;
     enemies.length=0; pickups.length=0; parts.length=0; floats.length=0; planes.length=0; bombs.length=0; shots.length=0;
     COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;
     const CX=WORLDW/2, CY=WORLDH/2;
@@ -362,6 +374,13 @@ window.G={
       drop(-55,35,'heal');
       ST.lightT=0.3;
     }
+    else if(name==='shield'||name==='shieldHit'){   /* v1.7: 护罩等离子球 (当前机体), shieldHit=弹反白闪帧 */
+      player.shieldT=99; player.shieldCd=0; player.shieldAge=0.3;
+      if(name==='shieldHit')player.shieldFlash=9;   /* >1 = 摆拍冻结常亮 */
+      pose('tank',0,-118,-72,Math.PI/2);            /* 静默敌车衬托护罩比例 */
+      drop(-64,64,'heal');
+    }
+    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍) */
     cam.ox=cam.x; cam.oy=cam.y;
     return name+' lvl'+RUN.lvl+' enemies:'+enemies.length;
   },

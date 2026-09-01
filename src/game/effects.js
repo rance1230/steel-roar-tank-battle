@@ -52,25 +52,61 @@ function initMotes(){
 }
 function floater(x,y,txt,col,size,life){ const l=life||0.9; floats.push({x,y,t:l,tm:l,txt,col,size:size||7}); }
 /* ---------- v1.6: 地形行进特效 (玩家/敌军共用) ----------
-   按行进所在 tile 与关卡主题出粒子: 水面溅花+涟漪 / 减速区搅动 / 地面扬尘(沙·雪·灰随主题) */
+   v1.7 增强: 粒子量/尺寸/寿命上调, 涟漪双圈错峰, 减速区涡旋搅动, 冲刺速度线;
+   河面语义随关卡分化: L3雨=水花 L5雪=冰晶 L7终战=熔岩 (tid3), 按 RUN.lvl 区分 */
+let _rippleTgl=false;   /* 涟漪错峰: 相邻两次触发交替内圈/外圈, 避免高频叠加成涂抹 */
 function terrainMoveFx(x,y,ang,tid,sprint,heavy){
-  const fx=themeCfg().fx, sc=(heavy?1.5:1)*(sprint?1.5:1);
+  const fx=themeCfg().fx, sc=(heavy?1.6:1)*(sprint?1.6:1), m=PERF.mul();
   const bx=x-Math.cos(ang)*10, by=y-Math.sin(ang)*10;
-  if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 扩散涟漪 */
-    const n=Math.max(4,Math.round(4*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-4,4),by+rnd(-4,4),
-      rnd(-20,20)-Math.cos(ang)*24,rnd(-46,-14),rnd(0.28,0.5),i%3?fx.water:PAL.white,rnd(1.2,2.6)*sc,180);
-    const r=part(bx,by,0,0,0.42,fx.water,7*sc,0); r.ring=true; r.a=0.45;
-    if(sprint){ const c=part(bx,by,0,0,0.2,PAL.white,3.5,0); c.core=true; }
-  } else if(tid===4){                            /* 减速区: 油污/能量/熔岩搅动 (亮色火花保证可见度) */
-    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-5,5),by+rnd(-5,5),rnd(-10,10),rnd(-30,-12),rnd(0.4,0.8),
-      i%2?fx.slow:PAL.white,rnd(1.4,3)*sc);
-  } else {                                       /* 地面: 扬尘/雪沫, 冲刺拖尾烟团 */
-    const n=Math.max(2,Math.round(2*sc*PERF.mul()));
-    for(let i=0;i<n;i++)part(bx+rnd(-3,3),by+rnd(-3,3),
-      rnd(-14,14)-Math.cos(ang)*16,rnd(-26,-8),rnd(0.3,0.6),i%4===0?PAL.smoke:fx.dust,rnd(1.2,2.4)*sc);
-    if(sprint)part(bx,by,rnd(-8,8)-Math.cos(ang)*10,rnd(-18,-8),rnd(0.5,0.9),fx.dust,rnd(3,4.6),0,0.35);
+  const cB=-Math.cos(ang), sB=-Math.sin(ang);   /* 车尾方向单位向量 */
+  if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 双圈涟漪 */
+    const lava=RUN.lvl===6, ice=RUN.lvl===4;
+    const n=Math.max(5,Math.round((ice?5:7)*sc*m));
+    for(let i=0;i<n;i++){
+      const p=part(bx+rnd(-5,5),by+rnd(-5,5),
+        cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+(ice?rnd(-18,-5):rnd(lava?-54:-80,lava?-26:-32)),
+        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.4,3.2)*sc, ice?140:(lava?90:240));
+      if(i%5===0)p.core=true;                    /* 亮芯水珠/岩浆滴 */
+      if(ice&&i%4===0)p.ray=true;                /* 冰晶闪光拖尾 */
+    }
+    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.55,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.7; }   /* 涟漪双圈: 错峰发射保圆环可读 */
+    else { const r2=part(bx,by,0,0,0.38,fx.water,14*sc,0); r2.ring=true; r2.a=0.6; }
+    if(sprint&&Math.random()<0.4){ const r3=part(bx,by,0,0,0.44,PAL.white,11*sc,0); r3.ring=true; r3.a=0.45;
+      const c=part(bx,by,0,0,0.22,PAL.white,4*sc,0); c.core=true; }
+    if(lava){ addLight(bx,by,17,PAL.ember,0.34,0.22);                      /* 岩浆橙光 */
+      for(let i=0;i<3;i++){ const e=part(bx+rnd(-6,6),by+rnd(-6,6),rnd(-10,10),rnd(-52,-24),rnd(0.6,1.2),
+        i%2?PAL.white:PAL.gold,rnd(1.4,2.4)*sc,-26); e.core=true; } }      /* 余烬白金芯 */
+  } else if(tid===4){                            /* 减速区: 油污/能量/熔岩涡旋搅动 + 亮色火花(白/金保对比) */
+    const n=Math.max(5,Math.round(5*sc*m));
+    for(let i=0;i<n;i++){
+      const a=rnd(Math.PI*2), rr=rnd(6,15);      /* 绕车尾切向速度 → 涡旋感 */
+      const p=part(bx+Math.cos(a)*rr,by+Math.sin(a)*rr,
+        -Math.sin(a)*rnd(30,70), Math.cos(a)*rnd(30,70)-rnd(12,36),
+        rnd(0.5,1), [fx.slow,PAL.white,PAL.gold][i%3], rnd(1.6,3.4)*sc, -22);
+      if(i%3===0)p.core=true;
+    }
+    const r0=part(bx,by,0,0,0.4,fx.slow,7*sc,0); r0.ring=true; r0.a=0.45;   /* 搅动光环 */
+    if(sprint){ const r=part(bx,by,0,0,0.36,PAL.white,9*sc,0); r.ring=true; r.a=0.5; }
+    addLight(bx,by,15,RUN.lvl===3?PAL.gold:fx.slow,0.3,0.22);
+  } else {                                       /* 地面: 扬尘/雪沫/灰烬, 冲刺烟团+速度线 */
+    const snow=RUN.lvl===4, ash=RUN.lvl===6;
+    const n=Math.max(3,Math.round(4*sc*m));
+    for(let i=0;i<n;i++){
+      const p=part(bx+rnd(-4,4),by+rnd(-4,4),
+        cB*rnd(14,34)+rnd(-16,16), sB*rnd(14,34)+(snow?rnd(-18,-6):rnd(-30,-10)),
+        rnd(snow?0.5:0.4,snow?0.95:0.8), i%4===0?PAL.smoke:fx.dust,
+        (snow?rnd(1.8,3.4):rnd(1.4,3))*sc, snow?36:0);
+      if(snow&&i%4===1)p.core=true;              /* 雪沫白芯 */
+      if(ash&&i%5===0){ p.col=PAL.ember; p.core=true; p.grav=-14; }   /* 灰烬火星 */
+      if(RUN.lvl===0&&i%3===0)p.col='#d9a860';   /* 沙漠暖色高光 */
+    }
+    if(sprint){
+      for(let i=0;i<2;i++)part(bx+rnd(-5,5),by+rnd(-5,5),cB*rnd(20,44)+rnd(-10,10),sB*rnd(20,44)-rnd(6,16),
+        rnd(0.7,1.1),i?fx.dust:PAL.smoke,rnd(3.6,6)*sc,0,0.42);      /* 大烟团 ×2 */
+      for(let i=0;i<2;i++){ const p=part(bx,by,cB*rnd(90,150),sB*rnd(90,150),0.16,fx.dust,rnd(1.6,2.4));
+        p.ray=true; }                                                /* 冲刺速度线 */
+      if(Math.random()<0.3)part(bx,by,cB*rnd(40,80)+rnd(-20,20),sB*rnd(40,80)-rnd(10,40),0.4,PAL.lite,rnd(1,1.8),260); /* 碎石 */
+    }
   }
 }
 function addLight(x,y,r,col,a,life){
@@ -94,8 +130,26 @@ function cameraKick(power,ang,zoom){
   cam.kickY=(cam.kickY||0)+Math.sin(ang)*power*0.45;
   cam.zoom=Math.min(0.075,(cam.zoom||0)+(zoom===undefined?power*0.003:zoom));
 }
+/* ---------- v1.7: 震动分级 ----------
+   原普通爆炸强度(kick 3)=最大档, 仅战斗单位击破触发; 命中按弹药分级:
+   T0机枪命中 < T1主炮命中/冲撞 < T2导弹/空袭/受伤 < T3单位击破(封顶)。
+   shakeHold: 击破瞬间暂停衰减(延长不增强), BOSS击破/玩家阵亡用。 */
+const SHAKE_T=[
+  {p:0.35,z:0},       /* T0 微 */
+  {p:0.9, z:0.004},   /* T1 轻 */
+  {p:1.8, z:0.009},   /* T2 中 */
+  {p:3.0, z:0.014},   /* T3 最大 = 原爆炸档 */
+];
+function kickTier(t,ang){
+  const d=SHAKE_T[clamp(t|0,0,3)];
+  cameraKick(d.p,ang,d.z);
+  return d.p;
+}
+function shakeHold(sec){ ST.shakeHold=Math.max(ST.shakeHold||0,sec); }
 function updCameraFX(dt){
   if(!cam)return;
+  if(ST.shakeHold>0)ST.shakeHold-=dt;            /* hold 期间震动不衰减 */
+  else ST.shake=Math.max(0,ST.shake-dt*11);
   const k=Math.max(0,1-dt*8.5), z=Math.max(0,1-dt*5.5);
   cam.kickX=(cam.kickX||0)*k; cam.kickY=(cam.kickY||0)*k; cam.zoom=(cam.zoom||0)*z;
   if(Math.abs(cam.kickX)<0.03)cam.kickX=0;
@@ -117,7 +171,7 @@ function hitFx(x,y,kind,ang){
 }
 /* ---------- 七层爆炸 (视觉设计第一版 §10):
    1白闪 2火球 3冲击波 4火花 5碎片 6烟雾 7地面弹坑(decal) ---------- */
-function explodeAt(x,y,r,dmg,big,cause,chainDepth){
+function explodeAt(x,y,r,dmg,big,cause,chainDepth,kick){
   const q=PERF.mul(), R=big?1.7:1;
   addLight(x,y,r*(big?4.4:3.2),big?PAL.orange:PAL.gold,big?0.54:0.38,big?0.48:0.32);
   part(x,y,0,0,big?0.09:0.06,PAL.white,r*0.55*R,0).core=true;              /* 1 白闪 */
@@ -134,7 +188,7 @@ function explodeAt(x,y,r,dmg,big,cause,chainDepth){
   for(let i=0,n=Math.round((big?5:3)*q);i<n;i++)                                                    /* 余烬闪烁 */
     part(x+rnd(-r*0.5,r*0.5),y+rnd(-r*0.5,r*0.5),rnd(-6,6),rnd(-20,-8),rnd(0.8,1.6),PAL.ember,rnd(1,1.8));
   stampScorch(x,y,r*(big?1.8:1.2));                                                        /* 7 弹坑 */
-  cameraKick(big?7:3,rnd(Math.PI*2),big?0.038:0.014);
+  kickTier(kick===undefined?(big?3:1):kick,rnd(Math.PI*2));   /* v1.7: 震动按档位, 命中轻/击破重 */
   if(big)SFX.bigboom(x,y);else SFX.boom(x,y);
   chainDepth=chainDepth||0;
   if(dmg>0&&chainDepth<=CHAIN_MAX){ const st=calcStats();   /* 连锁深度上限 */

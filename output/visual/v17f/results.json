@@ -1,0 +1,108 @@
+{
+  "tag": "v17f",
+  "results": [
+    {
+      "pass": true,
+      "msg": "冲刺残影可见度 ghost=1 (期望>0.9)"
+    },
+    {
+      "pass": true,
+      "msg": "残影位置历史 trail=90 (期望>=20)"
+    },
+    {
+      "pass": true,
+      "msg": "机枪命中震动 T0=0.35 (记录:0.35,0.5,0.9,0.45,1.8)"
+    },
+    {
+      "pass": true,
+      "msg": "主炮命中震动 T1=0.9"
+    },
+    {
+      "pass": true,
+      "msg": "导弹命中震动 T2=1.8"
+    },
+    {
+      "pass": true,
+      "msg": "命中震动不超过 T2 (max=1.8)"
+    },
+    {
+      "pass": true,
+      "msg": "击破震动 T3=3 (记录:3)"
+    },
+    {
+      "pass": true,
+      "msg": "击破后 ST.shake=3.00 >= 3"
+    },
+    {
+      "pass": true,
+      "msg": "战斗场景 fps=80 (期望>=50)"
+    }
+  ],
+  "perf": {
+    "fps": 80,
+    "updateMs": 0,
+    "renderMs": 0.67,
+    "updates": 1157,
+    "quality": "AUTO",
+    "qLevel": 2,
+    "ghost": 0,
+    "trail": 90,
+    "counts": {
+      "enemies": 6,
+      "shots": 2,
+      "parts": 16,
+      "pickups": 4
+    }
+  },
+  "sprintPerf": {
+    "fps": 85,
+    "updateMs": -0.01,
+    "renderMs": 0.76,
+    "updates": 518,
+    "quality": "AUTO",
+    "qLevel": 2,
+    "ghost": 1,
+    "trail": 90,
+    "counts": {
+      "enemies": 0,
+      "shots": 0,
+      "parts": 142,
+      "pickups": 0
+    }
+  },
+  "hitKicks": [
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.5,
+    0.9,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.45,
+    0.35,
+    1.8,
+    0.9,
+    0.35,
+    0.35,
+    0.35,
+    0.35
+  ],
+  "killLog": {
+    "kicks": [
+      3
+    ],
+    "shake": 3,
+    "hold": 0
+  },
+  "errors": []
+}
