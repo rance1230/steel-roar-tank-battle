@@ -2,7 +2,7 @@
 
 横版坦克突击动作游戏：驾驶孤军坦克穿越**七大主题战场**，击破敌军、捡强化部件、弹反敌弹、轰穿 BOSS 与它的精英护卫队——通关后进入更高强度的下一周目，无限循环。
 
-**当前版本 v1.4.0**（内容里程碑：v14 高清 AI 立绘 → v15 俯视 16 向单位 + 地形图集 → v1.5 七主题关卡与玻璃 UI → v1.6 机动特效与 BOSS 护卫队）
+**当前版本 v1.7.0**（内容里程碑：v14 高清 AI 立绘 → v15 俯视 16 向单位 + 地形图集 → v1.5 七主题关卡与玻璃 UI → v1.6 机动特效与 BOSS 护卫队 → v1.7 手感三改：震动分级 · 实心冲刺残影 · 3D 等离子护罩 · 地形特效增强）
 
 - ▶ 在线游玩（GitHub Pages）：https://rance1230.github.io/steel-roar-tank-battle/
 - 📦 Android APK / 单文件 `index.html`：[GitHub Releases](https://github.com/rance1230/steel-roar-tank-battle/releases)
@@ -12,21 +12,17 @@
 
 ## 游戏截图
 
-| 标题画面 | 选择机体（实车预览） |
-|---|---|
-| ![标题画面](docs/img/title.jpg) | ![选择机体](docs/img/hull-select.jpg) |
+| 标题画面 | 选择机体（实车预览） | 选择僚机 |
+|---|---|---|
+| ![标题画面](docs/img/title.jpg) | ![选择机体](docs/img/hull-select.jpg) | ![选择僚机](docs/img/wingman-select.jpg) |
 
-| 沙漠哨站·战斗（模拟摇杆+玻璃按键） | 雪原突围·主题战场 |
-|---|---|
-| ![沙漠战斗](docs/img/battle-desert.jpg) | ![雪原战斗](docs/img/battle-snow.jpg) |
+| 沙漠哨站·战斗（模拟摇杆+玻璃按键） | 雪原突围·主题战场 | 3D 等离子护罩 |
+|---|---|---|
+| ![沙漠战斗](docs/img/battle-desert.jpg) | ![雪原战斗](docs/img/battle-snow.jpg) | ![能量护盾](docs/img/shield-orb.jpg) |
 
-| BOSS 与精英护卫队 | 战地整备（局内成长） |
-|---|---|
-| ![BOSS战](docs/img/boss-escort.jpg) | ![战地整备](docs/img/upgrade.jpg) |
-
-| 僚机选择 | 内置操作说明（13 页） |
-|---|---|
-| ![选择僚机](docs/img/wingman-select.jpg) | ![操作说明](docs/img/help.jpg) |
+| BOSS 与精英护卫队 | 战地整备（局内成长） | 内置操作说明（13 页） |
+|---|---|---|
+| ![BOSS战](docs/img/boss-escort.jpg) | ![战地整备](docs/img/upgrade.jpg) | ![操作说明](docs/img/help.jpg) |
 
 ---
 
@@ -39,6 +35,7 @@
 - **冲撞破门**：高速冲撞触发零距离炮击 ×1.35，按敌质量击飞、撞飞连锁（深度≤3）。
 - **连击与 Overdrive**：5 秒连击链，连击越高掉落越好，60+ 进入 Overdrive（射速/移速提升+金色尾焰）。
 - **BOSS 精英护卫队**：BOSS 不再单挑——4+ 精英随行环布合围，BOSS 冲锋前有「!!」预警，击破 BOSS 护卫溃散。
+- **v1.7 手感三改**：3D 等离子护罩（球面明暗+经纬弧线+环绕能量点，三机体尺寸各异）；震动分级（命中轻震、击破重震、BOSS 击破延长）；冲刺拖出 3 条按车身距回溯的实心剪影；水面涟漪/冰面碎晶/熔岩余烬等地形特效全面增强。
 - **机动表现**：触屏模拟摇杆 360° 变速、冲刺残影、按地形出扬尘/水花/减速粒子。
 - **Roguelite 成长**：每关后「战地整备」用部件升级装甲/速度/攻击/防御（可全额退回重分），通关进入下一周目，强化全部继承。
 - **玻璃拟态 UI**：标题/菜单/整备/结算全套玻璃面板，虚拟按键为圆形玻璃按钮 + 摇杆圆环。
