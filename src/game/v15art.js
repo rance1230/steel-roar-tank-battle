@@ -154,7 +154,7 @@ function v15Player(){
     for(let i=0;i<gn;i++){
       const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
       V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
-        alpha:Math.max(0.4,0.92-i*0.1)*player.ghostA,lv:Math.min(5,i)});
+        alpha:Math.max(0.35,0.85-i*0.1)*player.ghostA,lv:Math.min(5,i)});
     }
   }
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;

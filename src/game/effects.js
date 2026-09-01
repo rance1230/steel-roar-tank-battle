@@ -21,7 +21,7 @@ function stampScorch(x,y,r){
 function stampTracks(x,y,ang,heavy){
   const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=heavy?5:4;
   dctx.save(); dctx.translate(x,y); dctx.rotate(ang);
-  dctx.globalAlpha=heavy?0.13:0.1; dctx.fillStyle='#020407';
+  dctx.globalAlpha=heavy?0.10:0.09; dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档, 亮冰面不突兀 */
   dctx.fillRect(-L/2,oy*gap-(heavy?1.2:1),L,heavy?2.4:2);   /* 沿行进方向的履带压痕短划 */
   dctx.fillRect(-L/2,-oy*gap-(heavy?1.2:1),L,heavy?2.4:2);
   dctx.restore(); dctx.globalAlpha=1;
@@ -68,7 +68,8 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
         const p=part(x+ox+rnd(-3,3),y+oy+rnd(-3,3),
           cB*rnd(6,20)+ox*rnd(1.2,2.2)+rnd(-9,9), sB*rnd(6,20)+oy*rnd(1.2,2.2)-rnd(6,20),
           rnd(0.32,0.6), i%3?fx.water:PAL.white, rnd(1.8,3.4)*sc, 150);
-        if(i%3===0){ p.core=true; p.ray=true; }   /* 冰晶白芯+闪光拖尾 */
+        if(i%6===0)p.core=true;                    /* 白芯圆: 1/6 */
+        else if(i%6===3)p.ray=true;                /* 短亮线: 1/6 (core/ray 分离, else-if 链不吞) */
       }
     } else {
       const n=Math.max(5,Math.round(8*sc*m));

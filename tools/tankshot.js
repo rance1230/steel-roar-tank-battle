@@ -84,24 +84,25 @@ function assert(cond, msg, results) {
     if (bx >= 0) window.G.tp((bx + 1) * TS + 8, bandY(bx + 1) * TS + TS + 2);   /* 段左端起跑 */
     window.__follow = setInterval(() => { const tx = Math.floor(player.x / TS); const by = bandY(tx);
       if (by > 0) player.y += clamp(by * TS + TS + 2 - player.y, -30, 30); }, 150);
+    window.__keep = setInterval(() => { player.sprintG = 1; player.sprintLock = false; }, 200);   /* 摆拍保能量, 摆脱 2.6s 窗 */
   });
   await page.keyboard.down('ShiftLeft');
   await page.keyboard.down('KeyD');   /* 沿平直河道行驶: 停留在冰面带内 */
-  await page.waitForTimeout(400);
-  const ramp1 = await page.evaluate(() => window.G.perf());   /* 彗尾增长中: 约 1~3 条 */
+  await page.waitForTimeout(650);
+  const ramp1 = await page.evaluate(() => window.G.perf());   /* 彗尾增长中: 1~3 条 (冰面起步含加速期) */
   await page.waitForTimeout(1600);   /* 冰面冲刺减速50%, 满尾需 ~2s (156px/83px/s) */
   const sprintPerf = await page.evaluate(() => window.G.perf());   /* 满尾: 5~6 条 */
   await page.screenshot({ path: outDir + '/sprint-ghosts.png' });
   await page.keyboard.up('KeyD');
   await page.keyboard.down('KeyW');   /* 改向上顶墙 */
-  await page.evaluate(() => { clearInterval(window.__follow); window.G.tp(480, 34); });   /* 停跟随, 贴上边缘 */
+  await page.evaluate(() => { clearInterval(window.__follow); clearInterval(window.__keep); window.G.tp(480, 34); });   /* 停跟随/保能量, 贴上边缘: 能量满但位移≈0 */
   await page.waitForTimeout(900);
   const stuckPerf = await page.evaluate(() => window.G.perf());   /* 卡住: 尾巴应收缩归零 */
   await page.screenshot({ path: outDir + '/sprint-stuck.png' });
   await page.keyboard.up('KeyW');
   await page.keyboard.up('ShiftLeft');
   assert(sprintPerf.ghost > 0.9, '冲刺残影可见度 ghost=' + sprintPerf.ghost + ' (期望>0.9)', results);
-  assert(ramp1.ghostN >= 1 && ramp1.ghostN < 5, '残影随冲刺增长 ramp@0.4s=' + ramp1.ghostN + '条 (期望1~4)', results);
+  assert(ramp1.ghostN >= 1 && ramp1.ghostN < 5, '残影随冲刺增长 ramp@0.65s=' + ramp1.ghostN + '条 (期望1~4)', results);
   assert(sprintPerf.ghostN >= 5, '满尾条数 ghostN=' + sprintPerf.ghostN + ' (期望>=5)', results);
   assert(stuckPerf.ghostN === 0, '卡住后残影归零 ghostN=' + stuckPerf.ghostN + ' len=' + stuckPerf.ghostLen + ' (期望0)', results);
   assert(sprintPerf.trail >= 20, '残影位置历史 trail=' + sprintPerf.trail + ' (期望>=20)', results);

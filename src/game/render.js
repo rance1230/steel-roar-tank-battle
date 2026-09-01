@@ -532,7 +532,7 @@ function drawGhosts(){
   const v=hullCfg().vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
   for(let i=0;i<gn;i++){
     const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
-    const al=Math.max(0.4,0.92-i*0.1)*player.ghostA, dk=Math.max(0.25,0.5-i*0.045);
+    const al=Math.max(0.35,0.85-i*0.1)*player.ghostA, dk=Math.max(0.25,0.5-i*0.045);
     ctx.save(); ctx.globalAlpha=al;
     drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk),hi:shade(vc(v.hi)||PAL.white,dk),
       trim:shade(vc(v.trim)||PAL.cyan,dk),turret:shade(vc(v.turret)||PAL.lite,dk),

@@ -42,7 +42,7 @@ let shotsFired=0;
 /* v1.7: 冲刺残影 — 彗尾模型: 位置历史环(60Hz×1.5s) + 尾长随冲刺实际位移增长,
    每走 GHOST_GAP(26px≈一个身位)多一条剪影, 封顶 GHOST_TAILMAX(156px=6条);
    停冲或卡住(实际位移≈0, 顶墙速度再大也不算)时尾长收缩 → 残影逐条消失 */
-const GHOST_GAP=26, GHOST_TAILMAX=156, GHOST_SHRINK=380;
+const GHOST_GAP=30, GHOST_TAILMAX=180, GHOST_SHRINK=380;
 function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.a}); if(p.trail.length>90)p.trail.shift(); }
 function trailAtDist(p,distBack){
   const t=p.trail; if(!t||t.length<2)return null;
@@ -316,14 +316,14 @@ function updPlayer(dt){
   if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5; callAirstrike(); }
   if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=sc.cd; p.shieldAge=0; SFX.shield(p.x,p.y); }
   const tid=tileAtPx(p.x,p.y);
+  const disp=Math.hypot(p.x-px0,p.y-py0);   /* v1.7: 实际位移(顶墙卡住时≈0) — 特效与残影共用的判定 */
   p.dustT-=dt;
-  if(p.moving&&p.dustT<=0){
+  if(p.moving&&disp>0.1&&p.dustT<=0){   /* v1.7.1: 实际位移才出特效——顶墙时不再原地堆粒子/履带印(0.10×60次盖章≈实心黑) */
     p.dustT=sprint?0.03:0.09;
     stampTracks(p.x-Math.cos(p.a)*10,p.y-Math.sin(p.a)*10,p.a,sprint);   /* §7 履带痕迹 decal */
     terrainMoveFx(p.x,p.y,p.a,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
   }
   /* v1.7: 残影彗尾 — 尾长随冲刺实际位移增长(每26px一条, 封顶6条; 卡住位移≈0即收缩), 松开淡出 */
-  const disp=Math.hypot(p.x-px0,p.y-py0);
   if(sprint&&disp>0.1){ p.ghostLen=Math.min(GHOST_TAILMAX,(p.ghostLen||0)+disp);
     p.ghostA=Math.min(1,p.ghostA+dt*8); }
   else { p.ghostLen=Math.max(0,(p.ghostLen||0)-dt*GHOST_SHRINK);
