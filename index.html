@@ -929,16 +929,16 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
   const cB=-Math.cos(ang), sB=-Math.sin(ang);   /* 车尾方向单位向量 */
   if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 双圈涟漪 */
     const lava=RUN.lvl===6, ice=RUN.lvl===4;
-    const n=Math.max(5,Math.round((ice?5:7)*sc*m));
+    const n=Math.max(5,Math.round((ice?5:8)*sc*m));
     for(let i=0;i<n;i++){
       const p=part(bx+rnd(-5,5),by+rnd(-5,5),
         cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+(ice?rnd(-18,-5):rnd(lava?-54:-80,lava?-26:-32)),
-        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.4,3.2)*sc, ice?140:(lava?90:240));
-      if(i%5===0)p.core=true;                    /* 亮芯水珠/岩浆滴 */
+        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.8,3.8)*sc, ice?140:(lava?90:240));
+      if(i%4===0)p.core=true;                    /* 亮芯水珠/岩浆滴 (真机审校: 加大加亮抗瓦片噪点) */
       if(ice&&i%4===0)p.ray=true;                /* 冰晶闪光拖尾 */
     }
-    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.55,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.7; }   /* 涟漪双圈: 错峰发射保圆环可读 */
-    else { const r2=part(bx,by,0,0,0.38,fx.water,14*sc,0); r2.ring=true; r2.a=0.6; }
+    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.6,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.8; r1.lw=3; }   /* 涟漪双圈: 错峰发射保圆环可读, 描边加实 */
+    else { const r2=part(bx,by,0,0,0.42,fx.water,14*sc,0); r2.ring=true; r2.a=0.65; r2.lw=3; }
     if(sprint&&Math.random()<0.4){ const r3=part(bx,by,0,0,0.44,PAL.white,11*sc,0); r3.ring=true; r3.a=0.45;
       const c=part(bx,by,0,0,0.22,PAL.white,4*sc,0); c.core=true; }
     if(lava){ addLight(bx,by,17,PAL.ember,0.34,0.22);                      /* 岩浆橙光 */
@@ -966,7 +966,7 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
         (snow?rnd(1.8,3.4):rnd(1.4,3))*sc, snow?36:0);
       if(snow&&i%4===1)p.core=true;              /* 雪沫白芯 */
       if(ash&&i%5===0){ p.col=PAL.ember; p.core=true; p.grav=-14; }   /* 灰烬火星 */
-      if(RUN.lvl===0&&i%3===0)p.col='#d9a860';   /* 沙漠暖色高光 */
+      if(RUN.lvl===0&&i%2===0)p.col='#d9a860';   /* 沙漠暖色高光 (真机审校: 提频保醒目) */
     }
     if(sprint){
       for(let i=0;i<2;i++)part(bx+rnd(-5,5),by+rnd(-5,5),cB*rnd(20,44)+rnd(-10,10),sB*rnd(20,44)-rnd(6,16),
@@ -1807,7 +1807,9 @@ function updParts(dt){
     p.life-=dt; if(p.life<=0){parts.splice(i,1);continue;}
     if(!p.ring){ p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||0)*dt;p.vx*=0.98;p.vy*=0.98; } }
   for(let i=floats.length-1;i>=0;i--){ const f=floats[i];
-    f.oy=f.y; f.t-=dt; f.y-=22*dt; if(f.t<=0)floats.splice(i,1); }
+    f.oy=f.y; f.t-=dt; f.y-=22*dt;
+    if(f.y<cam.y+34)f.y=cam.y+34;   /* v1.7: 飘字不越过顶部 HUD 条 */
+    if(f.t<=0)floats.splice(i,1); }
 }
 function updWeather(dt){
   for(const m of motes){ m.x+=m.vx*dt; m.y+=m.vy*dt; m.ph=(m.ph||0);
@@ -2424,7 +2426,7 @@ function drawParts(){
     const f=1-p.life/p.t;
     if(p.ring){
       glow(p.x,p.y,p.size*(0.9+f),p.col||PAL.gold,0.08*(1-f));
-      ctx.globalAlpha=(1-f)*(p.a||1); ctx.strokeStyle=p.col||PAL.gold; ctx.lineWidth=2;
+      ctx.globalAlpha=(1-f)*(p.a||1); ctx.strokeStyle=p.col||PAL.gold; ctx.lineWidth=p.lw||2;
       ctx.beginPath(); ctx.arc(p.x,p.y,p.size*(0.55+f*0.45),0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; }
     else if(p.core){                          /* 白芯冲击闪光: glow+实心圆 */
       glow(p.x,p.y,p.size*(1.2-f),p.col||PAL.white,0.5*(1-f));
@@ -4854,7 +4856,8 @@ window.G={
       pose('tank',0,-118,-72,Math.PI/2);            /* 静默敌车衬托护罩比例 */
       drop(-64,64,'heal');
     }
-    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍) */
+    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍); 压 boss 触发防 1.6s 后乱入 */
+    if(name==='free')ST.bossSpawned=true;
     cam.ox=cam.x; cam.oy=cam.y;
     return name+' lvl'+RUN.lvl+' enemies:'+enemies.length;
   },

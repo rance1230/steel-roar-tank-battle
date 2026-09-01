@@ -61,16 +61,16 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
   const cB=-Math.cos(ang), sB=-Math.sin(ang);   /* 车尾方向单位向量 */
   if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 双圈涟漪 */
     const lava=RUN.lvl===6, ice=RUN.lvl===4;
-    const n=Math.max(5,Math.round((ice?5:7)*sc*m));
+    const n=Math.max(5,Math.round((ice?5:8)*sc*m));
     for(let i=0;i<n;i++){
       const p=part(bx+rnd(-5,5),by+rnd(-5,5),
         cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+(ice?rnd(-18,-5):rnd(lava?-54:-80,lava?-26:-32)),
-        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.4,3.2)*sc, ice?140:(lava?90:240));
-      if(i%5===0)p.core=true;                    /* 亮芯水珠/岩浆滴 */
+        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.8,3.8)*sc, ice?140:(lava?90:240));
+      if(i%4===0)p.core=true;                    /* 亮芯水珠/岩浆滴 (真机审校: 加大加亮抗瓦片噪点) */
       if(ice&&i%4===0)p.ray=true;                /* 冰晶闪光拖尾 */
     }
-    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.55,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.7; }   /* 涟漪双圈: 错峰发射保圆环可读 */
-    else { const r2=part(bx,by,0,0,0.38,fx.water,14*sc,0); r2.ring=true; r2.a=0.6; }
+    if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.6,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.8; r1.lw=3; }   /* 涟漪双圈: 错峰发射保圆环可读, 描边加实 */
+    else { const r2=part(bx,by,0,0,0.42,fx.water,14*sc,0); r2.ring=true; r2.a=0.65; r2.lw=3; }
     if(sprint&&Math.random()<0.4){ const r3=part(bx,by,0,0,0.44,PAL.white,11*sc,0); r3.ring=true; r3.a=0.45;
       const c=part(bx,by,0,0,0.22,PAL.white,4*sc,0); c.core=true; }
     if(lava){ addLight(bx,by,17,PAL.ember,0.34,0.22);                      /* 岩浆橙光 */
@@ -98,7 +98,7 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
         (snow?rnd(1.8,3.4):rnd(1.4,3))*sc, snow?36:0);
       if(snow&&i%4===1)p.core=true;              /* 雪沫白芯 */
       if(ash&&i%5===0){ p.col=PAL.ember; p.core=true; p.grav=-14; }   /* 灰烬火星 */
-      if(RUN.lvl===0&&i%3===0)p.col='#d9a860';   /* 沙漠暖色高光 */
+      if(RUN.lvl===0&&i%2===0)p.col='#d9a860';   /* 沙漠暖色高光 (真机审校: 提频保醒目) */
     }
     if(sprint){
       for(let i=0;i<2;i++)part(bx+rnd(-5,5),by+rnd(-5,5),cB*rnd(20,44)+rnd(-10,10),sB*rnd(20,44)-rnd(6,16),

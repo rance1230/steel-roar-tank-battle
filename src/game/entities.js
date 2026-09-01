@@ -613,7 +613,9 @@ function updParts(dt){
     p.life-=dt; if(p.life<=0){parts.splice(i,1);continue;}
     if(!p.ring){ p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||0)*dt;p.vx*=0.98;p.vy*=0.98; } }
   for(let i=floats.length-1;i>=0;i--){ const f=floats[i];
-    f.oy=f.y; f.t-=dt; f.y-=22*dt; if(f.t<=0)floats.splice(i,1); }
+    f.oy=f.y; f.t-=dt; f.y-=22*dt;
+    if(f.y<cam.y+34)f.y=cam.y+34;   /* v1.7: 飘字不越过顶部 HUD 条 */
+    if(f.t<=0)floats.splice(i,1); }
 }
 function updWeather(dt){
   for(const m of motes){ m.x+=m.vx*dt; m.y+=m.vy*dt; m.ph=(m.ph||0);

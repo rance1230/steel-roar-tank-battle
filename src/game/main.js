@@ -380,7 +380,8 @@ window.G={
       pose('tank',0,-118,-72,Math.PI/2);            /* 静默敌车衬托护罩比例 */
       drop(-64,64,'heal');
     }
-    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍) */
+    /* 'free': 空场, 由脚本 tp/按键驱动 (冲刺残影/地形特效摆拍); 压 boss 触发防 1.6s 后乱入 */
+    if(name==='free')ST.bossSpawned=true;
     cam.ox=cam.x; cam.oy=cam.y;
     return name+' lvl'+RUN.lvl+' enemies:'+enemies.length;
   },

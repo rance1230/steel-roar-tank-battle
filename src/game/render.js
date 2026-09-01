@@ -490,7 +490,7 @@ function drawParts(){
     const f=1-p.life/p.t;
     if(p.ring){
       glow(p.x,p.y,p.size*(0.9+f),p.col||PAL.gold,0.08*(1-f));
-      ctx.globalAlpha=(1-f)*(p.a||1); ctx.strokeStyle=p.col||PAL.gold; ctx.lineWidth=2;
+      ctx.globalAlpha=(1-f)*(p.a||1); ctx.strokeStyle=p.col||PAL.gold; ctx.lineWidth=p.lw||2;
       ctx.beginPath(); ctx.arc(p.x,p.y,p.size*(0.55+f*0.45),0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; }
     else if(p.core){                          /* 白芯冲击闪光: glow+实心圆 */
       glow(p.x,p.y,p.size*(1.2-f),p.col||PAL.white,0.5*(1-f));
