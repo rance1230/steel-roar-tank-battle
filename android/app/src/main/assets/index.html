@@ -1247,7 +1247,7 @@ let shotsFired=0;
 /* v1.7: 冲刺残影 — 彗尾模型: 位置历史环(60Hz×1.5s) + 尾长随冲刺实际位移增长,
    每走 GHOST_GAP(26px≈一个身位)多一条剪影, 封顶 GHOST_TAILMAX(156px=6条);
    停冲或卡住(实际位移≈0, 顶墙速度再大也不算)时尾长收缩 → 残影逐条消失 */
-const GHOST_GAP=26, GHOST_TAILMAX=156, GHOST_SHRINK=380;
+const GHOST_GAP=30, GHOST_TAILMAX=180, GHOST_SHRINK=380;
 function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.a}); if(p.trail.length>90)p.trail.shift(); }
 function trailAtDist(p,distBack){
   const t=p.trail; if(!t||t.length<2)return null;
@@ -2487,7 +2487,7 @@ function drawGhosts(){
   const v=hullCfg().vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
   for(let i=0;i<gn;i++){
     const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
-    const al=Math.max(0.4,0.92-i*0.1)*player.ghostA, dk=Math.max(0.25,0.5-i*0.045);
+    const al=Math.max(0.35,0.85-i*0.1)*player.ghostA, dk=Math.max(0.25,0.5-i*0.045);
     ctx.save(); ctx.globalAlpha=al;
     drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk),hi:shade(vc(v.hi)||PAL.white,dk),
       trim:shade(vc(v.trim)||PAL.cyan,dk),turret:shade(vc(v.turret)||PAL.lite,dk),
@@ -3833,7 +3833,7 @@ function v15Player(){
     for(let i=0;i<gn;i++){
       const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
       V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
-        alpha:Math.max(0.4,0.92-i*0.1)*player.ghostA,lv:Math.min(5,i)});
+        alpha:Math.max(0.35,0.85-i*0.1)*player.ghostA,lv:Math.min(5,i)});
     }
   }
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;
