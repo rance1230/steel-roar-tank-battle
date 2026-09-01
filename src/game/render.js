@@ -524,19 +524,20 @@ function drawRadar(x,y,w,h){
   if(player){ upx(sx(player)-1,sy(player)-1,3,3,PAL.cyan); }
   uctx.restore();
 }
-/* v1.7: 冲刺残影 — 3条深色同形剪影 (0.09/0.17/0.25s 历史位), v15 生效时走 HD 队列 */
+/* v1.7: 冲刺残影彗尾 — 条数随冲刺位移增长(0~6条, 每26px一条), 逐条变浅; v15 生效时走 HD 队列 */
 function drawGhosts(){
   if(typeof V15!=='undefined'&&V15.ok&&V15.spec&&V15.spec('player',RUN.hull||'balanced'))return;
   if(!player||!player.ghostA||player.ghostA<0.02)return;
+  const gn=ghostCount(); if(gn<1)return;
   const v=hullCfg().vis||{}, hasV=!!v.hull, vc=c=>hasV&&c?c:undefined;
-  const ds=[40,80,120], al=[0.92,0.78,0.62], dk=[0.5,0.42,0.34];
-  for(let i=0;i<3;i++){
-    const e=trailAtDist(player,ds[i]); if(!e)continue;
-    ctx.save(); ctx.globalAlpha=al[i]*player.ghostA;
-    drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk[i]),hi:shade(vc(v.hi)||PAL.white,dk[i]),
-      trim:shade(vc(v.trim)||PAL.cyan,dk[i]),turret:shade(vc(v.turret)||PAL.lite,dk[i]),
-      barrel:shade(vc(v.barrel)||PAL.steel,dk[i]),hullDk:shade(v.dk||PAL.dark,dk[i]*0.7),
-      track:shade(v.track||PAL.steel,dk[i]),muzzle:shade(v.trim||PAL.cyan,dk[i]),
+  for(let i=0;i<gn;i++){
+    const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
+    const al=Math.max(0.4,0.92-i*0.1)*player.ghostA, dk=Math.max(0.25,0.5-i*0.045);
+    ctx.save(); ctx.globalAlpha=al;
+    drawTank(e.x,e.y,e.a,{s:v.s||1,hull:shade(vc(v.hull)||PAL.steel,dk),hi:shade(vc(v.hi)||PAL.white,dk),
+      trim:shade(vc(v.trim)||PAL.cyan,dk),turret:shade(vc(v.turret)||PAL.lite,dk),
+      barrel:shade(vc(v.barrel)||PAL.steel,dk),hullDk:shade(v.dk||PAL.dark,dk*0.7),
+      track:shade(v.track||PAL.steel,dk),muzzle:shade(v.trim||PAL.cyan,dk),
       twin:!!v.twin,antenna:false,core:false,dist:0,flash:0,ghost:true});
     ctx.restore();
   }

@@ -1,9 +1,21 @@
 {
-  "tag": "v17g",
+  "tag": "v17k",
   "results": [
     {
       "pass": true,
       "msg": "冲刺残影可见度 ghost=1 (期望>0.9)"
+    },
+    {
+      "pass": true,
+      "msg": "残影随冲刺增长 ramp@0.4s=1条 (期望1~4)"
+    },
+    {
+      "pass": true,
+      "msg": "满尾条数 ghostN=6 (期望>=5)"
+    },
+    {
+      "pass": true,
+      "msg": "卡住后残影归零 ghostN=0 len=0 (期望0)"
     },
     {
       "pass": true,
@@ -35,38 +47,42 @@
     },
     {
       "pass": true,
-      "msg": "战斗场景 fps=74 (期望>=50)"
+      "msg": "战斗场景 fps=84 (期望>=50)"
     }
   ],
   "perf": {
-    "fps": 74,
-    "updateMs": -0.01,
-    "renderMs": 0.69,
-    "updates": 1157,
+    "fps": 84,
+    "updateMs": 0,
+    "renderMs": 1.06,
+    "updates": 1250,
     "quality": "AUTO",
     "qLevel": 2,
     "ghost": 0,
+    "ghostN": 0,
+    "ghostLen": 0,
     "trail": 90,
     "counts": {
       "enemies": 6,
-      "shots": 4,
-      "parts": 15,
+      "shots": 3,
+      "parts": 16,
       "pickups": 4
     }
   },
   "sprintPerf": {
-    "fps": 68,
+    "fps": 78,
     "updateMs": 0,
-    "renderMs": 0.85,
-    "updates": 513,
+    "renderMs": 1.21,
+    "updates": 550,
     "quality": "AUTO",
     "qLevel": 2,
     "ghost": 1,
+    "ghostN": 6,
+    "ghostLen": 156,
     "trail": 90,
     "counts": {
       "enemies": 0,
       "shots": 0,
-      "parts": 156,
+      "parts": 134,
       "pickups": 0
     }
   },

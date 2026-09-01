@@ -39,8 +39,10 @@ function updCombo(dt){
   COMBO.flash=Math.max(0,COMBO.flash-dt);
 }
 let shotsFired=0;
-/* v1.7: 冲刺残影 — 位置历史环(60Hz采样, 留~1s), 冲刺时恒显3条深色同形剪影;
-   按距离回溯采样(不受河道减速影响), 空间间距恒定 ≈ 一车身长 */
+/* v1.7: 冲刺残影 — 彗尾模型: 位置历史环(60Hz×1.5s) + 尾长随冲刺实际位移增长,
+   每走 GHOST_GAP(26px≈一个身位)多一条剪影, 封顶 GHOST_TAILMAX(156px=6条);
+   停冲或卡住(实际位移≈0, 顶墙速度再大也不算)时尾长收缩 → 残影逐条消失 */
+const GHOST_GAP=26, GHOST_TAILMAX=156, GHOST_SHRINK=380;
 function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.a}); if(p.trail.length>90)p.trail.shift(); }
 function trailAtDist(p,distBack){
   const t=p.trail; if(!t||t.length<2)return null;
@@ -53,6 +55,7 @@ function trailAtDist(p,distBack){
   }
   return t[0];
 }
+function ghostCount(){ return player?Math.min(6,Math.floor((player.ghostLen||0)/GHOST_GAP)):0; }
 
 /* ---------- 玩家 ---------- */
 function makePlayer(){
@@ -61,7 +64,7 @@ function makePlayer(){
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
     shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
-    sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,trail:[]};
+    sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,ghostLen:0,trail:[]};
 }
 function shieldActive(){ return player.shieldT>0||player.shieldGrace>0; }
 
@@ -264,6 +267,7 @@ function updPlayer(dt){
         p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt); p.shieldAge+=dt;
         p.strikeCd=Math.max(0,p.strikeCd-dt);
         p.ghostA=Math.max(0,(p.ghostA||0)-dt*4);   /* v1.7: 锁定期间残影淡出 */
+        p.ghostLen=Math.max(0,(p.ghostLen||0)-dt*GHOST_SHRINK);
         return;   /* 锁定期间只等待主炮指令 */
       }
     }
@@ -289,6 +293,7 @@ function updPlayer(dt){
   p.vy+=clamp(tvy-p.vy,-dv,dv);
   const spd=Math.hypot(p.vx,p.vy);
   p.moving=spd>15;
+  const px0=p.x, py0=p.y;   /* v1.7: 彗尾按实际位移增长(顶墙卡住时位移≈0, 尾巴收缩) */
   moveCirc(p,p.vx*dt,p.vy*dt,p.r);
   if(spd>1)p.dist+=spd*dt;
   if(p.moving){ const ta=Math.atan2(p.vy,p.vx);
@@ -317,9 +322,12 @@ function updPlayer(dt){
     stampTracks(p.x-Math.cos(p.a)*10,p.y-Math.sin(p.a)*10,p.a,sprint);   /* §7 履带痕迹 decal */
     terrainMoveFx(p.x,p.y,p.a,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
   }
-  /* v1.7: 冲刺残影 — 冲刺中恒显3条深色剪影(见 v15art/render), 松开 0.25s 淡出 */
-  if(sprint&&p.moving)p.ghostA=Math.min(1,p.ghostA+dt*8);
-  else p.ghostA=Math.max(0,p.ghostA-dt*4);
+  /* v1.7: 残影彗尾 — 尾长随冲刺实际位移增长(每26px一条, 封顶6条; 卡住位移≈0即收缩), 松开淡出 */
+  const disp=Math.hypot(p.x-px0,p.y-py0);
+  if(sprint&&disp>0.1){ p.ghostLen=Math.min(GHOST_TAILMAX,(p.ghostLen||0)+disp);
+    p.ghostA=Math.min(1,p.ghostA+dt*8); }
+  else { p.ghostLen=Math.max(0,(p.ghostLen||0)-dt*GHOST_SHRINK);
+    p.ghostA=Math.max(0,p.ghostA-dt*4); }
   if(sprint&&p.moving&&Math.random()<0.5)part(p.x-Math.cos(p.a)*12,p.y-Math.sin(p.a)*12,-Math.cos(p.a)*30+rnd(-10,10),-Math.sin(p.a)*30+rnd(-10,10),0.25,PAL.gold,2);
   if(COMBO.od&&p.moving&&Math.random()<0.7)part(p.x-Math.cos(p.a)*11,p.y-Math.sin(p.a)*11,-Math.cos(p.a)*45+rnd(-12,12),-Math.sin(p.a)*45+rnd(-12,12),0.3,PAL.gold,rnd(1.5,2.5));
   trailRec(p);   /* v1.7: 残影位置历史 */

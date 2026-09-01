@@ -61,13 +61,23 @@ function terrainMoveFx(x,y,ang,tid,sprint,heavy){
   const cB=-Math.cos(ang), sB=-Math.sin(ang);   /* 车尾方向单位向量 */
   if(tid===3){                                   /* 水面/冰面/熔岩: 向后上溅花 + 双圈涟漪 */
     const lava=RUN.lvl===6, ice=RUN.lvl===4;
-    const n=Math.max(5,Math.round((ice?5:8)*sc*m));
-    for(let i=0;i<n;i++){
-      const p=part(bx+rnd(-5,5),by+rnd(-5,5),
-        cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+(ice?rnd(-18,-5):rnd(lava?-54:-80,lava?-26:-32)),
-        rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.8,3.8)*sc, ice?140:(lava?90:240));
-      if(i%4===0)p.core=true;                    /* 亮芯水珠/岩浆滴 (真机审校: 加大加亮抗瓦片噪点) */
-      if(ice&&i%4===0)p.ray=true;                /* 冰晶闪光拖尾 */
+    if(ice){   /* 冰面: 碎晶向车体两侧崩飞 — v15 残影在HD层盖住车后像素层粒子, 侧溅需飞出残影带(高≈50px) */
+      const n=Math.max(5,Math.round(5*sc*m));
+      for(let i=0;i<n;i++){
+        const side=(i%2?1:-1)*rnd(13,24), ox=-Math.sin(ang)*side, oy=Math.cos(ang)*side;
+        const p=part(x+ox+rnd(-3,3),y+oy+rnd(-3,3),
+          cB*rnd(6,20)+ox*rnd(1.2,2.2)+rnd(-9,9), sB*rnd(6,20)+oy*rnd(1.2,2.2)-rnd(6,20),
+          rnd(0.32,0.6), i%3?fx.water:PAL.white, rnd(1.8,3.4)*sc, 150);
+        if(i%3===0){ p.core=true; p.ray=true; }   /* 冰晶白芯+闪光拖尾 */
+      }
+    } else {
+      const n=Math.max(5,Math.round(8*sc*m));
+      for(let i=0;i<n;i++){
+        const p=part(bx+rnd(-5,5),by+rnd(-5,5),
+          cB*rnd(16,44)+rnd(-14,14), sB*rnd(16,44)+rnd(lava?-54:-80,lava?-26:-32),
+          rnd(0.34,0.62), i%3?fx.water:PAL.white, rnd(1.8,3.8)*sc, lava?90:240);
+        if(i%4===0)p.core=true;                    /* 亮芯水珠/岩浆滴 (抗瓦片噪点) */
+      }
     }
     if(_rippleTgl=!_rippleTgl){ const r1=part(bx,by,0,0,0.6,lava?PAL.gold:PAL.white,10*sc,0); r1.ring=true; r1.a=0.8; r1.lw=3; }   /* 涟漪双圈: 错峰发射保圆环可读, 描边加实 */
     else { const r2=part(bx,by,0,0,0.42,fx.water,14*sc,0); r2.ring=true; r2.a=0.65; r2.lw=3; }

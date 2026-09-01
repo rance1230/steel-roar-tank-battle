@@ -290,11 +290,13 @@ window.G={
   },
   checkReflected(){ return shots.some(s=>s.refl&&s.friendly); },
   tp(x,y){ player.x=clamp(x,24,WORLDW-24); player.y=clamp(y,24,WORLDH-24); player.ox=player.x; player.oy=player.y;
-    player.trail=[]; player.ghostA=0;   /* v1.7: 传送清残影历史 */
+    player.trail=[]; player.ghostA=0; player.ghostLen=0;   /* v1.7: 传送清残影历史与尾长 */
     cam.x=clamp(player.x-VW/2,0,WORLDW-VW); cam.y=clamp(player.y-VH/2,0,WORLDH-VH); cam.ox=cam.x; cam.oy=cam.y; },
   perf(){ return {fps:PERF.fps,updateMs:+PERF.updateMs.toFixed(2),renderMs:+PERF.renderMs.toFixed(2),
     updates:PERF.updates,quality:PERF.quality,qLevel:PERF.qLevel,
     ghost:player?+(player.ghostA||0).toFixed(2):0,          /* v1.7: 残影可见度 0~1 */
+    ghostN:ghostCount(),                                      /* v1.7: 彗尾当前条数 0~6 */
+    ghostLen:player?Math.round(player.ghostLen||0):0,
     trail:player&&player.trail?player.trail.length:0,
     counts:{enemies:enemies.length,shots:shots.length,parts:parts.length,pickups:pickups.length}}; },
   set(k,v){ SET[k]=v; applyVolumes(); saveSet(); },

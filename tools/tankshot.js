@@ -70,8 +70,8 @@ function assert(cond, msg, results) {
   await page.waitForTimeout(150);
   await page.screenshot({ path: outDir + '/shield-hit.png' });
 
-  /* C. 冲刺残影 (雪原冰面河道: 残影+冰花+扬雪同框) */
-  await page.evaluate(() => {   /* 关卡保持 lvl4; 找河道最平直的 7 格段, tp 到段中点 */
+  /* C. 冲刺残影彗尾 (雪原冰面河道: 增长中的彗尾+冰花同框) */
+  await page.evaluate(() => {   /* 关卡保持 lvl4; 找河道最平直的 7 格段, 页内跟随钳回河带(防驶出) */
     window.G.visualScene('free');
     const bandY = tx => { for (let ty = 1; ty < MAPH - 1; ty++) if (terr.m[ty * MAPW + tx] === 3) return ty; return -1; };
     let bx = -1, bs = 1e9;
@@ -81,16 +81,29 @@ function assert(cond, msg, results) {
       const v = Math.max(...ys) - Math.min(...ys);
       if (v < bs) { bs = v; bx = tx; }
     }
-    if (bx >= 0) window.G.tp((bx + 1) * TS + 8, bandY(bx + 1) * TS + TS + 2);   /* 段左端起跑, 沿河驶过整段 */
+    if (bx >= 0) window.G.tp((bx + 1) * TS + 8, bandY(bx + 1) * TS + TS + 2);   /* 段左端起跑 */
+    window.__follow = setInterval(() => { const tx = Math.floor(player.x / TS); const by = bandY(tx);
+      if (by > 0) player.y += clamp(by * TS + TS + 2 - player.y, -30, 30); }, 150);
   });
   await page.keyboard.down('ShiftLeft');
   await page.keyboard.down('KeyD');   /* 沿平直河道行驶: 停留在冰面带内 */
-  await page.waitForTimeout(1400);
-  const sprintPerf = await page.evaluate(() => window.G.perf());
+  await page.waitForTimeout(400);
+  const ramp1 = await page.evaluate(() => window.G.perf());   /* 彗尾增长中: 约 1~3 条 */
+  await page.waitForTimeout(1600);   /* 冰面冲刺减速50%, 满尾需 ~2s (156px/83px/s) */
+  const sprintPerf = await page.evaluate(() => window.G.perf());   /* 满尾: 5~6 条 */
   await page.screenshot({ path: outDir + '/sprint-ghosts.png' });
+  await page.keyboard.up('KeyD');
+  await page.keyboard.down('KeyW');   /* 改向上顶墙 */
+  await page.evaluate(() => { clearInterval(window.__follow); window.G.tp(480, 34); });   /* 停跟随, 贴上边缘 */
+  await page.waitForTimeout(900);
+  const stuckPerf = await page.evaluate(() => window.G.perf());   /* 卡住: 尾巴应收缩归零 */
+  await page.screenshot({ path: outDir + '/sprint-stuck.png' });
   await page.keyboard.up('KeyW');
   await page.keyboard.up('ShiftLeft');
   assert(sprintPerf.ghost > 0.9, '冲刺残影可见度 ghost=' + sprintPerf.ghost + ' (期望>0.9)', results);
+  assert(ramp1.ghostN >= 1 && ramp1.ghostN < 5, '残影随冲刺增长 ramp@0.4s=' + ramp1.ghostN + '条 (期望1~4)', results);
+  assert(sprintPerf.ghostN >= 5, '满尾条数 ghostN=' + sprintPerf.ghostN + ' (期望>=5)', results);
+  assert(stuckPerf.ghostN === 0, '卡住后残影归零 ghostN=' + stuckPerf.ghostN + ' len=' + stuckPerf.ghostLen + ' (期望0)', results);
   assert(sprintPerf.trail >= 20, '残影位置历史 trail=' + sprintPerf.trail + ' (期望>=20)', results);
 
   /* D. 地形行进特效 */

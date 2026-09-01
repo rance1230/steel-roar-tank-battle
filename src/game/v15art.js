@@ -65,7 +65,7 @@ function v15Glow(x,y,r,c,a){
 /* ---------- v1.7: 残影实心剪影帧缓存 ----------
    帧图 source-in 填深色 → 纯色坦克剪影(轮廓100%可读, 不依赖帧内明暗细节);
    三档色深随距离递减, 懒生成后缓存。绘制尺寸与本体一致 → 形象完全一致。 */
-const GHOST_COL=['#141b2b','#1e2940','#2a3852'];   /* 深蓝黑系三档: 越靠后越浅 */
+const GHOST_COL=['#141b2b','#1c2740','#243350','#2c3f60','#344b70','#3d5780'];   /* 深蓝黑系六级: 越靠尾越浅 */
 V15.ghostFrame=function(sp,idx,lv){
   if(!V15._gh)V15._gh=new Map();
   const key=sp.img+':'+idx+':'+lv;
@@ -148,12 +148,13 @@ function v15Player(){
   if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
   const sp=v15Spec('player',RUN.hull||'balanced');
   if(!sp||!v15Image(sp.img))return false;
-  /* v1.7: 冲刺残影 — 按距离回溯采样 3 条实心深色剪影 (40/80/120px = 1~3 车身长, 保证互不遮挡), 先于本体入队 */
-  if(player.ghostA>0.02&&player.trail&&player.trail.length>4){
-    const ds=[40,80,120], al=[0.92,0.78,0.62];
-    for(let i=0;i<3;i++){
-      const e=trailAtDist(player,ds[i]); if(!e)continue;
-      V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,alpha:al[i]*player.ghostA,lv:i});
+  /* v1.7: 残影彗尾 — 条数随冲刺位移增长(ghostLen/GHOST_GAP, 封顶6), 逐条变浅变淡, 先于本体入队 */
+  const gn=ghostCount();
+  if(player.ghostA>0.02&&gn>0&&player.trail&&player.trail.length>4){
+    for(let i=0;i<gn;i++){
+      const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
+      V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
+        alpha:Math.max(0.4,0.92-i*0.1)*player.ghostA,lv:Math.min(5,i)});
     }
   }
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;
