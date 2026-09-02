@@ -20,10 +20,19 @@ function stampScorch(x,y,r){
 }
 function stampTracks(x,y,ang,heavy,skid){
   const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=skid?6.5:(heavy?5:4),W=skid?3:(heavy?2.4:2);
+  const snow=(RUN.lvl===4||RUN.lvl===5);
+  const ice=tileAtPx(x,y)===3&&snow;
   dctx.save(); dctx.translate(x,y); dctx.rotate(ang);
-  dctx.globalAlpha=skid?0.16:(heavy?0.10:0.09); dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档; v1.8 W3: 甩尾印加浓拉长 */
-  dctx.fillRect(-L/2,oy*gap-W/2,L,W);   /* 沿行进方向的履带压痕短划 */
-  dctx.fillRect(-L/2,-oy*gap-W/2,L,W);
+  if(skid&&ice){   /* W9-rubric R2: 近黑细芯(0.55)+宽软边(0.22)双层, 加长后移出车体投影 */
+    const LL=12;
+    dctx.fillStyle='#000a14';
+    dctx.globalAlpha=0.22; dctx.fillRect(-LL/2-2,oy*gap-W*0.9-1.5,LL+4,W+3); dctx.fillRect(-LL/2-2,-oy*gap-W*0.9-1.5,LL+4,W+3);
+    dctx.globalAlpha=0.55; dctx.fillRect(-LL/2,oy*gap-W*0.4,LL,W*0.8); dctx.fillRect(-LL/2,-oy*gap-W*0.4,LL,W*0.8);
+  } else {
+    dctx.globalAlpha=skid?0.18:(heavy?0.10:0.09); dctx.fillStyle='#020407';
+    dctx.fillRect(-L/2,oy*gap-W/2,L,W);   /* 沿行进方向的履带压痕短划 */
+    dctx.fillRect(-L/2,-oy*gap-W/2,L,W);
+  }
   dctx.restore(); dctx.globalAlpha=1;
 }
 

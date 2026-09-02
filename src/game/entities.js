@@ -260,7 +260,7 @@ function releaseMsl(){
 function fireMissileAt(tgt){
   const p=player, h=hullCfg().missile;
   const mx=p.x+Math.cos(p.ta)*15,my=p.y+Math.sin(p.ta)*15;
-  const s=shot(mx,my,p.ta+rnd(-0.12,0.12),200,16,true,'missile',{accel:520,blast:h.blast});   /* v1.8 W6平衡: 46→16, atk 由§3管线乘 */
+  const s=shot(mx,my,p.ta+rnd(-0.18,0.18),200,16,true,'missile',{accel:520,blast:h.blast});   /* v1.8 W6平衡: 46→16; W9: 开角加大可读 */
   if(tgt)s.lock=tgt;
   part(mx,my,0,0,0.08,PAL.white,4,0).core=true;
   addLight(mx,my,18,PAL.white,0.24,0.1);
@@ -400,15 +400,17 @@ function updPlayer(dt){
   const slipping=p.slip>40&&spd>70;   /* v1.8 W3: 甩尾 — 侧滑超阈值(冰面/急转/低grip机体) */
   if(p.moving&&disp>0.1&&p.dustT<=0){   /* v1.7.1: 实际位移才出特效——顶墙时不再原地堆粒子/履带印(0.10×60次盖章≈实心黑) */
     p.dustT=sprint?0.03:(slipping?0.05:0.09);
-    stampTracks(p.x-Math.cos(p.bodyA)*10,p.y-Math.sin(p.bodyA)*10,p.bodyA,sprint,slipping);   /* §7 履带痕迹 decal (甩尾加浓拉长) */
+    const back=slipping?22:10;   /* W9-rubric: 甩尾印后移出车体投影(54px 精灵会盖住 -10 处的印) */
+    stampTracks(p.x-Math.cos(p.bodyA)*back,p.y-Math.sin(p.bodyA)*back,p.bodyA,sprint,slipping);   /* §7 履带痕迹 decal (甩尾加浓拉长) */
     terrainMoveFx(p.x,p.y,p.bodyA,tid,sprint,slipping);   /* v1.6: 主题行进特效(扬尘/水花/雪沫; 甩尾加量) */
-    if(slipping){   /* v1.8 W3: 侧向扬尘/溅水 — 沿车体侧滑方向喷出 */
+    if(slipping){   /* v1.8 W3: 侧向扬尘/溅水 — 沿车体侧滑方向喷出 (W9-rubric: 冰面喷雪×1.8+双倍) */
       const fx=themeCfg().fx, sd=lV>=0?1:-1;
       const sx2=-Math.sin(p.bodyA)*sd, sy2=Math.cos(p.bodyA)*sd;
-      const wc=tid===3?(fx.water||'#9bdcff'):(fx.dust||PAL.sand);
-      for(let i=0;i<2;i++)part(p.x+sx2*10+rnd(-3,3),p.y+sy2*10+rnd(-3,3),
-        sx2*rnd(28,62)+rnd(-8,8),sy2*rnd(28,62)+rnd(-8,8)-(tid===3?12:0),
-        rnd(0.25,0.45),wc,rnd(1.5,2.8),tid===3?140:0);
+      const ice=tid===3&&RUN.lvl===4, wc=tid===3?(fx.water||'#9bdcff'):(fx.dust||PAL.sand);
+      const n2=ice?5:2, sz=ice?2.2:1;   /* W9-rubric R2: 青白大团, 尺寸明显大于冰面白噪点 */
+      for(let i=0;i<n2;i++)part(p.x+sx2*10+rnd(-4,4),p.y+sy2*10+rnd(-4,4),
+        sx2*rnd(28,66)+rnd(-10,10),sy2*rnd(28,66)+rnd(-10,10)-(tid===3?14:0),
+        rnd(0.3,0.55),ice?'#a8dcff':wc,rnd(1.8,3.2)*sz,tid===3?140:0);
     }
   }
   /* v1.7: 残影彗尾 — 尾长随冲刺实际位移增长(每26px一条, 封顶6条; 卡住位移≈0即收缩), 松开淡出 */

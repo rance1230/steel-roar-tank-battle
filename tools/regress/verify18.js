@@ -146,12 +146,14 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(G5.keys === 0 && G5.vkeys === 0 && G5.vj === 0 && G5.rax === 0 && G5.cls.indexOf('on') < 0, 'G5 resetTransientInput 清 keys/VKEYS/双杆/瞄准轴/视觉态');
   /* G6 visibilitychange hidden → 取消蓄力不放弹 */
   await ev(() => { enemies.length = 0; if (typeof wingman !== 'undefined' && wingman) wingman.downT = 99;   /* 僚机会持续开火产生友方mg */
-    player.charging = true; player.charge = 0.8; window.__shots0 = shots.filter(x => x.friendly).length; });   /* 只计友方弹 */
+    keys.add('KeyL'); player.charging = true; player.charge = 0.8;   /* 按住键再置charging: 不按键的松键语义下一帧即释放(竞态) */
+    window.__shots0 = shots.filter(x => x.friendly && x.kind === 'missile').length; });   /* 只计友方导弹 */
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', {value: true, configurable: true});
     document.dispatchEvent(new Event('visibilitychange'));
     Object.defineProperty(document, 'hidden', {value: false, configurable: true}); });
+  await ev(() => keys.delete('KeyL'));
   await sleep(300);
-  g = await ev(() => ({chg: player.charging, c0: player.charge, sn: shots.filter(x => x.friendly).length - window.__shots0}));
+  g = await ev(() => ({chg: player.charging, c0: player.charge, sn: shots.filter(x => x.friendly && x.kind === 'missile').length - window.__shots0}));
   ok(g.chg === false && g.c0 === 0 && g.sn <= 0, 'G6 后台取消蓄力不发射 (charging=' + g.chg + ', 新弹' + g.sn + ')');
   await ev(() => { window.__fp.connected = false; });
 
@@ -159,7 +161,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await ev(() => {                      /* 随机地图 flake 防御: 找 5×5 干净空地做测试锚点 (H6/I 共用) */
     window.__open = () => { for (let y = 8; y < MAPH - 8; y += 3) for (let x = 8; x < MAPW - 8; x += 3) {
       let ok = true;
-      for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -3; dy <= 3 && ok; dy++) for (let dx = -3; dx <= 3; dx++) {
         const t = tileAt(x + dx, y + dy); if (t === 5 || t === 3 || t === 4) { ok = false; break; } }
       if (ok) return {x: x * TS + 16, y: y * TS + 16}; } return {x: 200, y: 200}; }; });
   const H1 = await ev(() => ({noA: !('a' in player), hasBody: typeof player.bodyA === 'number', hasTa: typeof player.ta === 'number'}));
@@ -241,11 +243,11 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     let n = 0; const iv = setInterval(() => { if (++n > 6 || t.dead) { clearInterval(iv);
       res({kvx: Math.round(t.kvx || 0), moved: Math.round(t.x - px0)}); } }, 16); }));
   ok(J2.kvx > 50 && J2.moved > 3, 'J2 ram 击退=速度场驱动 (' + J2.kvx + 'px/s, ' + J2.moved + 'px/0.1s)');
-  const J3 = await page.evaluate(() => new Promise(res => {    /* 撞墙: 法向反弹, 速度反向 */
+  const J3 = await page.evaluate(() => new Promise(res => {    /* 撞墙: 法向反弹, 速度反向 (采样窗口最大vx防衰减偶发) */
     G.tp(40, 200); player.bodyA = Math.PI; player.vx = -260; player.vy = 0;
-    let n = 0; const iv = setInterval(() => { if (++n > 8) { clearInterval(iv);
-      res({vx: Math.round(player.vx)}); } }, 16); }));
-  ok(J3.vx > 0, 'J3 撞墙反弹: 西向全速→东向回弹 (' + J3.vx + 'px/s)');
+    let n = 0, mx = 0; const iv = setInterval(() => { mx = Math.max(mx, player.vx);
+      if (++n > 10) { clearInterval(iv); res({vx: Math.round(mx)}); } }, 16); }));
+  ok(J3.vx > 30, 'J3 撞墙反弹: 西向全速→东向回弹 (max ' + J3.vx + 'px/s)');
 
   /* ---- K. W6 Damage Matrix: ATK-scaled 比值2.0 / ATK-independent 比值1.0 (契约§3) ---- */
   const K = await ev(() => {
@@ -302,14 +304,16 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(L4.frozen, 'L4c 暂停期间队列冻结 (t 不递减)');
   await sleep(700);                                /* 等 L4 残留弹幕全部出膛 */
   await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; enemies.length = 0; });
-  const L5 = await page.evaluate(() => new Promise(res => {      /* 无目标→沿ta直射 */
+  const L5 = await page.evaluate(() => new Promise(res => {      /* 无目标→沿ta直射 (插桩计数, 不依赖弹数组存量) */
     enemies.length = 0; player.mslCd = 0; player.ta = 0;
-    const sh0 = shots.filter(x => x.friendly && x.kind === 'missile').length;
+    window.__dumbN = 0; window.__lockN = 0;
+    const _fm = fireMissileAt;
+    window.fireMissileAt = fireMissileAt = function(t) { if (t) window.__lockN++; else window.__dumbN++; return _fm(t); };
     keys.add('KeyL');
     setTimeout(() => { keys.delete('KeyL');
-      setTimeout(() => { const ms = shots.filter(x => x.friendly && x.kind === 'missile');
-        res({n: ms.length - sh0, dumb: ms.slice(sh0).every(m => !m.lock)}); }, 300); }, 1000); }));
-  ok(L5.n >= 1 && L5.dumb, 'L5 无目标沿ta直射 dumb-fire (n=' + L5.n + ', 无lock=' + L5.dumb + ')');
+      setTimeout(() => { fireMissileAt = _fm; window.fireMissileAt = _fm;
+        res({n: window.__dumbN, dumb: window.__lockN === 0 && window.__dumbN > 0}); }, 300); }, 1000); }));
+  ok(L5.n >= 1 && L5.dumb, 'L5 无目标沿ta直射 dumb-fire (dumb=' + L5.n + ', 全部无lock=' + L5.dumb + ')');
   await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; RUN.hull = 'balanced'; });
 
   /* ---- M. W7 护盾: 同帧批量弹反合并 + 漩涡质量分级 ---- */
@@ -363,6 +367,41 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     attempt();
   }));
   ok(N3.tg && N3.moved > 60, 'N3 坦克侧闪: 前兆辉光+横移击退 (tg=' + N3.tg + ', kv=' + N3.moved + ')');
+
+  /* ---- O. W9-B 补齐: MG 击杀节奏 + 静态零 p.a ---- */
+  const O1 = await page.evaluate(() => new Promise(res => {   /* MG 单杀 truck ≥1.2s (削玩家后节奏) */
+    RUN.hull = 'balanced'; RUN.up = {hp: 0, spd: 0, atk: 0, def: 0, cdr: 0}; RUN.eq = {armor: 0, track: 0, fire: 0, comp: 0};
+    const s = window.__open(); G.tp(s.x, s.y);
+    const t = G.dummy('truck', s.x + 60, s.y); t.stun = 99; t.kvx = 0; t.kvy = 0;
+    player.ta = 0; player.bodyA = 0;
+    keys.add('KeyJ'); const t0 = performance.now();
+    const iv = setInterval(() => { if (t.dead) { clearInterval(iv); keys.delete('KeyJ');
+        res({ms: Math.round(performance.now() - t0), hp: t.maxHp}); } }, 50); }));
+  ok(O1.ms >= 1100 && O1.ms <= 4000, 'O1 MG 击杀节奏 1.1-4s (' + O1.ms + 'ms, hp' + O1.hp.toFixed(1) + ' — 本关cfg×难度后血量, 非秒杀)');
+
+  /* ---- P. W9-C 交互: 双杆+武器钮同按 (三输入通道并发) ---- */
+  await ev(() => { SET.touch = 'on'; });
+  await sleep(250);   /* 触屏层显示稳定(零尺寸会 NaN, 见 G3 教训) */
+  const P1 = await page.evaluate(() => {          /* 左杆驱动 + 右杆瞄准 + 机枪同时 */
+    const jl = document.getElementById('joy'), jr = document.getElementById('rjoy');
+    const rl = jl.getBoundingClientRect(), rr = jr.getBoundingClientRect();
+    jl.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 51,
+      clientX: rl.left + rl.width / 2, clientY: rl.top + rl.height / 2 - rl.width * 0.35}));
+    jr.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 52,
+      clientX: rr.left + rr.width / 2 + rr.width * 0.3, clientY: rr.top + rr.height / 2}));
+    keys.add('KeyJ');
+    return true; });
+  await sleep(420);
+  const P1r = await ev(() => {
+    const m = shots.filter(x => x.friendly && x.kind === 'mg').length;
+    const r = {vy: Math.round(player.vy), ta: +player.ta.toFixed(2), mg: m};
+    document.getElementById('joy').dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 51}));
+    document.getElementById('rjoy').dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 52}));
+    keys.delete('KeyJ');
+    return r; });
+  await ev(() => { SET.touch = 'auto'; });
+  ok(P1 && P1r.vy < -30 && Math.abs(P1r.ta) < 0.2 && P1r.mg > 0,
+     'P1 双杆+武器并发: 左杆北移(vy' + P1r.vy + ') 右杆瞄准东(ta' + P1r.ta + ') 机枪' + P1r.mg + '发');
 
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();

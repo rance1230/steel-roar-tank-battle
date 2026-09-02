@@ -423,7 +423,8 @@ function drawLocks(){
   if(!p||!p.charging||!p.lockSlots||!p.lockSlots.length||MENU||ST.state!=='play')return;
   uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
   uctx.lineWidth=1.4;
-  const seen={};
+  const seen={}, tot={};
+  for(const s of p.lockSlots) if(s.id)tot[s.id]=(tot[s.id]||0)+1;
   for(const s of p.lockSlots){
     if(!s.id)continue;
     const e=enemies.find(x=>x.id===s.id&&!x.dead);
@@ -433,9 +434,20 @@ function drawLocks(){
     const close=Math.max(0,1-age/0.2);             /* 新锁 0.2s 内从外收拢 */
     const R=e.r+7+k*3.4+close*26;
     const a0=ST.t*2.0+k*0.6, seg=Math.PI*0.30;
-    uctx.strokeStyle=age<0.09?PAL.white:(k===1?PAL.gold:rgba(PAL.gold,0.5));
-    for(let q=0;q<4;q++){
-      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a0+q*Math.PI/2,a0+q*Math.PI/2+seg); uctx.stroke();
+    /* W9-rubric: 金框贴金沙不可读 → 深色描边垫底 + 雪地图用青白 */
+    const snow=RUN.lvl===4||RUN.lvl===5;
+    const main=age<0.09?PAL.white:(k===1?(snow?PAL.cyan:PAL.gold):rgba(snow?PAL.cyan:PAL.gold,0.55));
+    for(let q=0;q<4;q++){                       /* 双描: 深底 3.6px + 主色 1.8px */
+      const a1=a0+q*Math.PI/2;
+      uctx.strokeStyle='#06121e'; uctx.lineWidth=3.6;
+      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a1,a1+seg); uctx.stroke();
+      uctx.strokeStyle=main; uctx.lineWidth=1.8;
+      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a1,a1+seg); uctx.stroke();
+    }
+    if(k===1){                                  /* 每目标叠数标记 ×N (W9-rubric: 同心环静态帧不可读) */
+      uctx.font='bold 8px '+FONT; uctx.textAlign='center';
+      uctx.fillStyle='#06121e'; uctx.fillText('×'+tot[s.id], IPx(e)+R*0.72+1, IPy(e)-R*0.72+1);
+      uctx.fillStyle=main; uctx.fillText('×'+tot[s.id], IPx(e)+R*0.72, IPy(e)-R*0.72);
     }
   }
   uctx.restore();
