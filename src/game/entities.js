@@ -64,6 +64,7 @@ function makePlayer(){
     hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
+    mslCd:0,mslVolley:[],lockSlots:[],   /* v1.8 W4: 多锁导弹 — 冷却/固定步进弹幕队列/锁定快照 */
     shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
     sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,ghostLen:0,trail:[]};
 }
@@ -217,22 +218,67 @@ function fireCannon(){ const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮�
   addLight(mx,my,22,PAL.gold,0.28,0.11);
   cameraKick(0.5,a,0.0015);                           /* v1.7: 后坐力仅微踢, 不再震屏 */
   part(mx,my,Math.cos(a)*40,Math.sin(a)*40,0.09,PAL.gold,3); SFX.cannon(mx,my); }
-function fireMissile(){
-  const st=calcStats(), h=hullCfg();
-  /* §18 突击型三枚分锁: ≥3敌 各锁其一; 单体时按 100/65/50 衰减 */
-  const alive=enemies.filter(e=>!e.dead).sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
-  const fall=[1,0.65,0.5];
-  for(let i=0;i<h.missile.maxLocks;i++){
-    const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
-    const dmg=46*(alive.length===1?fall[i]:1);   /* raw; atk 由§3管线乘 */
-    const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
-    const s=shot(mx,my,player.ta+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});   /* v1.8 W2: 出膛沿炮塔 */
-    if(tgt)s.lock=tgt;
-    part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
-    addLight(mx,my,18,PAL.white,0.24,0.1);
+/* ============================================================
+   v1.8 W4: 多锁导弹 — 数量∝蓄力(首锁0.20s, 每+lockStep增1槽, 封顶maxLocks);
+   锁定快照+滞回(260获取/310丢失, 只补洞不重排); 发射→固定步进弹幕队列
+   (updPlayer 递减出膛, ±错峰; 暂停/Hitstop/死亡/菜单天然同步);
+   真冷却 missile.cd×cdMul(§4全额), 冷却期禁蓄力; 无目标槽→沿ta直射。
+   ============================================================ */
+const MSL_LOCK_R=260, MSL_LOSE_R=310;
+function mslCount(charge){
+  const h=hullCfg().missile;
+  if(charge<0.20-1e-6)return 0;                      /* 首锁边界: charge=0.20 恰好第1锁 */
+  return Math.max(1,Math.min(h.maxLocks,1+Math.floor((charge-0.20+1e-6)/h.lockStep)));
+}
+function mslCandidates(range){
+  return enemies.filter(e=>!e.dead&&Math.hypot(e.x-player.x,e.y-player.y)<range)
+    .sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
+}
+function updMslLocks(desired){
+  const p=player, cand=mslCandidates(MSL_LOCK_R);
+  /* 快照滞回: 已有槽位只在目标死亡/超310px时补洞, 不逐帧重排 */
+  for(const s of p.lockSlots){
+    const e=enemies.find(x=>x.id===s.id&&!x.dead);
+    if(!e||Math.hypot(e.x-p.x,e.y-p.y)>MSL_LOSE_R)s.id=0;
   }
-  cameraKick(0.45,player.ta,0.0015);   /* v1.7: 发射微踢(沿炮塔方向) */
-  SFX.missile(player.x,player.y);
+  for(const s of p.lockSlots)
+    if(!s.id&&cand.length)s.id=cand[(p.lockSlots.indexOf(s))%cand.length].id;
+  while(p.lockSlots.length<desired&&cand.length){
+    p.lockSlots.push({id:cand[p.lockSlots.length%cand.length].id,t0:ST.t});
+    SFX.pick(p.x,p.y-6);   /* 锁定滴答 */
+  }
+  while(p.lockSlots.length>desired)p.lockSlots.pop();
+}
+function releaseMsl(){
+  const p=player, h=hullCfg().missile, cnt=mslCount(p.charge);
+  if(cnt<1)return;                                   /* 未到首锁: 不发射不计冷却 */
+  p.mslCd=h.cd*calcStats().cdMul;                    /* §4: 技能CD全额 */
+  const slots=p.lockSlots.slice(0,cnt);
+  while(slots.length<cnt)slots.push({id:0});          /* 无目标空槽→dumb-fire */
+  for(let i=0;i<cnt;i++)p.mslVolley.push({t:0.07*i+rnd(-0.02,0.02),id:slots[i].id});
+}
+function fireMissileAt(tgt){
+  const p=player, h=hullCfg().missile;
+  const mx=p.x+Math.cos(p.ta)*15,my=p.y+Math.sin(p.ta)*15;
+  const s=shot(mx,my,p.ta+rnd(-0.12,0.12),200,46,true,'missile',{accel:520,blast:h.blast});   /* raw 46, atk 由§3管线乘 */
+  if(tgt)s.lock=tgt;
+  part(mx,my,0,0,0.08,PAL.white,4,0).core=true;
+  addLight(mx,my,18,PAL.white,0.24,0.1);
+}
+function updMslVolley(dt){
+  const p=player;
+  if(!p.mslVolley.length){p._volFired=false;return;}
+  for(let i=p.mslVolley.length-1;i>=0;i--){
+    const v=p.mslVolley[i]; v.t-=dt;
+    if(v.t<=0){
+      let tgt=v.id?enemies.find(x=>x.id===v.id&&!x.dead):null;
+      if(!tgt){ const cs=mslCandidates(MSL_LOSE_R); tgt=cs[0]||null; }   /* 死目标→最近候选→dumb */
+      fireMissileAt(tgt);
+      SFX.missile(p.x,p.y);                                  /* 连发涟漪声 */
+      if(!p._volFired){ cameraKick(0.45,p.ta,0.0015); p._volFired=true; }   /* 首发踢 */
+      p.mslVolley.splice(i,1);
+    }
+  }
 }
 function callAirstrike(){
   let tx=player.x,ty=player.y,n=0;
@@ -341,8 +387,11 @@ function updPlayer(dt){
   if(p.maxHp!==calcStats().maxHp){ const ns=calcStats(); p.hp=Math.min(p.hp+Math.max(0,ns.maxHp-p.maxHp),ns.maxHp); p.maxHp=ns.maxHp; }
   if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)*calcStats().wcdMul/hullCfg().mgDps; fireMG(); }
   if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1)*calcStats().wcdMul; fireCannon(); }
-  if(IN.msl()){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); }
-  else if(p.charging){ if(p.charge>=0.45*hullCfg().missile.cd)fireMissile(); p.charging=false; p.charge=0; }
+  /* v1.8 W4: 多锁导弹 — 冷却期禁蓄力; 蓄力期间持续刷新锁定快照; 松手→弹幕队列 */
+  p.mslCd=Math.max(0,p.mslCd-dt);
+  updMslVolley(dt);
+  if(IN.msl()&&p.mslCd<=0){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); updMslLocks(mslCount(p.charge)); }
+  else if(p.charging){ releaseMsl(); p.charging=false; p.charge=0; p.lockSlots.length=0; }
   if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5*calcStats().cdMul; callAirstrike(); }
   if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); p.shieldAge=0; SFX.shield(p.x,p.y); }
   const tid=tileAtPx(p.x,p.y);
@@ -607,7 +656,7 @@ function updShots(dt){
           if(!e.dead&&dist2(s.x,s.y,e.x,e.y)<(e.r+s.r)*(e.r+s.r)){
             if(s.kind==='mg'){ applyDamage(e,s.dmg,'machinegun'); hitFx(s.x,s.y,'mg',s.ang); burst(s.x,s.y,3,[PAL.gold,PAL.white],50,0.2); kickTier(0); }
             else if(s.kind==='shell'){ hitFx(s.x,s.y,'armor',s.ang); explodeAt(s.x,s.y,18*hullCfg().blast,s.dmg,false,'cannon',0,1); }
-            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30,s.dmg,false,s.refl?'reflect':'missile',0,2); }
+            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30*(s.blast||1),s.dmg,false,s.refl?'reflect':'missile',0,2); }
             dead=true; break;
           } }
       } else {

@@ -873,7 +873,7 @@ const HULLS={
     mgDps:1.10,breach:1.25,
     move:{mass:0.8,accel:1.12,turnRate:10,lateralGrip:0.78,brake:1.2,sprint:1.20},
     turret:{rate:14},
-    missile:{maxLocks:3,lockStep:0.15,cd:0.85,blast:1.0},
+    missile:{maxLocks:6,lockStep:0.15,cd:1.8,blast:1.0},
     shield:{dur:0.22,perfect:0.08,cd:0.95},
     vis:{s:0.94,hull:'#c9702a',hi:'#ffe0b0',dk:'#7a4315',trim:'#f6b94e',turret:'#a85a20',
       barrel:'#3a3f46',track:'#6a4a28',glow:'#f6b94e',ring:'#f6b94e',twin:false,callsign:'STRIDER-03'}},
@@ -881,7 +881,7 @@ const HULLS={
     mgDps:1.00,breach:1.00,
     move:{mass:1.0,accel:1.00,turnRate:10,lateralGrip:1.0,brake:1.0,sprint:1.00},
     turret:{rate:10},
-    missile:{maxLocks:1,lockStep:0.18,cd:1.00,blast:1.0},
+    missile:{maxLocks:5,lockStep:0.18,cd:2.2,blast:1.0},
     shield:{dur:0.42,perfect:0.12,cd:0.75},
     vis:{s:1,hull:null,hi:null,dk:null,trim:null,turret:null,barrel:null,track:null,
       glow:null,ring:null,twin:false,callsign:'IRONCLAD-07'}},
@@ -889,7 +889,7 @@ const HULLS={
     mgDps:0.90,breach:1.10,
     move:{mass:1.45,accel:0.88,turnRate:10,lateralGrip:1.0,brake:0.8,sprint:0.85},
     turret:{rate:7},
-    missile:{maxLocks:1,lockStep:0.22,cd:1.25,blast:1.5},
+    missile:{maxLocks:4,lockStep:0.22,cd:2.6,blast:1.5},
     shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true},
     vis:{s:1.15,hull:'#3d4652',hi:'#c8d2da',dk:'#252b33',trim:'#f6b94e',turret:'#2f3742',
       barrel:'#20262e',track:'#2a323c',glow:'#8fd8e8',ring:'#ff7a5c',twin:true,callsign:'BASTION-09'}}};
@@ -1405,6 +1405,7 @@ function makePlayer(){
     hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
+    mslCd:0,mslVolley:[],lockSlots:[],   /* v1.8 W4: 多锁导弹 — 冷却/固定步进弹幕队列/锁定快照 */
     shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
     sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,ghostLen:0,trail:[]};
 }
@@ -1558,22 +1559,67 @@ function fireCannon(){ const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮�
   addLight(mx,my,22,PAL.gold,0.28,0.11);
   cameraKick(0.5,a,0.0015);                           /* v1.7: 后坐力仅微踢, 不再震屏 */
   part(mx,my,Math.cos(a)*40,Math.sin(a)*40,0.09,PAL.gold,3); SFX.cannon(mx,my); }
-function fireMissile(){
-  const st=calcStats(), h=hullCfg();
-  /* §18 突击型三枚分锁: ≥3敌 各锁其一; 单体时按 100/65/50 衰减 */
-  const alive=enemies.filter(e=>!e.dead).sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
-  const fall=[1,0.65,0.5];
-  for(let i=0;i<h.missile.maxLocks;i++){
-    const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
-    const dmg=46*(alive.length===1?fall[i]:1);   /* raw; atk 由§3管线乘 */
-    const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
-    const s=shot(mx,my,player.ta+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});   /* v1.8 W2: 出膛沿炮塔 */
-    if(tgt)s.lock=tgt;
-    part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
-    addLight(mx,my,18,PAL.white,0.24,0.1);
+/* ============================================================
+   v1.8 W4: 多锁导弹 — 数量∝蓄力(首锁0.20s, 每+lockStep增1槽, 封顶maxLocks);
+   锁定快照+滞回(260获取/310丢失, 只补洞不重排); 发射→固定步进弹幕队列
+   (updPlayer 递减出膛, ±错峰; 暂停/Hitstop/死亡/菜单天然同步);
+   真冷却 missile.cd×cdMul(§4全额), 冷却期禁蓄力; 无目标槽→沿ta直射。
+   ============================================================ */
+const MSL_LOCK_R=260, MSL_LOSE_R=310;
+function mslCount(charge){
+  const h=hullCfg().missile;
+  if(charge<0.20-1e-6)return 0;                      /* 首锁边界: charge=0.20 恰好第1锁 */
+  return Math.max(1,Math.min(h.maxLocks,1+Math.floor((charge-0.20+1e-6)/h.lockStep)));
+}
+function mslCandidates(range){
+  return enemies.filter(e=>!e.dead&&Math.hypot(e.x-player.x,e.y-player.y)<range)
+    .sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
+}
+function updMslLocks(desired){
+  const p=player, cand=mslCandidates(MSL_LOCK_R);
+  /* 快照滞回: 已有槽位只在目标死亡/超310px时补洞, 不逐帧重排 */
+  for(const s of p.lockSlots){
+    const e=enemies.find(x=>x.id===s.id&&!x.dead);
+    if(!e||Math.hypot(e.x-p.x,e.y-p.y)>MSL_LOSE_R)s.id=0;
   }
-  cameraKick(0.45,player.ta,0.0015);   /* v1.7: 发射微踢(沿炮塔方向) */
-  SFX.missile(player.x,player.y);
+  for(const s of p.lockSlots)
+    if(!s.id&&cand.length)s.id=cand[(p.lockSlots.indexOf(s))%cand.length].id;
+  while(p.lockSlots.length<desired&&cand.length){
+    p.lockSlots.push({id:cand[p.lockSlots.length%cand.length].id,t0:ST.t});
+    SFX.pick(p.x,p.y-6);   /* 锁定滴答 */
+  }
+  while(p.lockSlots.length>desired)p.lockSlots.pop();
+}
+function releaseMsl(){
+  const p=player, h=hullCfg().missile, cnt=mslCount(p.charge);
+  if(cnt<1)return;                                   /* 未到首锁: 不发射不计冷却 */
+  p.mslCd=h.cd*calcStats().cdMul;                    /* §4: 技能CD全额 */
+  const slots=p.lockSlots.slice(0,cnt);
+  while(slots.length<cnt)slots.push({id:0});          /* 无目标空槽→dumb-fire */
+  for(let i=0;i<cnt;i++)p.mslVolley.push({t:0.07*i+rnd(-0.02,0.02),id:slots[i].id});
+}
+function fireMissileAt(tgt){
+  const p=player, h=hullCfg().missile;
+  const mx=p.x+Math.cos(p.ta)*15,my=p.y+Math.sin(p.ta)*15;
+  const s=shot(mx,my,p.ta+rnd(-0.12,0.12),200,46,true,'missile',{accel:520,blast:h.blast});   /* raw 46, atk 由§3管线乘 */
+  if(tgt)s.lock=tgt;
+  part(mx,my,0,0,0.08,PAL.white,4,0).core=true;
+  addLight(mx,my,18,PAL.white,0.24,0.1);
+}
+function updMslVolley(dt){
+  const p=player;
+  if(!p.mslVolley.length){p._volFired=false;return;}
+  for(let i=p.mslVolley.length-1;i>=0;i--){
+    const v=p.mslVolley[i]; v.t-=dt;
+    if(v.t<=0){
+      let tgt=v.id?enemies.find(x=>x.id===v.id&&!x.dead):null;
+      if(!tgt){ const cs=mslCandidates(MSL_LOSE_R); tgt=cs[0]||null; }   /* 死目标→最近候选→dumb */
+      fireMissileAt(tgt);
+      SFX.missile(p.x,p.y);                                  /* 连发涟漪声 */
+      if(!p._volFired){ cameraKick(0.45,p.ta,0.0015); p._volFired=true; }   /* 首发踢 */
+      p.mslVolley.splice(i,1);
+    }
+  }
 }
 function callAirstrike(){
   let tx=player.x,ty=player.y,n=0;
@@ -1682,8 +1728,11 @@ function updPlayer(dt){
   if(p.maxHp!==calcStats().maxHp){ const ns=calcStats(); p.hp=Math.min(p.hp+Math.max(0,ns.maxHp-p.maxHp),ns.maxHp); p.maxHp=ns.maxHp; }
   if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)*calcStats().wcdMul/hullCfg().mgDps; fireMG(); }
   if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1)*calcStats().wcdMul; fireCannon(); }
-  if(IN.msl()){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); }
-  else if(p.charging){ if(p.charge>=0.45*hullCfg().missile.cd)fireMissile(); p.charging=false; p.charge=0; }
+  /* v1.8 W4: 多锁导弹 — 冷却期禁蓄力; 蓄力期间持续刷新锁定快照; 松手→弹幕队列 */
+  p.mslCd=Math.max(0,p.mslCd-dt);
+  updMslVolley(dt);
+  if(IN.msl()&&p.mslCd<=0){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); updMslLocks(mslCount(p.charge)); }
+  else if(p.charging){ releaseMsl(); p.charging=false; p.charge=0; p.lockSlots.length=0; }
   if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5*calcStats().cdMul; callAirstrike(); }
   if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); p.shieldAge=0; SFX.shield(p.x,p.y); }
   const tid=tileAtPx(p.x,p.y);
@@ -1948,7 +1997,7 @@ function updShots(dt){
           if(!e.dead&&dist2(s.x,s.y,e.x,e.y)<(e.r+s.r)*(e.r+s.r)){
             if(s.kind==='mg'){ applyDamage(e,s.dmg,'machinegun'); hitFx(s.x,s.y,'mg',s.ang); burst(s.x,s.y,3,[PAL.gold,PAL.white],50,0.2); kickTier(0); }
             else if(s.kind==='shell'){ hitFx(s.x,s.y,'armor',s.ang); explodeAt(s.x,s.y,18*hullCfg().blast,s.dmg,false,'cannon',0,1); }
-            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30,s.dmg,false,s.refl?'reflect':'missile',0,2); }
+            else { hitFx(s.x,s.y,s.refl?'metal':'armor',s.ang); explodeAt(s.x,s.y,30*(s.blast||1),s.dmg,false,s.refl?'reflect':'missile',0,2); }
             dead=true; break;
           } }
       } else {
@@ -2565,6 +2614,29 @@ function drawAim(){
   uctx.closePath(); uctx.fillStyle=PAL.gold; uctx.fill();
   uctx.globalAlpha=1; uctx.restore();
 }
+/* v1.8 W4: 多锁准星 — 每锁一段旋转括弧(收拢动画+锁定瞬闪); 单目标多锁=同心叠环 */
+function drawLocks(){
+  const p=player;
+  if(!p||!p.charging||!p.lockSlots||!p.lockSlots.length||MENU||ST.state!=='play')return;
+  uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
+  uctx.lineWidth=1.4;
+  const seen={};
+  for(const s of p.lockSlots){
+    if(!s.id)continue;
+    const e=enemies.find(x=>x.id===s.id&&!x.dead);
+    if(!e)continue;
+    const k=seen[s.id]=(seen[s.id]||0)+1;          /* 同目标第 k 锁 → 同心外扩 */
+    const age=Math.max(0,ST.t-(s.t0||ST.t));
+    const close=Math.max(0,1-age/0.2);             /* 新锁 0.2s 内从外收拢 */
+    const R=e.r+7+k*3.4+close*26;
+    const a0=ST.t*2.0+k*0.6, seg=Math.PI*0.30;
+    uctx.strokeStyle=age<0.09?PAL.white:(k===1?PAL.gold:rgba(PAL.gold,0.5));
+    for(let q=0;q<4;q++){
+      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a0+q*Math.PI/2,a0+q*Math.PI/2+seg); uctx.stroke();
+    }
+  }
+  uctx.restore();
+}
 function drawTruck(x,y,ang,o){
   const s=o.s, accent=o.trim||PAL.red;
   unitShadow(x,y,(o.boss?18:11)*s,(o.boss?7:5)*s,o.boss?0.5:0.34);
@@ -2790,7 +2862,16 @@ function drawHUD(){
   /* ---- 武器状态: 芯片化(触屏时置于顶栏下, 避开底部按钮; 键盘/手柄时置左下角) ---- */
   const cy=touchOn?31:VH-22;
   hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  hudChip(26,cy,'➤',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:1),PAL.aqua,p.charging||p.charge>0);
+  {   /* v1.8 W4: 导弹芯片双态 — 冷却(暗,恢复进度)/蓄力(亮, 0.20 首锁刻度+锁数) */
+    const mc=hullCfg().missile.cd*calcStats().cdMul;
+    if(p.mslCd>0)hudChip(26,cy,'➤',1-p.mslCd/mc,PAL.steel,false);
+    else if(p.charging){
+      hudChip(26,cy,'➤',p.charge/1.2,PAL.aqua,true);
+      const cnt=mslCount(p.charge);
+      if(cnt>0)txt('×'+cnt,42,cy+5,7,PAL.gold,'center');
+      txt('▮',6+Math.round(20*0.20/1.2),cy+13,5,rgba(PAL.gold,0.55));   /* 0.20s 首锁刻度 */
+    } else hudChip(26,cy,'➤',1,PAL.aqua,true);
+  }
   hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
   hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
   /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
@@ -5073,6 +5154,7 @@ function draw(alpha){
   if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
   drawAim();   /* v1.8 W2: 瞄准指示 */
+  drawLocks(); /* v1.8 W4: 多锁准星 */
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
   if(ST.state==='clear')drawClearCard();

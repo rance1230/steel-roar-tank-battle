@@ -264,6 +264,52 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(kBadF.length === 0, 'K2 ATK-independent 3类 比值1.0±0.05 (' +
      K.flat.map(c => c + ':' + K.ratios[c].toFixed(2)).join(' ') + ')');
 
+  /* ---- L. W4 多锁导弹: 数量公式/首锁边界/冷却禁蓄力/单目标叠锁/队列暂停冻结/无目标dumb ---- */
+  const L1 = await ev(() => { RUN.hull = 'assault';
+    return {c03: mslCount(0.3), c06: mslCount(0.6), c12: mslCount(1.2),
+            first: mslCount(0.20), pre: mslCount(0.199), zero: mslCount(0)}; });
+  ok(L1.c03 === 1 && L1.c06 === 3 && L1.c12 === 6, 'L1 数量∝蓄力 0.3s→' + L1.c03 + ' 0.6s→' + L1.c06 + ' 1.2s→' + L1.c12);
+  ok(L1.first === 1 && L1.pre === 0 && L1.zero === 0, 'L2 首锁边界: 0.20→' + L1.first + ' 0.199→' + L1.pre + ' 0→' + L1.zero);
+  await ev(() => { enemies.length = 0;
+    const s = window.__open(); G.tp(s.x, s.y);
+    player.charging = false; player.charge = 0; player.lockSlots.length = 0; player.mslVolley.length = 0; });
+  const L3 = await page.evaluate(() => new Promise(res => {      /* 冷却期禁蓄力 */
+    player.mslCd = 1; keys.add('KeyL');
+    setTimeout(() => { keys.delete('KeyL');
+      res({chg: player.charging, c0: player.charge}); }, 260); }));
+  ok(!L3.chg && L3.c0 === 0, 'L3 冷却期禁蓄力 (charging=' + L3.chg + ', charge=' + L3.c0 + ')');
+  const L4 = await page.evaluate(() => new Promise(res => {      /* 单目标叠锁→6弹队列→暂停冻结 */
+    player.mslCd = 0;
+    const s = window.__open(); G.tp(s.x, s.y);
+    const t = G.dummy('tank', s.x + 60, s.y); t.stun = 99; t.hp = t.maxHp = 99999;
+    enemies.length = 0; enemies.push(t);
+    keys.add('KeyL');
+    setTimeout(() => {                                          /* 仍在蓄力: 读锁定快照 */
+      const id0 = player.lockSlots.length ? player.lockSlots[0].id : -1;
+      const n = player.lockSlots.length;
+      const stack = id0 > 0 && player.lockSlots.every(x => x.id === id0);
+      keys.delete('KeyL');                                      /* 松手 */
+      setTimeout(() => {                                        /* 60ms: 等 release 入队(首发或已出膛) */
+        const vlen = player.mslVolley.length;
+        MENU = true; const tb = JSON.stringify(player.mslVolley.map(v => +v.t.toFixed(3)));   /* 暂停 0.25s */
+        setTimeout(() => { const ta = JSON.stringify(player.mslVolley.map(v => +v.t.toFixed(3)));
+          MENU = null;
+          res({stack, n, vlen, frozen: tb === ta && vlen > 0}); }, 250); }, 60); }, 1500); }));
+  ok(L4.n === 6 && L4.stack, 'L4 单目标6锁同id叠锁 (n=' + L4.n + ', stack=' + L4.stack + ')');
+  ok(L4.vlen >= 4, 'L4b 松手→6发弹幕队列(首发±0.07s错峰, 60ms时待发' + L4.vlen + ')');
+  ok(L4.frozen, 'L4c 暂停期间队列冻结 (t 不递减)');
+  await sleep(700);                                /* 等 L4 残留弹幕全部出膛 */
+  await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; enemies.length = 0; });
+  const L5 = await page.evaluate(() => new Promise(res => {      /* 无目标→沿ta直射 */
+    enemies.length = 0; player.mslCd = 0; player.ta = 0;
+    const sh0 = shots.filter(x => x.friendly && x.kind === 'missile').length;
+    keys.add('KeyL');
+    setTimeout(() => { keys.delete('KeyL');
+      setTimeout(() => { const ms = shots.filter(x => x.friendly && x.kind === 'missile');
+        res({n: ms.length - sh0, dumb: ms.slice(sh0).every(m => !m.lock)}); }, 300); }, 1000); }));
+  ok(L5.n >= 1 && L5.dumb, 'L5 无目标沿ta直射 dumb-fire (n=' + L5.n + ', 无lock=' + L5.dumb + ')');
+  await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; RUN.hull = 'balanced'; });
+
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
   log(fails === 0 && errors.length === 0 ? '=== V18 (G0-5+W0) ALL PASS ===' : '=== ' + fails + ' FAILS ===');

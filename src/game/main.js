@@ -240,6 +240,7 @@ function draw(alpha){
   if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
   drawAim();   /* v1.8 W2: 瞄准指示 */
+  drawLocks(); /* v1.8 W4: 多锁准星 */
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
   if(ST.state==='clear')drawClearCard();

@@ -417,6 +417,29 @@ function drawAim(){
   uctx.closePath(); uctx.fillStyle=PAL.gold; uctx.fill();
   uctx.globalAlpha=1; uctx.restore();
 }
+/* v1.8 W4: 多锁准星 — 每锁一段旋转括弧(收拢动画+锁定瞬闪); 单目标多锁=同心叠环 */
+function drawLocks(){
+  const p=player;
+  if(!p||!p.charging||!p.lockSlots||!p.lockSlots.length||MENU||ST.state!=='play')return;
+  uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
+  uctx.lineWidth=1.4;
+  const seen={};
+  for(const s of p.lockSlots){
+    if(!s.id)continue;
+    const e=enemies.find(x=>x.id===s.id&&!x.dead);
+    if(!e)continue;
+    const k=seen[s.id]=(seen[s.id]||0)+1;          /* 同目标第 k 锁 → 同心外扩 */
+    const age=Math.max(0,ST.t-(s.t0||ST.t));
+    const close=Math.max(0,1-age/0.2);             /* 新锁 0.2s 内从外收拢 */
+    const R=e.r+7+k*3.4+close*26;
+    const a0=ST.t*2.0+k*0.6, seg=Math.PI*0.30;
+    uctx.strokeStyle=age<0.09?PAL.white:(k===1?PAL.gold:rgba(PAL.gold,0.5));
+    for(let q=0;q<4;q++){
+      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a0+q*Math.PI/2,a0+q*Math.PI/2+seg); uctx.stroke();
+    }
+  }
+  uctx.restore();
+}
 function drawTruck(x,y,ang,o){
   const s=o.s, accent=o.trim||PAL.red;
   unitShadow(x,y,(o.boss?18:11)*s,(o.boss?7:5)*s,o.boss?0.5:0.34);
@@ -642,7 +665,16 @@ function drawHUD(){
   /* ---- 武器状态: 芯片化(触屏时置于顶栏下, 避开底部按钮; 键盘/手柄时置左下角) ---- */
   const cy=touchOn?31:VH-22;
   hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  hudChip(26,cy,'➤',p.charging?clamp(p.charge/0.45,0,1):(p.charge>0?p.charge/0.45:1),PAL.aqua,p.charging||p.charge>0);
+  {   /* v1.8 W4: 导弹芯片双态 — 冷却(暗,恢复进度)/蓄力(亮, 0.20 首锁刻度+锁数) */
+    const mc=hullCfg().missile.cd*calcStats().cdMul;
+    if(p.mslCd>0)hudChip(26,cy,'➤',1-p.mslCd/mc,PAL.steel,false);
+    else if(p.charging){
+      hudChip(26,cy,'➤',p.charge/1.2,PAL.aqua,true);
+      const cnt=mslCount(p.charge);
+      if(cnt>0)txt('×'+cnt,42,cy+5,7,PAL.gold,'center');
+      txt('▮',6+Math.round(20*0.20/1.2),cy+13,5,rgba(PAL.gold,0.55));   /* 0.20s 首锁刻度 */
+    } else hudChip(26,cy,'➤',1,PAL.aqua,true);
+  }
   hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
   hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
   /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
