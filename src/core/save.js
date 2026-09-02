@@ -34,7 +34,7 @@ const HULLS={
     move:{mass:1.45,accel:0.88,turnRate:10,lateralGrip:1.0,brake:0.8,sprint:0.85},
     turret:{rate:7},
     missile:{maxLocks:4,lockStep:0.22,cd:2.6,blast:1.5},
-    shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true},
+    shield:{dur:2.6,perfect:0.18,cd:3.4,fortress:true},   /* v1.8 W7: 4.0→2.6, 连发=短真空非永久盾 */
     vis:{s:1.15,hull:'#3d4652',hi:'#c8d2da',dk:'#252b33',trim:'#f6b94e',turret:'#2f3742',
       barrel:'#20262e',track:'#2a323c',glow:'#8fd8e8',ring:'#ff7a5c',twin:true,callsign:'BASTION-09'}}};
 const HULL_KEYS=['assault','balanced','heavy'];

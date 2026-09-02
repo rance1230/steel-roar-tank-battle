@@ -76,7 +76,9 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(F.every(o => o.eff >= o.need - 1e-9), 'F1 三机体×cdr{0,10,30} 有效CD≥dur+grace+0.25 (' +
      F.filter(o => o.eff < o.need - 1e-9).length + ' 违例)');
   const Fh = F.find(o => o.hk === 'heavy' && o.cdr === 0);
-  ok(Fh.eff > 4, 'F2 重装旧数值下不变量生效 (有效CD ' + Fh.eff.toFixed(2) + 's > 旧实际1.5s, 永久盾bug已封)');
+  const hv = await ev(() => HULLS.heavy.shield);   /* v1.8 W7: 重装 4.0/1.5→2.6/3.4 */
+  ok(hv.dur === 2.6 && hv.cd === 3.4 && Fh.eff >= hv.dur + 0.43 - 1e-9 && Fh.eff - hv.dur >= 0.4,
+     'F2 重装 dur2.6/cd3.4: 有效CD ' + Fh.eff.toFixed(2) + ' ≥ dur+grace+0.25, 真空≥0.4s (连发非永久盾)');
 
   /* ---- G. W1 双摇杆输入: 三通道瞄准轴 ---- */
   await ev(() => { window.G.start(); menuActivate(); menuActivate(); onKeyPress('Enter'); }); await sleep(3400);
@@ -309,6 +311,27 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
         res({n: ms.length - sh0, dumb: ms.slice(sh0).every(m => !m.lock)}); }, 300); }, 1000); }));
   ok(L5.n >= 1 && L5.dumb, 'L5 无目标沿ta直射 dumb-fire (n=' + L5.n + ', 无lock=' + L5.dumb + ')');
   await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; RUN.hull = 'balanced'; });
+
+  /* ---- M. W7 护盾: 同帧批量弹反合并 + 漩涡质量分级 ---- */
+  const M1 = await page.evaluate(() => new Promise(res => {   /* 3发同帧撞盾: 全反弹+合并反馈 */
+    enemies.length = 0; shots.length = 0;                     /* 清残留弹防污染 */
+    player.inv = 0; player.shieldT = 0.42; player.shieldGrace = 0; player.shieldAge = 0.4;
+    player.shieldFlash = 0; player._parry = null;
+    const parry0 = STATS.parryN + STATS.parryP;
+    for (let i = 0; i < 3; i++)                               /* 3发敌弹同距同速 → 同帧命中 */
+      shot(player.x - 30, player.y - 6 + i * 6, 0, 300, 9, false, 'shell');
+    let n = 0; const iv = setInterval(() => { const refl = shots.filter(s => s.friendly && s.refl).length;
+      if (refl >= 3 || ++n > 18) { clearInterval(iv);
+        res({refl, feedback: parry0 < STATS.parryN + STATS.parryP}); } }, 30); }));
+  ok(M1.refl >= 3 && M1.feedback, 'M1 同帧3发全反弹+合并反馈 (refl=' + M1.refl + ', 反馈触发=' + M1.feedback + ')');
+  const M2 = await ev(() => {                                 /* 漩涡质量分级: q2 粒子≫q0 */
+    const c = q => { const n0 = parts.length; shieldSwirl(player.x, player.y, false, q);
+      return parts.length - n0; };
+    return {q2: c(2), q1: c(1), q0: c(0), perf: (() => { const n0 = parts.length; shieldSwirl(player.x, player.y, true, 2); return parts.length - n0; })()};
+  });
+  ok(M2.q2 >= 18 && M2.q0 <= 5 && M2.q1 < M2.q2, 'M2 漩涡分级 q2(' + M2.q2 + ')>q1(' + M2.q1 + ')>q0(' + M2.q0 + ')');
+  ok(M2.perf > M2.q2, 'M2b Perfect 增强 (perf=' + M2.perf + ' > q2=' + M2.q2 + ')');
+  await ev(() => { player.shieldT = 0; player._parry = null; shots.length = 0; });
 
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();

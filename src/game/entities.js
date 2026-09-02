@@ -676,7 +676,9 @@ function updShots(dt){
             s.vx=Math.cos(na)*s.spd; s.vy=Math.sin(na)*s.spd; s.life=1.6;
             RUN.score+=30;
             player.shieldFlash=0.12;   /* v1.7: 弹反护罩白闪 */
-            parryFeedback(perfect,s);
+            /* v1.8 W7: 逐发独立全反弹保持; 同帧累积, 帧末合并反馈(增强 hitstop/kick/漩涡) */
+            player._parry={n:(player._parry?player._parry.n:0)+1,perfect:perfect||(player._parry&&player._parry.perfect),x:s.x,y:s.y};
+            hitFx(s.x,s.y,'metal',s.ang);
           } else if(player.inv<=0){
             hitFx(s.x,s.y,'armor',s.ang);
             damagePlayer(s.dmg,s.ang);
@@ -693,6 +695,11 @@ function updShots(dt){
       }
     }
     if(dead)releaseShot(i);
+  }
+  /* v1.8 W7: 同帧弹反合并反馈 — 漩涡/hitstop/kick 按 N 与 Perfect 分级 */
+  if(player._parry){
+    parryFeedback(player._parry.perfect,{x:player._parry.x,y:player._parry.y,ang:Math.atan2(player._parry.y-player.y,player._parry.x-player.x)},player._parry.n);
+    player._parry=null;
   }
 }
 function updPlanes(dt){

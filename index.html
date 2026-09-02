@@ -890,7 +890,7 @@ const HULLS={
     move:{mass:1.45,accel:0.88,turnRate:10,lateralGrip:1.0,brake:0.8,sprint:0.85},
     turret:{rate:7},
     missile:{maxLocks:4,lockStep:0.22,cd:2.6,blast:1.5},
-    shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true},
+    shield:{dur:2.6,perfect:0.18,cd:3.4,fortress:true},   /* v1.8 W7: 4.0→2.6, 连发=短真空非永久盾 */
     vis:{s:1.15,hull:'#3d4652',hi:'#c8d2da',dk:'#252b33',trim:'#f6b94e',turret:'#2f3742',
       barrel:'#20262e',track:'#2a323c',glow:'#8fd8e8',ring:'#ff7a5c',twin:true,callsign:'BASTION-09'}}};
 const HULL_KEYS=['assault','balanced','heavy'];
@@ -1312,30 +1312,48 @@ function breachFire(e,stagger){
 function endFlight(e){ e.flying=null; e.stun=Math.max(e.stun,0.35); }
 
 /* ---- B. Parry 分级反馈 ---- */
-function parryFeedback(perfect,s){
+/* v1.8 W7: 护盾弹反蓝白粒子漩涡 — 切向+向内速度=螺旋内卷; 质量分级 q2/q1/q0;
+   Perfect: 半径×1.3 角速×1.3 亮度↑ (不堆粒子数, 靠运动与光强) */
+function shieldSwirl(x,y,perfect,q){
+  q=(q===undefined)?PERF.qLevel:q;
+  const blue='#7ec8ff';
+  const R=perfect?26:19;
+  const n=q>=2?(perfect?26:18):q===1?(perfect?15:10):0;   /* q0=仅冲击环+3粒 */
+  const spin=perfect?9.5:7;
+  for(let i=0;i<n;i++){
+    const a=(i*0.618)*Math.PI*2+rnd(0.25), r=R*(0.35+0.65*((i*0.381)%1));
+    const va=a+Math.PI/2;                              /* 切向 → 漩涡 */
+    part(x+Math.cos(a)*r,y+Math.sin(a)*r,
+      Math.cos(va)*spin*R*0.5-Math.cos(a)*R*0.9, Math.sin(va)*spin*R*0.5-Math.sin(a)*R*0.9,
+      rnd(0.3,0.55), i%3?blue:PAL.white, rnd(1.3,2.6)*(perfect?1.25:1), 0, perfect?1:0.85);
+  }
+  const ring=part(x,y,0,0,0.34,perfect?PAL.white:blue,R*1.5,0); ring.ring=true;   /* 冲击环 */
+  if(q<=0)for(let i=0;i<3;i++){const a2=rnd(Math.PI*2);
+    part(x+Math.cos(a2)*R,y+Math.sin(a2)*R,Math.cos(a2)*40,Math.sin(a2)*40,0.2,blue,1.6);}
+  addLight(x,y,R*2.3,perfect?PAL.white:blue,perfect?0.42:0.27,0.2);
+}
+/* v1.8 W7: 弹反反馈批量化 — 同帧 N 发合并: N≥2 增强 hitstop/kick + ×N 浮字 + 大漩涡 */
+function parryFeedback(perfect,s,n){
+  n=n||1;
   const cx=s.x, cy=s.y;
+  const batch=n>=2;
   if(perfect){
     STATS.parryP++;
-    HITSTOP=0.055; STATS.hitstopN++;
+    HITSTOP=batch?0.07:0.055; STATS.hitstopN++;
     COMBO.t=Math.max(COMBO.t,1.2);              /* Combo grace 保连 */
-    floater(player.x,player.y-26,T('parryMsg'),PAL.white,10,0.28);
+    floater(player.x,player.y-26,T('parryMsg')+(batch?' ×'+n:''),PAL.white,10,0.28);
     for(let i=0;i<4;i++){ /* 十字闪光: 4根放射光束 */
       const an=i*Math.PI/2;
       const p1=part(cx+Math.cos(an)*8,cy+Math.sin(an)*8,Math.cos(an)*120,Math.sin(an)*120,0.18,PAL.white,4.5); p1.ray=true;
       const p2=part(cx+Math.cos(an+0.78)*6,cy+Math.sin(an+0.78)*6,Math.cos(an+0.78)*90,Math.sin(an+0.78)*90,0.15,PAL.lite,3.5); p2.ray=true; }
-    burst(cx,cy,8,[PAL.white,PAL.lite],110,0.3);
-    addLight(cx,cy,34,PAL.white,0.34,0.16);
-    kickTier(2,s.ang);   /* v1.7: Perfect弹反→中档 */
-    SFX.reflect(cx,cy,true);
   }else{
     STATS.parryN++;
-    HITSTOP=0.035; STATS.hitstopN++;
-    for(let i=0;i<6;i++){ const a=rnd(Math.PI*2);   /* 小型白蓝接触环 */
-      part(cx+Math.cos(a)*5,cy+Math.sin(a)*5,Math.cos(a)*46,Math.sin(a)*46,0.12,i%2?PAL.white:PAL.lite,2); }
-    addLight(cx,cy,22,PAL.aqua,0.22,0.1);
-    kickTier(0,s.ang);   /* v1.7: 普通弹反→微档 */
-    SFX.reflect(cx,cy,false);
+    HITSTOP=batch?0.055:0.035; STATS.hitstopN++;
   }
+  shieldSwirl(player.x,player.y,perfect||batch);         /* 漩涡以玩家为中心(护罩本体) */
+  if(batch)burst(cx,cy,8,[PAL.white,'#7ec8ff'],130,0.32);
+  kickTier(batch?3:(perfect?2:1),s.ang);   /* v1.7: Perfect弹反→中档; v1.8 W7 批量→强档 */
+  SFX.reflect(cx,cy,perfect||batch);
 }
 </script>
 <script>
@@ -2017,7 +2035,9 @@ function updShots(dt){
             s.vx=Math.cos(na)*s.spd; s.vy=Math.sin(na)*s.spd; s.life=1.6;
             RUN.score+=30;
             player.shieldFlash=0.12;   /* v1.7: 弹反护罩白闪 */
-            parryFeedback(perfect,s);
+            /* v1.8 W7: 逐发独立全反弹保持; 同帧累积, 帧末合并反馈(增强 hitstop/kick/漩涡) */
+            player._parry={n:(player._parry?player._parry.n:0)+1,perfect:perfect||(player._parry&&player._parry.perfect),x:s.x,y:s.y};
+            hitFx(s.x,s.y,'metal',s.ang);
           } else if(player.inv<=0){
             hitFx(s.x,s.y,'armor',s.ang);
             damagePlayer(s.dmg,s.ang);
@@ -2034,6 +2054,11 @@ function updShots(dt){
       }
     }
     if(dead)releaseShot(i);
+  }
+  /* v1.8 W7: 同帧弹反合并反馈 — 漩涡/hitstop/kick 按 N 与 Perfect 分级 */
+  if(player._parry){
+    parryFeedback(player._parry.perfect,{x:player._parry.x,y:player._parry.y,ang:Math.atan2(player._parry.y-player.y,player._parry.x-player.x)},player._parry.n);
+    player._parry=null;
   }
 }
 function updPlanes(dt){
