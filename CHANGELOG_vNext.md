@@ -2,6 +2,22 @@
 
 基线见 `BASELINE.md`；每阶段完成后须通过回归套件（主流程/触屏/性能）方可合入。
 
+## v1.8.0 — 核心驾驶与战斗系统 2.0（2026-09-03）
+
+**冻结契约**：`CONTROL_CONTRACT_v1.8.md`（§1 键位替代表 / §2 移动数学 / §3 DAMAGE_MATRIX / §4 冷却公式 / §5 固定时间原则 / §6 enemyId / §7 存档迁移 / §8 验收基线）。八个工作包 G0→W10 逐一提交、每包独立回归。
+
+- **双摇杆炮塔（W1/W2）**：手柄 axes[2]/[3] 右摇杆 / 触屏 `#rjoy` 右虚拟摇杆（`makeStick` 工厂：pointerId+setPointerCapture+pointercancel 完整指针所有权，双杆互不抢触点）/ 键盘 WASD=移动+方向键=瞄准（8 向归一化）；**松手永久保持最后瞄准角**；`resetTransientInput` 清全部输入态，visibilitychange hidden 取消导弹蓄力不发射。玩家角度状态一次性迁移 `p.a`→`p.bodyA/ta`（QA 静态零残留），fireMG/fireCannon 沿 `p.ta` + 炮口偏移，Breach 锁定车身炮塔同轴。分层 HD 素材：正典单图（左 hull 右 turret 同比例）+ 边界洪泛 alpha 切割 + 腐蚀法炮塔 pivot + 源分辨率单次插值旋转合成 16 帧 → 6 张 512 atlas（388KB，纹理 6.0MB，首载 90ms）；残影用 hull 帧剪影；选车预览分层。素材 3 轮视觉审校 SHIP（教训：网格枚举旋转不可靠/朝向投票互斥失效→确定性覆盖表/随机地形淹死假警报/出生无敌闪烁相位假警报）。
+- **惯性驾驶（W3）**：契约 §2 数学——左杆=desired velocity 世界系加速（0.16s×accel）；速度投影车体系 forward/lateral，lateral 以 lateralGrip×地形 grip 指数衰减 → 甩尾；制动速度插值（松键 0.3s 仍 >30% 速度、1.2s 内停）；bodyA 以 turnRate 跟随（去硬编码）。地形：冰 grip×0.3 / 河 grip×0.6 / 泥 speed×0.55。甩尾 FX：slip>40 加浓履带印+侧向扬尘/喷雪（冰面青白大团）。机型手感：突击 grip0.78 易漂 / 均衡 1.0 / 重装 mass1.45+brake0.8 难停撞重。
+- **碰撞冲量（W3.5）**：`moveCircEx{hit,moved,nx,ny,impact,rdx,rdy}` + 兼容包装；玩家撞墙法向反弹 25%+按 impact 分级反馈（斜擦 vn≈0 不误判）；ram 击退速度冲量化（敌 kv 击退场 exp 衰减，玩家反冲按质量比），删除全部 `x+=` 位移直改（含主炮后坐力）；玩家↔敌闭合接触按质量比法向冲量交换；眩晕敌人也受击退场。
+- **伤害管线 2.0（W6）**：`DMG_ATK` 策略表 × `applyDamage(e,raw,cause)` —— atk 在管线内**恰好乘一次**；12 cause 分类（airstrike 独立 atk×；reflect/knockback/shot ATK-independent；敌方伤害 def×taken 走 damagePlayer）；调用点全部改传 raw；effects.js 纯表现。
+- **多锁导弹（W4）**：数量 `1+floor((charge-0.20+ε)/lockStep)` clamp maxLocks（突击 6/0.15 · 均衡 5/0.18 · 重装 4/0.22+blast×1.5，1.2s 满蓄全部恰好达上限）；锁定快照+滞回（260 获取/310 丢失只补洞不重排），单目标叠锁=同心准环 ×N 标签；固定步进弹幕队列 `p.mslVolley`（updPlayer 递减 ±0.07s 错峰出膛，暂停/Hitstop/死亡/菜单天然同步）；死目标发射时重锁最近→无目标沿 ta 直射；真冷却 1.8/2.2/2.6s×cdMul 冷却期禁蓄力；HUD 芯片双态+锁数+首锁刻度；锁定准星深描边+雪地青色（视觉 rubric 整改）。
+- **CDR 培养（W5）**：整备 4→5 行；`cdMul=clamp(1/(1+0.04×cdr),0.55,1)` 技能全额/武器 0.65+0.35×cdMul（W0）；两处 %4 导航与手柄 30 级封顶收口；i18n ×3。
+- **护盾 2.0（W7）**：重装 dur 4.0→2.6/cd 1.5→3.4（连发=短真空，不变量自然满足）；同帧多发累积合并反馈（N≥2 顿帧 0.07+强震+×N 浮字）；**蓝白圆形粒子漩涡**（切向+向内=螺旋内卷，质量分级 q2/q1/q0；Perfect 半径×1.3/角速×1.3/亮度↑不堆粒子）。
+- **帮助触屏化（W8）**：‹› 实体翻页钮+✕返回钮（全侧边隐形热区保留）；页脚按输入模式；页码 13 四处硬编码收口。
+- **战斗再平衡（W6b）**：MG 3→2.2 / 主炮 24→18 / 导弹 46→16 / 空袭 34→20；tank 26→44 / truck 17→26 / L4+ 射速+10%；坦克侧闪战术（威胁弹 110px→履带亮光前兆 0.24s→反应延迟 0.12-0.3s→横移击退，冷却 1.5-3s，难度门控 0/30/50/70/85%）；冲撞非 BOSS 55×atk 即杀 CRUSH!+强震 / BOSS 60×atk+stagger 永不即杀（保底 1hp）。
+- **验收（W9）**：A 层 verify6 39 / verify7 / verify8 / verify9 / tankshot 12 / smoke 全绿（SUPERSEDED 项按契约改标：急停→惯性滑行）；B 层 verify18 扩至 60 断言（存档迁移/冷却表/护盾不变量/双杆三通道/炮塔分离/漂移侧滑/泥地乘数/碰撞法线/ram 速度场/Damage Matrix 12 类比值/多锁全链/批量弹反/漩涡分级/CRUSH/侧闪/双杆并发/MG 节奏）；D 层 `perf_v18.js` 采样协议（预热 2s+30s ring buffer+p95/p99/长帧/粒子池：avg 82.9fps/零长帧/零错误）；视觉 rubric 6 项 3 轮审校全 PASS。真机 debug 包已装（JS 桥 `eval(atob())` 就绪）。
+- **发版（W10）**：`tools/release_v18.js` 流水线一次跑通（build→sync→SHA-256→gradle release→APK 解包再断言→manifest：APK sha256 与签名证书指纹分开记录）；README 双版本线+秘籍公开+6 张新截图；versionCode 13。
+
 ## v1.7.2 — 手柄映射改键修复 + 触屏收尾（2026-09-02）
 
 - **改键捕获状态机（核心修复）**：旧捕获逻辑进入后下一帧即抓"任何按下的按钮"——手柄 A 确认进入捕获时 A 尚未松开、瞬间被绑回自身，手柄玩家永远改不了键；改 `MENU.capture` 为 `{act,hold}` 两段状态机：首帧快照已按住按钮为忽略表 → 全部松开才武装 → 第一个新按键写入并 `saveSet()`。桌面无头 fake-pad 24 断言 + Redmi 真机 E2E（A 按住 0.9s 不误绑、保持等待 → 松开按 Y 正确绑定 → trSet 持久化 → 重载恢复）全过。

@@ -1,0 +1,15 @@
+{
+  "version": "1.8.0",
+  "versionCode": 13,
+  "builtAt": "2026-09-02T22:34:09.723Z",
+  "indexHtml": {
+    "bytes": 7485078,
+    "sha256": "ee2112ad4c8e1e2b054b243b9f6f90f515d52c0ca9cb2e680a46e183e5a119fc"
+  },
+  "apk": {
+    "bytes": 9782099,
+    "sha256": "8d85ae7874422814992fe6549ce5c8a46d4571cf7525e49f59507af7f9b08edd",
+    "path": "android/app/build/outputs/apk/release/app-release.apk"
+  },
+  "signer": "Signer #1 certificate DN: CN=Steel Roar, OU=Games, O=Rance, C=CN\nSigner #1 certificate SHA-256 digest: 700cfdfd2bef0e7dc4edca060858e928ea18ac84938474fdc5481572e2aa6c5b"
+}
