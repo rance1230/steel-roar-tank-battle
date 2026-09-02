@@ -771,7 +771,7 @@ function drawWorld(){
   drawDecals();
   for(const lp of lightPools)glow(lp.x,lp.y,lp.r+Math.sin(ST.t*1.3+lp.ph)*3,PAL.orange,0.10);   /* 战场暖光池 */
   for(const pk of pickups)drawPickup(pk);
-  for(const e of enemies)drawEnemy(e);
+  for(const e of enemies){ if(e.telegraph>0)glow(e.x,e.y,11,PAL.white,0.24); drawEnemy(e); }   /* v1.8 W6平衡: 侧闪前兆 */
   drawGhosts();                                        /* v1.6: 冲刺残影在本体之下 */
   if(ST.state!=='over')drawPlayer();
   if(ST.state!=='over')drawWingman();

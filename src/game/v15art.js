@@ -160,7 +160,8 @@ V15.flushHd=function(ox,oy){
       uctx.save(); uctx.globalAlpha=q.boss?0.36:0.26; uctx.fillStyle=PAL.shadow;
       uctx.beginPath(); uctx.ellipse(q.x,q.y+2,w*(q.boss?0.40:0.36),w*0.12,0,0,Math.PI*2); uctx.fill(); uctx.restore();
       /* 阵营辉光: 敌红/僚机与玩家机体色/空袭青 */
-      if(q.kind==='enemy'){ v15Glow(q.x,q.y,q.boss?14+Math.sin(ST.t*4)*2:8,PAL.red,q.boss?0.16:0.10); }
+      if(q.kind==='enemy'){ v15Glow(q.x,q.y,q.boss?14+Math.sin(ST.t*4)*2:8,PAL.red,q.boss?0.16:0.10);
+        if(q.tg)v15Glow(q.x,q.y,11,PAL.white,0.24); }   /* v1.8 W6平衡: 侧闪前兆履带亮光 */
       else if(q.kind==='plane'){ v15Glow(q.x,q.y,14,'#9bdcff',0.12);
         v15Glow(q.x-Math.cos(q.ang)*w*0.45,q.y-Math.sin(q.ang)*w*0.45,7,PAL.ember,0.20); }
       else if(sp.glow){ v15Glow(q.x+Math.cos(q.ang||0)*w*0.28,q.y+Math.sin(q.ang||0)*w*0.28,
@@ -229,7 +230,7 @@ function v15Enemy(e){
   const jx=e.jitter>0?rnd(-1.3,1.3):0, jy=e.jitter>0?rnd(-1.3,1.3):0;
   const sp=e.boss?v15Spec('boss','landship'):v15Spec('enemy',e.kind==='tank'?'tank':'truck');
   if(!sp||!v15Image(sp.img))return false;
-  V15.queue.push({kind:'enemy',spec:sp,x:IPx(e)+jx,y:IPy(e)+jy,ang:e.a,flash:e.flash||0,
+  V15.queue.push({kind:'enemy',spec:sp,x:IPx(e)+jx,y:IPy(e)+jy,ang:e.a,flash:e.flash||0,tg:e.telegraph>0,
     boss:!!e.boss,r:e.r,hp:e.hp/e.maxHp,showHp:!e.boss&&e.hp<e.maxHp,flying:!!e.flying});
   return true;
 }

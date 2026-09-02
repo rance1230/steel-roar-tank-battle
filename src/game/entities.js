@@ -91,12 +91,12 @@ function spawnEnemyAt(kind,boss,x,y){
     stun:0,flash:0,ramCd:0,touchCd:0,dist:0,jitter:0,flying:null,kvx:0,kvy:0,
     mass:boss?'fortress':(isTank?'medium':'light')};
   if(isTank) enemies.push(Object.assign(base,{r:9,
-    hp:26*cfg.hp*dm.hp*cycHp(),maxHp:26*cfg.hp*dm.hp*cycHp(),speed:44,
-    prefMin:120,prefMax:200,range:250,fireT:rnd(1,2.4),fireCd:2.6/cfg.rate/dm.react,
+    hp:44*cfg.hp*dm.hp*cycHp(),maxHp:44*cfg.hp*dm.hp*cycHp(),speed:44,   /* v1.8 W6平衡: 26→44 */
+    prefMin:120,prefMax:200,range:250,fireT:rnd(1,2.4),fireCd:2.6/cfg.rate/dm.react*(RUN.lvl>=4?0.9:1),   /* v1.8 W6平衡: L4+ 射速+10% */
     dmg:11*cfg.dmg*cycDmg(),orb:rnd()<0.5?1:-1,orbT:rnd(2,5)/dm.ai,
     spr:0.09/dm.acc,lead:0.6*dm.ai,strafe:0.7*dm.ai,smart:dm.ai,score:100}));
   else enemies.push(Object.assign(base,{r:8,
-    hp:17*cfg.hp*dm.hp*cycHp(),maxHp:17*cfg.hp*dm.hp*cycHp(),speed:78,
+    hp:26*cfg.hp*dm.hp*cycHp(),maxHp:26*cfg.hp*dm.hp*cycHp(),speed:78,   /* v1.8 W6平衡: 17→26 */
     prefMin:80,prefMax:160,range:210,fireT:rnd(1,2),fireCd:2.0/cfg.rate/dm.react,burst:0,burstT:0,
     dmg:3*cfg.dmg*cycDmg(),orb:rnd()<0.5?1:-1,orbT:rnd(2,5)/dm.ai,
     spr:0.12/dm.acc,lead:0.35*dm.ai,strafe:0.7*dm.ai,smart:dm.ai,score:80}));
@@ -205,14 +205,14 @@ function shot(x,y,ang,spd,dmg,friendly,kind,extra){
 }
 function fireMG(){ shotsFired++; const a=player.ta+rnd(-0.05,0.05);   /* v1.8 W2: 沿炮塔; raw 3, atk 由§3管线乘 */
   const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
-  shot(mx,my,a,430,3,true,'mg');
+  shot(mx,my,a,430,2.2,true,'mg');   /* v1.8 W6平衡: 3→2.2 */
   part(mx,my,rnd(-15,15),rnd(-15,15),0.08,PAL.gold,2);
   part(mx,my,0,0,0.05,PAL.gold,3.2,0).core=true;     /* 枪口焰芯 */
   addLight(mx,my,12,PAL.gold,0.18,0.055);
   if(ST.t-mgSndT>0.055){ SFX.mg(mx,my); mgSndT=ST.t; } }
 function fireCannon(){ const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮塔; raw 24, atk 由§3管线乘 */
   const mx=player.x+Math.cos(player.ta)*17,my=player.y+Math.sin(player.ta)*17;
-  shot(mx,my,a,320,24,true,'shell',{cause:'shot'});
+  shot(mx,my,a,320,18,true,'shell',{cause:'shot'});   /* v1.8 W6平衡: 24→18 */
   player.vx-=Math.cos(a)*55; player.vy-=Math.sin(a)*55;   /* v1.8 W3.5: 后坐力=速度冲量(禁位移直改) */
   flashFx(mx,my,9);                                   /* 炮口火光 (§VFX) */
   addLight(mx,my,22,PAL.gold,0.28,0.11);
@@ -260,7 +260,7 @@ function releaseMsl(){
 function fireMissileAt(tgt){
   const p=player, h=hullCfg().missile;
   const mx=p.x+Math.cos(p.ta)*15,my=p.y+Math.sin(p.ta)*15;
-  const s=shot(mx,my,p.ta+rnd(-0.12,0.12),200,46,true,'missile',{accel:520,blast:h.blast});   /* raw 46, atk 由§3管线乘 */
+  const s=shot(mx,my,p.ta+rnd(-0.12,0.12),200,16,true,'missile',{accel:520,blast:h.blast});   /* v1.8 W6平衡: 46→16, atk 由§3管线乘 */
   if(tgt)s.lock=tgt;
   part(mx,my,0,0,0.08,PAL.white,4,0).core=true;
   addLight(mx,my,18,PAL.white,0.24,0.1);
@@ -432,20 +432,27 @@ function tryContact(e){
       const facing=Math.abs(angDiff(pl.bodyA,Math.atan2(-ny2,-nx2)))<Math.PI/3;   /* v1.8 W2: 车身角(原 pl.a 迁移遗漏致 NaN 永false) */
       if(sp2>120&&facing&&!pl.breach&&!e.flying){ enterBreach(e); }
       else if(sp2>40){
-        const crit=Math.random()<0.6;
-        const dmg=crit?40:20;          /* raw; atk 由§3管线乘 */
-        applyDamage(e,dmg,'ram');
-        floater(e.x,e.y-16,(crit?'CRIT ':'')+Math.round(dmg),crit?PAL.gold:PAL.white,crit?11:8);
+        /* v1.8 W6平衡: 冲撞=高风险高回报 — 非BOSS 暴击55×atk 即杀 "CRUSH!";
+           BOSS 60×atk 大伤害+stagger, 永不即杀(保底1hp) */
+        if(e.boss){
+          applyDamage(e,60,'ram');
+          if(e.dead||e.hp<=0){ e.dead=false; e.hp=Math.max(1,e.hp); }   /* BOSS 永不即杀 */
+          e.stun=Math.max(e.stun,1.2);
+          floater(e.x,e.y-16,''+Math.round(60*calcStats().atk),PAL.gold,11);
+        } else {
+          applyDamage(e,55,'ram');
+          floater(e.x,e.y-16,'CRUSH!',PAL.gold,12,0.3);
+        }
         /* v1.8 W3.5: 击退=速度冲量(敌 kv 击退场, exp 衰减), 玩家反冲按质量比 — 禁位移直改 */
         const kbV=e.boss?70:240;
         e.kvx=(e.kvx||0)-nx2/nl*kbV; e.kvy=(e.kvy||0)-ny2/nl*kbV;
         const mE=e.boss?6:(e.kind==='tank'?1.3:0.9), mP=hullCfg().move.mass;
         const rec=kbV*mE/(mE+mP)*0.5;
         pl.vx+=nx2/nl*rec; pl.vy+=ny2/nl*rec;
-        burst((e.x+pl.x)/2,(e.y+pl.y)/2,crit?16:8,[PAL.gold,PAL.white,PAL.lite],crit?110:70,0.4);
-        if(crit)RUN.score+=25;
+        burst((e.x+pl.x)/2,(e.y+pl.y)/2,e.boss?16:14,[PAL.gold,PAL.white,PAL.lite],e.boss?110:95,0.4);
+        RUN.score+=25;
         SFX.ram((e.x+pl.x)/2,(e.y+pl.y)/2);
-        kickTier(crit?2:1,Math.atan2(e.y-pl.y,e.x-pl.x));   /* v1.7: 冲撞分级 */
+        kickTier(e.boss?2:3,Math.atan2(e.y-pl.y,e.x-pl.x));   /* 非BOSS碾杀→强档; v1.7冲撞分级 */
       } else if(e.touchCd<=0&&pl.inv<=0){
         e.touchCd=1.2; damagePlayer(6,Math.atan2(ny2,nx2),true);
       }
@@ -464,6 +471,7 @@ function tryContact(e){
 }
 
 function d2p(e){ return Math.hypot(player.x-e.x,player.y-e.y); }
+const DODGE_P=[0,0.3,0.5,0.7,0.85];   /* v1.8 W6平衡: 侧闪概率按难度 */
 function updEnemies(dt){
   const aliveReg=enemies.filter(e=>!e.boss).length;
   if(ST.spawnedN<cfg.quota-1){
@@ -559,6 +567,28 @@ function updEnemies(dt){
         const gl=Math.hypot(gx,gy)||1;
         mx=gx/gl; my=gy/gl;
       } else e.escort=false;
+    }
+    /* v1.8 W6平衡: 坦克侧闪战术 — 来弹威胁→履带亮光前兆(telegraph)→反应延迟120-300ms
+       →横向击退速度闪避; 冷却1.5-3s; 难度门控 简单0/普通30%/困难50%/噩梦70%/疯狂85% */
+    if(e.kind==='tank'&&!e.boss&&!e.flying&&e.stun<=0){
+      if(e.dodgeT>0){
+        e.dodgeT-=dt;
+        if(e.dodgeT<=0){
+          if(Math.random()<DODGE_P[SET.diff]){
+            e.kvx=(e.kvx||0)+Math.cos(e.dodgeA)*150; e.kvy=(e.kvy||0)+Math.sin(e.dodgeA)*150;
+            e.telegraph=0;
+          }
+        }
+      } else {
+        e.dodgeCd=Math.max(0,(e.dodgeCd||0)-dt);
+        if(e.dodgeCd<=0){
+          const th=shots.find(s=>s.friendly&&!s.refl&&s.kind!=='mg'&&
+            dist2(s.x,s.y,e.x,e.y)<110*110&&((e.x-s.x)*s.vx+(e.y-s.y)*s.vy)>0);
+          if(th){ e.dodgeCd=rnd(1.5,3); e.dodgeT=0.12+rnd(0,0.18); e.telegraph=0.24;
+            e.dodgeA=Math.atan2(e.y-th.y,e.x-th.x)+Math.PI/2*(e.orb||1); }
+        }
+      }
+      if(e.telegraph>0)e.telegraph-=dt;
     }
     Grid.query(e.x,e.y,e.r+18,_gqSep);
     for(const o of _gqSep){ if(o===e)continue;
@@ -712,7 +742,7 @@ function updPlanes(dt){
     if(pl.x<-60||pl.x>WORLDW+60)planes.splice(i,1);
   }
   for(let i=bombs.length-1;i>=0;i--){ const b=bombs[i]; b.ox=b.x; b.oy=b.y; b.t-=dt;
-    if(b.t<=0){ explodeAt(b.x,b.y,30,34,false,'airstrike',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档; §3: airstrike 独立cause=atk×(原经explodeAt隐式×atk, 行为保真) */
+    if(b.t<=0){ explodeAt(b.x,b.y,30,20,false,'airstrike',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档; §3: airstrike 独立cause=atk×(原经explodeAt隐式×atk, 行为保真) */
 }
 function updPickups(dt){
   for(let i=pickups.length-1;i>=0;i--){ const pk=pickups[i];

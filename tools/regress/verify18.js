@@ -333,6 +333,37 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(M2.perf > M2.q2, 'M2b Perfect 增强 (perf=' + M2.perf + ' > q2=' + M2.q2 + ')');
   await ev(() => { player.shieldT = 0; player._parry = null; shots.length = 0; });
 
+  /* ---- N. W6平衡: 冲撞规则 + 坦克侧闪 ---- */
+  const N1 = await page.evaluate(() => new Promise(res => {   /* 非BOSS: 55×atk 即杀 CRUSH! */
+    const s = window.__open(); G.tp(s.x, s.y);
+    const t = G.dummy('truck', s.x + 18, s.y); t.ramCd = 0; t.stun = 99; t.hp = t.maxHp = 40;   /* 40>旧40暴击线, <55 */
+    player.bodyA = 0; player.vx = 100; player.vy = 0;
+    let n = 0; const iv = setInterval(() => { if (t.dead || ++n > 8) { clearInterval(iv);
+      res({dead: t.dead, hp: Math.round(t.hp)}); } }, 20); }));
+  ok(N1.dead, 'N1 冲撞非BOSS即杀 CRUSH! (40hp 卡车被 55×atk 秒杀)');
+  const N2 = await page.evaluate(() => new Promise(res => {   /* BOSS: 60×atk 大伤害+stagger, 永不即杀 */
+    const s = window.__open(); G.tp(s.x, s.y);
+    const b = G.dummy('tank', s.x + 18, s.y); b.boss = true; b.mass = 'fortress';   /* G.dummy 无boss参, 手动标记 */
+    b.ramCd = 0; b.stun = 0; b.hp = b.maxHp = 80;
+    player.bodyA = 0; player.vx = 100; player.vy = 0;
+    let n = 0; const iv = setInterval(() => { if (b.hp < b.maxHp || ++n > 8) { clearInterval(iv);
+      res({hp: Math.round(b.hp), stun: +(b.stun || 0).toFixed(2)}); } }, 20); }));
+  ok(N2.hp >= 1 && N2.hp < 60 && N2.stun >= 1, 'N2 BOSS大伤害+stagger 永不即杀 (hp ' + N2.hp + ', stun ' + N2.stun + ')');
+  const N3 = await page.evaluate(() => new Promise(res => {   /* 坦克侧闪: 来弹→前兆辉光→横移 (85%门控, 3次尝试) */
+    SET.diff = 4;
+    let tg = false, moved = 0, tries = 0;
+    const attempt = () => { if (++tries > 3) { SET.diff = 2; enemies.length = 0; return res({tg, moved}); }
+      const s = window.__open(); G.tp(s.x, s.y);
+      const t = G.dummy('tank', s.x + 90, s.y); t.stun = 0; t.hp = t.maxHp = 9999;
+      shot(s.x, s.y, 0, 320, 10, true, 'shell');
+      let n = 0; const iv = setInterval(() => { n++;
+        if (t.telegraph > 0) tg = true;
+        moved = Math.max(moved, Math.round(Math.abs(t.kvx || 0) + Math.abs(t.kvy || 0)));
+        if (n > 36) { clearInterval(iv); t.dead = true; enemies.length = 0; attempt(); } }, 25); };
+    attempt();
+  }));
+  ok(N3.tg && N3.moved > 60, 'N3 坦克侧闪: 前兆辉光+横移击退 (tg=' + N3.tg + ', kv=' + N3.moved + ')');
+
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
   log(fails === 0 && errors.length === 0 ? '=== V18 (G0-5+W0) ALL PASS ===' : '=== ' + fails + ' FAILS ===');

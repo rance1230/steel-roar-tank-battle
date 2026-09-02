@@ -53,8 +53,8 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   // 4) Breach 全链: 击杀路径(击飞目标死亡→连锁爆炸)
   await page.evaluate('(' + setup + ')()');
   const pre = await page.evaluate(() => new Promise(res => {   // 页内原子轮询: 桥往返>0.34s保持窗会读到释放后状态
-    player.a = 0; player.vx = 170; player.vy = 0;                 // 先给速度, 同帧生成目标 → 首帧即高速接触
-    const t1 = G.dummy('tank', 258, 135); t1.stun = 99;           // 顶入目标(将死于零距离炮击)
+    player.bodyA = 0; player.vx = 170; player.vy = 0;              // v1.8 W2: bodyA 迁移; 先给速度同帧生成目标 → 首帧即高速接触
+    const t1 = G.dummy('tank', 258, 135); t1.stun = 99; t1.hp = t1.maxHp = 20;   // v1.8 W6平衡: 敌耐久增强, 测试用低血目标保证击杀路径(与平衡数值解耦)
     const t3 = G.dummy('truck', 290, 130); t3.stun = 99;          // 连锁爆炸受害者
     let n = 0; const iv = setInterval(() => {
       if ((player.breach && player.vx === 0 && player.vy === 0) || ++n > 90) { clearInterval(iv); res({lock: !!player.breach, locks: STATS.breachLocks, vx: player.vx}); } }, 16);   /* 首帧仅×0.05, 保持帧才归零 */
@@ -79,7 +79,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   // 5) 击飞路径: 高血量目标存活→飞行→敌敌碰撞
   await page.evaluate('(' + setup + ')()');
   await page.evaluate(() => {
-    player.a = 0; player.vx = 170; player.vy = 0;
+    player.bodyA = 0; player.vx = 170; player.vy = 0;
     const t1 = G.dummy('tank', 258, 135); t1.stun = 99; t1.hp = t1.maxHp = 600;
     const t2 = G.dummy('tank', 340, 135); t2.stun = 99; t2.hp = t2.maxHp = 600;  // 飞行路径上的受害者
   });
@@ -103,7 +103,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await page.evaluate(() => {           // 直接设定双方位置: 排除Boss提前走近消耗ramCd的随机性
     const b = enemies.find(e => e.boss);
     b.x = b.ox = 400; b.y = b.oy = 135; b.stun = 0; b.fireT = 99; b.ramCd = 0;
-    G.tp(374, 135); player.a = 0; player.vx = 170; player.vy = 0;
+    G.tp(374, 135); player.bodyA = 0; player.vx = 170; player.vy = 0;
   });
   await waitLock();
   await page.evaluate(() => { breachFire(player.breach.e, player.breach.stagger); });
