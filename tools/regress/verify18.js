@@ -215,6 +215,28 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     ok(sm < 0.68, 'I3 泥地减速≈0.55× (L' + (mud.lv + 1) + ', 采样最小 ' + (sm * 100).toFixed(0) + '%)');
   } else ok(false, 'I3 泥地: 全关卡无 tile4');
 
+  /* ---- J. W3.5 碰撞冲量: moveCircEx 法线/冲击 + ram速度化 + 撞墙反弹 ---- */
+  const J1 = await ev(() => { const o = {x: 26, y: 200};
+    const m = moveCircEx(o, -30, 0, 12);          /* 撞世界左边界 */
+    return {hit: m.hit, nx: m.nx, ny: m.ny, moved: m.moved}; });
+  ok(J1.hit && J1.nx === 1 && J1.ny === 0 && !J1.moved, 'J1 moveCircEx 边界正撞: 法线(+1,0) 零位移 (' + J1.nx + ',' + J1.ny + ')');
+  const J1b = await ev(() => { const o = {x: 26, y: 200};
+    const m = moveCircEx(o, -30, 20, 12);         /* 斜撞: X挡Y滑 */
+    return {hit: m.hit, nx: m.nx, moved: m.moved, dy: o.y - 200}; });
+  ok(J1b.hit && J1b.nx === 1 && J1b.moved && J1b.dy === 20, 'J1b 斜撞滑动: X挡Y过, 法线(+1,0)');
+  const J2 = await page.evaluate(() => new Promise(res => {   /* ram: 击退走 kv 速度场(禁位移直改) */
+    const t = G.dummy('truck', player.x + 18, player.y); t.ramCd = 0; t.stun = 99; t.hp = t.maxHp = 9999;
+    const px0 = t.x;
+    player.bodyA = 0; player.vx = 100; player.vy = 0;          /* 接触距离内, 40<sp<120 → ram 分支 */
+    let n = 0; const iv = setInterval(() => { if (++n > 6 || t.dead) { clearInterval(iv);
+      res({kvx: Math.round(t.kvx || 0), moved: Math.round(t.x - px0)}); } }, 16); }));
+  ok(J2.kvx > 50 && J2.moved > 3, 'J2 ram 击退=速度场驱动 (' + J2.kvx + 'px/s, ' + J2.moved + 'px/0.1s)');
+  const J3 = await page.evaluate(() => new Promise(res => {    /* 撞墙: 法向反弹, 速度反向 */
+    G.tp(40, 200); player.bodyA = Math.PI; player.vx = -260; player.vy = 0;
+    let n = 0; const iv = setInterval(() => { if (++n > 8) { clearInterval(iv);
+      res({vx: Math.round(player.vx)}); } }, 16); }));
+  ok(J3.vx > 0, 'J3 撞墙反弹: 西向全速→东向回弹 (' + J3.vx + 'px/s)');
+
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
   log(fails === 0 && errors.length === 0 ? '=== V18 (G0-5+W0) ALL PASS ===' : '=== ' + fails + ' FAILS ===');

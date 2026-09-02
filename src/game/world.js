@@ -36,9 +36,21 @@ function blockedAt(x,y,r){
       if((x-cx)*(x-cx)+(y-cy)*(y-cy)<r*r)return true; } }
   return false;
 }
-function moveCirc(o,dx,dy,r){
-  if(!blockedAt(o.x+dx,o.y+dy,r)){o.x+=dx;o.y+=dy;return true;}
-  if(dx!==0&&!blockedAt(o.x+dx,o.y,r)){o.x+=dx;return true;}
-  if(dy!==0&&!blockedAt(o.x,o.y+dy,r)){o.y+=dy;return true;}
-  return false;
+/* v1.8 W3.5: 扩展碰撞移动 — 返回 hit/表面法线(朝外)/法向冲击速度/剩余位移;
+   冲量语义由调用方处理(只改 vx/vy, 禁 x+= 直改)。vx/vy 可选: 提供则算 impact。 */
+function moveCircEx(o,dx,dy,r,vx,vy){
+  if(!blockedAt(o.x+dx,o.y+dy,r)){ o.x+=dx; o.y+=dy;
+    return {hit:false,moved:true,nx:0,ny:0,impact:0,rdx:0,rdy:0}; }
+  const hd=Math.hypot(dx,dy)||1e-9;
+  let m1=false,m2=false;
+  if(dx!==0&&!blockedAt(o.x+dx,o.y,r)){ o.x+=dx; m1=true; }
+  if(dy!==0&&!blockedAt(o.x,o.y+dy,r)){ o.y+=dy; m2=true; }
+  let nx,ny;
+  if(!m1&&!m2){ nx=-dx/hd; ny=-dy/hd; }              /* 正撞: 法线=运动反方向 */
+  else if(!m1){ nx=dx>0?-1:1; ny=0; }                /* X 轴被挡 */
+  else { nx=0; ny=dy>0?-1:1; }                       /* Y 轴被挡 */
+  const impact=(vx===undefined)?0:Math.max(0,-(vx*nx+vy*ny));
+  return {hit:true,moved:m1||m2,nx,ny,impact,rdx:m1?0:dx,rdy:m2?0:dy};
 }
+/* 兼容包装: 旧行为=是否产生位移 */
+function moveCirc(o,dx,dy,r){ return moveCircEx(o,dx,dy,r).moved; }
