@@ -143,9 +143,9 @@ function tick(dt){
     if(PAD.just.confirm||PAD.just.back)menuBack(); }
   if(MENU&&MENU.capture&&PAD.gp){ /* pollPad内处理 */ }
   if(ST.state==='upgrade'){
-    if(PAD.just.up){ST.upg.sel=(ST.upg.sel+3)%4;SFX.pick();}
-    if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%4;SFX.pick();}
-    if(PAD.just.right&&RUN.pts>0){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();}
+    if(PAD.just.up){ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.right&&RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();}   /* v1.8 W5: 手柄路径补30级封顶 */
     if(PAD.just.left&&RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();}
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;

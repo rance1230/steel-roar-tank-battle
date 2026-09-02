@@ -180,10 +180,10 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  winT:'完 结 撒 花 !',win1:'全部关卡压制完成 · 战场已肃清',
  winStats:'总击破 {n} 台 · 总用时 {t} · 总分 {s}',best:'最高分 {n}',
  winOpt:'Enter 进入第 {n} 周目 · R 重分配点数 · Q 回标题',
- upgT:'战地整备',upgPts:'强化部件',upgHp:'装甲值',upgSpd:'速度',upgAtk:'攻击力',upgDef:'防御力',
+ upgT:'战地整备',upgPts:'强化部件',upgHp:'装甲值',upgSpd:'速度',upgAtk:'攻击力',upgDef:'防御力',upgCdr:'冷却加速',
  upgHint:'↑↓选择 →强化 ←退回 Enter 出击 R 全部退回',
  upgRefund:'全部退回点数',
- upgStat:'装甲 {a} · 速度 +{s}% · 攻击 +{k}% · 防御 {d}%',
+ upgStat:'装甲 {a} · 速度 +{s}% · 攻击 +{k}% · 防御 {d}% · 冷却 -{c}%',
  lvNames:['沙漠哨站','林地圣域','雨巷孤城','工业废墟','雪原突围','夜幕要塞','终焉战场'],
  lvHints:['沙地行驶会扬尘 · 岩石可作掩护','林地游击 · 敌军皮卡部队来袭','暴雨+闪电 · 浅水区减速','油污地面大幅减速 · 废墟掩体多','冰面减速 · 河道横穿战场','夜雨闪电 · 能量地板减速','熔岩裂隙减速 · 最终决战全歼!'],
  itemHeal:'修理包',itemPart:'强化部件',
@@ -249,10 +249,10 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  winT:'完結おめでとう!',win1:'全ステージ制圧完了 · 戦場は制圧された',
  winStats:'総撃破 {n} 台 · 総時間 {t} · 総得点 {s}',best:'ハイスコア {n}',
  winOpt:'Enter 第 {n} 周目へ · R 再振分 · Q タイトル',
- upgT:'戦地整備',upgPts:'強化パーツ',upgHp:'装甲値',upgSpd:'速度',upgAtk:'攻撃力',upgDef:'防御力',
+ upgT:'戦地整備',upgPts:'強化パーツ',upgHp:'装甲値',upgSpd:'速度',upgAtk:'攻撃力',upgDef:'防御力',upgCdr:'クールダウン',
  upgHint:'↑↓選択 →強化 ←返却 Enter 出撃 R 全返却',
  upgRefund:'全ポイント返却',
- upgStat:'装甲 {a} · 速度 +{s}% · 攻撃 +{k}% · 防御 {d}%',
+ upgStat:'装甲 {a} · 速度 +{s}% · 攻撃 +{k}% · 防御 {d}% · 冷却 -{c}%',
  lvNames:['砂漠哨戒基地','森の聖域','雨の孤城','工業廃墟','雪原突破','夜半の要塞','終焉の戦場'],
  lvHints:['砂地は砂塵が舞う · 岩を掩体に','林地戦 · 敵トラック部隊来襲','暴雨+落雷 · 浅瀬は減速','油汚れ地面は大幅減速 · 廃墟掩体多し','氷面は減速 · 河川が戦場を横切る','夜雨と落雷 · エネルギー床は減速','溶岩の亀裂は減速 · 最終決戦!'],
  itemHeal:'修理キット',itemPart:'強化パーツ',
@@ -319,10 +319,10 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  winT:'  CONGRATULATIONS!  ',win1:'All missions complete · battlefield secured',
  winStats:'Total kills {n} · Time {t} · Score {s}',best:'Best {n}',
  winOpt:'Enter NG+{n} · R Respec points · Q Title',
- upgT:'FIELD REFIT',upgPts:'Upgrade Parts',upgHp:'Armor',upgSpd:'Speed',upgAtk:'Attack',upgDef:'Defense',
+ upgT:'FIELD REFIT',upgPts:'Upgrade Parts',upgHp:'Armor',upgSpd:'Speed',upgAtk:'Attack',upgDef:'Defense',upgCdr:'Cooldown',
  upgHint:'Up/Down select · Right + / Left - · Enter Deploy · R Refund all',
  upgRefund:'Refund all points',
- upgStat:'Armor {a} · Speed +{s}% · Atk +{k}% · Def {d}%',
+ upgStat:'Armor {a} · Speed +{s}% · Atk +{k}% · Def {d}% · CD -{c}%',
  lvNames:['Desert Outpost','Forest Shrine','Rain City','Industrial Ruins','Snow Breakout','Night Fortress','Final Battlefield'],
  lvHints:['Sand raises dust · rocks make cover','Woodland skirmish · pickup squads inbound','Storm + lightning · shallows slow you','Oil floors slow hard · lots of cover','Ice slows · river cuts the field','Night rain + lightning · energy floors slow','Lava cracks slow · final battle!'],
  itemHeal:'Repair Kit',itemPart:'Upgrade Part',
@@ -4577,11 +4577,11 @@ function menuKey(code){
   }
 }
 /* ---------- 整备(升级)画面输入 ---------- */
-const UPG_KEYS=['hp','spd','atk','def'];
+const UPG_KEYS=['hp','spd','atk','def','cdr'];   /* v1.8 W5: CDR 培养项 */
 function upgKey(code){
   switch(code){
-    case 'ArrowUp': case 'KeyW': ST.upg.sel=(ST.upg.sel+3)%4; SFX.pick(); break;
-    case 'ArrowDown': case 'KeyS': ST.upg.sel=(ST.upg.sel+1)%4; SFX.pick(); break;
+    case 'ArrowUp': case 'KeyW': ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length; SFX.pick(); break;
+    case 'ArrowDown': case 'KeyS': ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length; SFX.pick(); break;
     case 'ArrowRight': case 'KeyD': if(RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();} break;
     case 'ArrowLeft': case 'KeyA': if(RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();} break;
     case 'Enter': case 'KeyJ': deployFromUpgrade(); break;
@@ -4683,9 +4683,9 @@ function drawUpgrade(){
   uPanel(48,8,VW-96,VH-28,PAL.gold,0.72);
   txtO(T('upgT'),VW/2,12,13,PAL.gold,'center');
   txt(T('upgPts')+': '+RUN.pts,VW/2,30,10,PAL.gold,'center');
-  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def']];
+  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr']];   /* v1.8 W5: 5行 */
   rows.forEach((r,i)=>{
-    const y=52+i*24, sel=ST.upg.sel===i;
+    const y=46+i*21, sel=ST.upg.sel===i;
     const lv=RUN.up[r[1]];
     if(sel){ upx(66,y-5,250,18,PAL.panel2); upx(66,y-5,2,18,PAL.gold); txt('▶',60,y,9,PAL.gold); }
     txt(T(r[0]),74,y,9,sel?PAL.white:PAL.lite);
@@ -4698,7 +4698,7 @@ function drawUpgrade(){
     TAP_RECTS.push({x:300,y:y-6,w:20,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
   });
   const st=calcStats();
-  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100)}),VW/2,152,9,PAL.acid,'center');
+  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),VW/2,162,9,PAL.acid,'center');
   if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+2}),VW/2,166,7,PAL.white,'center');
   const blink=(ST.t%1.2)<0.86;
   if(blink)txtO(T('upgHint'),VW/2,VH-40,7,PAL.lite,'center');
@@ -5057,9 +5057,9 @@ function tick(dt){
     if(PAD.just.confirm||PAD.just.back)menuBack(); }
   if(MENU&&MENU.capture&&PAD.gp){ /* pollPad内处理 */ }
   if(ST.state==='upgrade'){
-    if(PAD.just.up){ST.upg.sel=(ST.upg.sel+3)%4;SFX.pick();}
-    if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%4;SFX.pick();}
-    if(PAD.just.right&&RUN.pts>0){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();}
+    if(PAD.just.up){ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.right&&RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();}   /* v1.8 W5: 手柄路径补30级封顶 */
     if(PAD.just.left&&RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();}
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;

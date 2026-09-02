@@ -158,11 +158,11 @@ function menuKey(code){
   }
 }
 /* ---------- 整备(升级)画面输入 ---------- */
-const UPG_KEYS=['hp','spd','atk','def'];
+const UPG_KEYS=['hp','spd','atk','def','cdr'];   /* v1.8 W5: CDR 培养项 */
 function upgKey(code){
   switch(code){
-    case 'ArrowUp': case 'KeyW': ST.upg.sel=(ST.upg.sel+3)%4; SFX.pick(); break;
-    case 'ArrowDown': case 'KeyS': ST.upg.sel=(ST.upg.sel+1)%4; SFX.pick(); break;
+    case 'ArrowUp': case 'KeyW': ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length; SFX.pick(); break;
+    case 'ArrowDown': case 'KeyS': ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length; SFX.pick(); break;
     case 'ArrowRight': case 'KeyD': if(RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();} break;
     case 'ArrowLeft': case 'KeyA': if(RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();} break;
     case 'Enter': case 'KeyJ': deployFromUpgrade(); break;
@@ -264,9 +264,9 @@ function drawUpgrade(){
   uPanel(48,8,VW-96,VH-28,PAL.gold,0.72);
   txtO(T('upgT'),VW/2,12,13,PAL.gold,'center');
   txt(T('upgPts')+': '+RUN.pts,VW/2,30,10,PAL.gold,'center');
-  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def']];
+  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr']];   /* v1.8 W5: 5行 */
   rows.forEach((r,i)=>{
-    const y=52+i*24, sel=ST.upg.sel===i;
+    const y=46+i*21, sel=ST.upg.sel===i;
     const lv=RUN.up[r[1]];
     if(sel){ upx(66,y-5,250,18,PAL.panel2); upx(66,y-5,2,18,PAL.gold); txt('▶',60,y,9,PAL.gold); }
     txt(T(r[0]),74,y,9,sel?PAL.white:PAL.lite);
@@ -279,7 +279,7 @@ function drawUpgrade(){
     TAP_RECTS.push({x:300,y:y-6,w:20,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
   });
   const st=calcStats();
-  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100)}),VW/2,152,9,PAL.acid,'center');
+  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),VW/2,162,9,PAL.acid,'center');
   if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+2}),VW/2,166,7,PAL.white,'center');
   const blink=(ST.t%1.2)<0.86;
   if(blink)txtO(T('upgHint'),VW/2,VH-40,7,PAL.lite,'center');
