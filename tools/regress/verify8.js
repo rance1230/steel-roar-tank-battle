@@ -69,9 +69,13 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(Math.abs(diag - (-45)) < 8, '键盘对角线45° (' + diag.toFixed(1) + '°)');
 
   // --- 4) 反弹生效(命中后+2连击) ---
-  await page.evaluate(() => { enemies.length = 0; const t = G.dummy('truck', player.x + 80, player.y); t.stun = 99; G.reflectProbe(); });
+  await page.evaluate(() => { const sp = window.__open(); G.tp(sp.x, sp.y);   /* 重新锚定: 斜向测试已把玩家移出清区, 弹出生点会进岩石 */
+    enemies.length = 0; const t = G.dummy('truck', player.x + 80, player.y); t.stun = 99; G.reflectProbe(); });
   await sleep(1000);   /* v1.8: 反弹弹命中(反射0.3s+飞行0.5s)需~0.8s; 原靠僚机MG凑连击(现已冻结) */
-  let info = await page.evaluate(() => G.info());
+  let info = await page.evaluate(() => { const dbg = {combo: COMBO.n, t: +(COMBO.t||0).toFixed(2),
+    refl: shots.filter(s=>s.friendly&&s.refl).length, en: enemies.map(e=>({hp:Math.round(e.hp),dead:e.dead})),
+    shield: player.shieldT, parry: STATS.parryN+STATS.parryP, px: Math.round(player.x), py: Math.round(player.y)};
+    return Object.assign({}, G.info(), {dbg}); });
   ok(info.combo >= 2, '反弹命中计入连击 (combo=' + info.combo + ')');
   // tier 升级触发
   await page.evaluate(() => { COMBO.n = 9; COMBO.tier = 0; COMBO.t = 5; });

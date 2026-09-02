@@ -5272,6 +5272,7 @@ window.G={
   },
   checkReflected(){ return shots.some(s=>s.refl&&s.friendly); },
   tp(x,y){ player.x=clamp(x,24,WORLDW-24); player.y=clamp(y,24,WORLDH-24); player.ox=player.x; player.oy=player.y;
+    player.vx=0; player.vy=0;   /* v1.8 W3: 惯性时代传送必须清速度(旧速度漂移会擦过反弹判定) */
     player.trail=[]; player.ghostA=0; player.ghostLen=0;   /* v1.7: 传送清残影历史与尾长 */
     cam.x=clamp(player.x-VW/2,0,WORLDW-VW); cam.y=clamp(player.y-VH/2,0,WORLDH-VH); cam.ox=cam.x; cam.oy=cam.y; },
   perf(){ return {fps:PERF.fps,updateMs:+PERF.updateMs.toFixed(2),renderMs:+PERF.renderMs.toFixed(2),
