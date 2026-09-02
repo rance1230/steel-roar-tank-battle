@@ -14,7 +14,15 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   /* v1.3+ 新游戏菜单链: 标题→hull→wingman→ctrl→intro→play (对齐 tanksmoke) */
   await page.evaluate(() => { window.G.start(); menuActivate(); menuActivate(); onKeyPress('Enter'); });
   await sleep(3200);
-  await page.evaluate(() => { G.dbg.god = true; G.tp(480, 200); });
+  await page.evaluate(() => { G.dbg.god = true; G.tp(480, 200);
+    /* v1.8: 冻结刷怪+清敌 — 游荡敌人撞击/击退会污染速度方向断言 (W3.5 冲量化后放大) */
+    ST.spawnT = 1e9; enemies.length = 0; if (typeof wingman !== 'undefined' && wingman) wingman.downT = 99;
+    window.__open = () => { for (let y = 8; y < MAPH - 8; y += 3) for (let x = 8; x < MAPW - 8; x += 3) {
+      let ok = true;
+      for (let dy = -3; dy <= 3 && ok; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const t = tileAt(x + dx, y + dy); if (t === 5 || t === 3 || t === 4) { ok = false; break; } }
+      if (ok) return {x: x * TS + 16, y: y * TS + 16}; } return {x: 200, y: 200}; };
+    const sp = window.__open(); G.tp(sp.x, sp.y);   /* 开阔地: 撞墙反弹会翻转速度向量断言 */ });
   await sleep(400);
 
   // --- 1) 模拟摇杆任意角度移动 (360°) ---
@@ -36,7 +44,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await page.evaluate(() => { window.__fp.axes = [0, 0]; });
 
   // --- 2) 加速/摩擦曲线 ---
-  await page.evaluate(() => { G.tp(200, 480); player.vx = 0; player.vy = 0; });
+  await page.evaluate(() => { const sp = window.__open(); G.tp(sp.x, sp.y); player.vx = 0; player.vy = 0; });
   await page.keyboard.down('KeyW');
   await sleep(60); // ~4逻辑帧 (v1.8基线: 0.16s 加速曲线, 100ms 采样已达 81% 无法区分)
   const s01 = await page.evaluate(() => Math.hypot(player.vx, player.vy));
@@ -53,7 +61,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(s0b < 15, '松手1.2s内刹停 (' + s0b.toFixed(1) + ')');
 
   // --- 3) 键盘对角线 45° ---
-  await page.evaluate(() => { G.tp(300, 300); player.vx = 0; player.vy = 0; });
+  await page.evaluate(() => { const sp = window.__open(); G.tp(sp.x, sp.y); player.vx = 0; player.vy = 0; });
   await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD');
   await sleep(700);
   const diag = await page.evaluate(() => Math.atan2(player.vy, player.vx) * 57.3);
@@ -62,7 +70,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
 
   // --- 4) 反弹生效(命中后+2连击) ---
   await page.evaluate(() => { enemies.length = 0; const t = G.dummy('truck', player.x + 80, player.y); t.stun = 99; G.reflectProbe(); });
-  await sleep(600);
+  await sleep(1000);   /* v1.8: 反弹弹命中(反射0.3s+飞行0.5s)需~0.8s; 原靠僚机MG凑连击(现已冻结) */
   let info = await page.evaluate(() => G.info());
   ok(info.combo >= 2, '反弹命中计入连击 (combo=' + info.combo + ')');
   // tier 升级触发
