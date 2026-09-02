@@ -982,15 +982,27 @@ function drawClearCard(){
   txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
   txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
   if((ST.t%1.2)<0.86)txtO(contDyn(),VW/2,164,9,PAL.white,'center');
+  if(inMode()==='touch')TAP_RECTS.push({x:VW/2-100,y:146,w:200,h:42,act:()=>afterClear()});
+}
+function drawTouchAction(x,y,w,label,col,act){
+  uPanel(x,y,w,24,col,0.78);
+  txt(label,x+w/2,y+8,8,PAL.white,'center');
+  TAP_RECTS.push({x,y,w,h:24,act});
 }
 function drawOver(){
   uctx.globalAlpha=0.64; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
-  uPanel(VW/2-104,72,208,104,PAL.red,0.78);
-  txtO(T('overT'),VW/2,80,20,PAL.red,'center');
-  txtO(T('overS'),VW/2,110,12,PAL.white,'center');
-  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
-  const oq=overQDyn();
-  if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
+  const touch=inMode()==='touch';
+  uPanel(VW/2-110,touch?62:72,220,touch?130:104,PAL.red,0.78);
+  txtO(T('overT'),VW/2,touch?70:80,20,PAL.red,'center');
+  txtO(T('overS'),VW/2,touch?101:110,12,PAL.white,'center');
+  if(touch&&ST.overT>0.3){
+    drawTouchAction(VW/2-102,142,98,T('touchRetry'),PAL.gold,()=>retryLevel());
+    drawTouchAction(VW/2+4,142,98,T('touchTitle'),PAL.cyan,()=>toTitle());
+  }else{
+    if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
+    const oq=overQDyn();
+    if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
+  }
 }
 function drawWinBG(){
   px(0,0,VW,VH,PAL.ink);
@@ -1015,6 +1027,15 @@ function drawWin(){
   }
   uctx.restore();
   upx(0,118,VW,1,PAL.gold); upx(0,VH-8,VW,1,PAL.dark);
+  if(inMode()==='touch'&&ST.winT>2){
+    drawTouchAction(24,VH-35,140,TF('touchNext',{n:RUN.cycle+2}),PAL.gold,()=>{
+      RUN.cycle++; RUN.lvl=0; saveRun(); startLevel();
+    });
+    drawTouchAction(170,VH-35,140,T('touchRespec'),PAL.cyan,()=>{
+      refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'};
+    });
+    drawTouchAction(316,VH-35,140,T('touchTitle'),PAL.red,()=>toTitle());
+  }
 }
 function drawPauseHint(){
   txt(T('pauseHint'),VW/2,VH-12,7,PAL.steel,'center');

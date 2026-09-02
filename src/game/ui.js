@@ -51,6 +51,11 @@ function menuBack(){
   else openMenu('title');
 }
 function volBlocks(v){ if(v===0)return T('volOff'); return '▮'.repeat(v)+'▯'.repeat(4-v); }
+/* padmap 行的动作名 (engine 改键成功 toast 也用它); 帮助页标题去掉 [J] 类后缀 */
+function padActLabel(a){
+  const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',pause:'padPause'};
+  return lbls[a]?T(lbls[a]).replace(/\s*\[.*/,''):(a==='confirm'?'⏎ OK':'⎋ '+T('back'));
+}
 function menuItems(id){
   const its=[];
   if(id==='title'){
@@ -112,13 +117,12 @@ function menuItems(id){
   }
   if(id==='padmap'){
     const acts=['mg','cannon','msl','strike','sprint','shield','pause','confirm','back'];
-    const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',pause:'pauseT'};
     for(const a of acts){
       its.push({choice:1,act:a,
-        labelFn:()=>lbls[a]?T(lbls[a]).replace(/\s*\[.*/,''):(a==='confirm'?'⏎ OK':'⎋ '+T('back')),
-        value:()=>TF('padBtn',{n:SET.pad[a]}),
+        labelFn:()=>padActLabel(a),
+        value:()=>padBtnName(SET.pad[a]),
         delta:0,
-        enter:()=>{MENU.capture=a;}});
+        enter:()=>{MENU.capture={act:a};}});
     }
     its.push({label:'restore',enter:()=>{SET.pad=JSON.parse(JSON.stringify(SET_DEF.pad));saveSet();showToast(T('restored'));}});
     its.push({label:'back',enter:()=>menuBack()});
@@ -192,13 +196,20 @@ function drawMenu(){
     if(sel){ upx(x+12,iy-3,W-24,rowH-2,PAL.panel2); upx(x+12,iy-3,2,rowH-2,PAL.gold); txt('▶',x+18,iy,8,PAL.gold); }
     const label=lbl.startsWith('▶')?lbl.slice(1):lbl;
     txt(label,x+32,iy,8,sel?PAL.white:PAL.lite);
-    MENU_RECTS.push({x:x+6,y:iy-3,w:W-12,h:rowH-3,act:()=>{
+    MENU_RECTS.push({x:x+6,y:iy-3,w:W-12,h:rowH-3,act:p=>{
       MENU.sel=i;
-      if(MENU.id==='padmap'&&it.act){MENU.capture=it.act;return;}
-      if(it.choice&&it.delta){it.delta(1);return;}
+      if(MENU.id==='padmap'&&it.act){MENU.capture={act:it.act};return;}
+      if(it.choice&&it.delta){
+        const d=p&&p.pointerType==='touch'&&p.x<x+W*0.56?-1:1;
+        it.delta(d); return;
+      }
       if(it.enter)it.enter();
     }});
-    if(it.choice){ txt('‹ '+it.value()+' ›',x+W-14,iy,8,sel?PAL.gold:PAL.steel,'right'); }
+    if(it.choice){
+      /* 正在捕获绑定的行: 值闪烁为 ? */
+      const waiting=MENU.id==='padmap'&&MENU.capture&&MENU.capture.act===it.act&&((performance.now()/300|0)%2===0);
+      txt('‹ '+(waiting?'?':it.value())+' ›',x+W-14,iy,8,sel?PAL.gold:PAL.steel,'right');
+    }
   });
   let foot='';
   if(id==='padmap')foot=PAD.gp?(PAD.gp.id||'').slice(0,26):T('padNone');

@@ -110,8 +110,21 @@ function pollPad(){
         for(const ai of PAD_ALIAS[a]){ if(gp.buttons[ai]&&gp.buttons[ai].pressed){on=true;break;} }
       if(on)h[a]=true; }
     if(!PAD.seen){ PAD.seen=true; showToast(T('padConn')); SFX.pick(); }
-    if(MENU&&MENU.capture){ for(let i=0;i<gp.buttons.length;i++)
-      if(gp.buttons[i].pressed){ SET.pad[MENU.capture]=i; MENU.capture=null; saveSet(); SFX.pick(); break; } }
+    /* 改键捕获: 先快照进入捕获时按住的按钮(如确认键A), 全部松开后才武装, 防止确认键被误绑 */
+    if(MENU&&MENU.capture){
+      const cap=MENU.capture;
+      if(!cap.hold){ cap.hold=[];
+        for(let i=0;i<gp.buttons.length;i++) if(gp.buttons[i]&&gp.buttons[i].pressed) cap.hold.push(i);
+      } else if(!cap.hold.some(i=>gp.buttons[i]&&gp.buttons[i].pressed)){
+        let bi=-1;
+        for(let i=0;i<gp.buttons.length;i++) if(gp.buttons[i]&&gp.buttons[i].pressed){bi=i;break;}
+        if(bi<0&&gp.axes.length>10){   /* HAT 十字键(安卓HID手柄走axes) → 虚拟按钮12-15 */
+          if(hy<-HDZ)bi=12; else if(hy>HDZ)bi=13; else if(hx<-HDZ)bi=14; else if(hx>HDZ)bi=15;
+        }
+        if(bi>=0){ SET.pad[cap.act]=bi; MENU.capture=null; saveSet(); SFX.pick();
+          showToast(TF('padSet',{a:padActLabel(cap.act),b:padBtnName(bi)})); }
+      }
+    }
     /* 任一实体输入(按键/摇杆/十字键)即切换到手柄提示 */
     let act=am>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
     if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
@@ -130,22 +143,31 @@ const OVL=document.getElementById('touchovl');
 const TBTNS=[];
 /* 虚拟摇杆轴: [-1,1], 幅度=速度比例; pollPad 无手柄时合入 PAD.ax/ay */
 const VJ={ax:0,ay:0};
+let RESET_JOY=()=>{};
 function tbtn(label,ic,css,code,press,parent){
-  const el=document.createElement('div'); el.className='tbtn';
+  const el=document.createElement('button'); el.type='button'; el.className='tbtn';
+  el.dataset.action=code; el.setAttribute('aria-label',label);
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
   for(const k in css)el.style[k]=css[k];
-  const down=e=>{ e.preventDefault(); el.classList.add('on'); setInMode('touch');
+  let pid=null;
+  const down=e=>{ e.preventDefault(); if(pid!==null)return; pid=e.pointerId;
+    try{el.setPointerCapture(pid);}catch(_){ }
+    el.classList.add('on'); setInMode('touch');
     if(press){ onKeyPress(code); VKEYS.add(code); } else { VKEYS.add(code); } };
-  const up=e=>{ e.preventDefault(); el.classList.remove('on'); VKEYS.delete(code); };
+  const up=(e,force=false)=>{ if(pid===null||(!force&&e.pointerId!==pid))return;
+    if(e)e.preventDefault(); const old=pid; pid=null;
+    el.classList.remove('on'); VKEYS.delete(code);
+    try{if(el.hasPointerCapture(old))el.releasePointerCapture(old);}catch(_){ } };
+  el._touchRelease=()=>up(null,true);
   el.addEventListener('pointerdown',down);
-  el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('pointerleave',up);
+  el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up);
   el.addEventListener('contextmenu',e=>e.preventDefault());
   (parent||OVL).appendChild(el); TBTNS.push(el);
   return el;
 }
 (function buildTouch(){
-  /* 双簇布局: 左(摇杆)与右(动作)各占 40% 屏宽, 物理隔离永不重叠; 中心 20% 留给画面 */
-  const S='clamp(44px,11vmin,64px)', L='clamp(54px,13vmin,82px)';
+  /* 双簇布局: 左摇杆靠近拇指自然落点, 右动作区留出安全区并保持两列分层。 */
+  const S='var(--touch-s)', L='var(--touch-l)';
   const mkCluster=(css)=>{ const d=document.createElement('div');
     d.style.cssText='position:absolute;bottom:0;height:100%;width:40%;pointer-events:none;'+css;
     OVL.appendChild(d); return d; };
@@ -185,23 +207,33 @@ function tbtn(label,ic,css,code,press,parent){
   const jend=e=>{ if(jid!==e.pointerId)return; jid=null;
     VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
     DIRS.forEach(k=>VKEYS.delete(k)); };
+  RESET_JOY=()=>{ if(jid!==null){try{if(joy.hasPointerCapture(jid))joy.releasePointerCapture(jid);}catch(_){ }}
+    jid=null; VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
+    DIRS.forEach(k=>VKEYS.delete(k)); };
   joy.addEventListener('pointerup',jend); joy.addEventListener('pointercancel',jend);
+  joy.addEventListener('lostpointercapture',jend);
   joy.addEventListener('contextmenu',e=>e.preventDefault());
   /* ---- 右簇: 2列动作网格(贴最右缘, 全圆形玻璃) ---- */
-  B(cr,'机枪','●',{right:'4px',bottom:'calc('+S+'/2 + 10px)',width:L,height:L},'KeyJ');
-  B(cr,'主炮','◆',{right:'calc('+L+' + 14px)',bottom:'2px',width:S,height:S},'KeyK');
-  B(cr,'加速','»',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*1.18)',width:S,height:S},'ShiftLeft');
-  B(cr,'导弹','▲',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*2.36)',width:S,height:S},'KeyL');
-  B(cr,'护盾','⬡',{right:'4px',bottom:'calc('+L+' + '+S+'*0.95)',width:S,height:S},'Space',true);
-  B(cr,'空袭','✈',{right:'4px',bottom:'calc('+L+' + '+S+'*2.15)',width:S,height:S},'KeyU',true);
+  const edge='max(12px,calc(var(--safe-right) + 10px))';
+  const inner='calc(var(--safe-right) + '+L+' + 20px)';
+  B(cr,'机枪','●',{right:edge,bottom:'calc(var(--safe-bottom) + 16px)',width:L,height:L},'KeyJ');
+  B(cr,'主炮','◆',{right:inner,bottom:'calc(var(--safe-bottom) + 4px)',width:S,height:S},'KeyK');
+  B(cr,'加速','»',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + 12px)',width:S,height:S},'ShiftLeft');
+  B(cr,'导弹','▲',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + '+S+' + 20px)',width:S,height:S},'KeyL');
+  B(cr,'护盾','⬡',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + 16px)',width:S,height:S},'Space',true);
+  B(cr,'空袭','✈',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + '+S+' + 24px)',width:S,height:S},'KeyU',true);
   /* 暂停: 右上角 */
-  tbtn('暂停','❚❚',{right:'8px',top:'8px',width:'clamp(40px,9vmin,54px)',height:'clamp(40px,9vmin,54px)'},'KeyP',true);
+  tbtn('暂停','❚❚',{right:edge,top:'max(10px,calc(var(--safe-top) + 8px))',width:'clamp(44px,9vmin,56px)',height:'clamp(44px,9vmin,56px)'},'KeyP',true);
 })();
+function resetTouchControls(){
+  for(const el of TBTNS)if(el._touchRelease)el._touchRelease();
+  RESET_JOY(); VKEYS.clear();
+}
 function updOvl(){
   /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
   const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');
   const d=show?'block':'none';
-  if(OVL.style.display!==d)OVL.style.display=d;
+  if(OVL.style.display!==d){ if(d==='none')resetTouchControls(); OVL.style.display=d; }
 }
 let toastT=null;
 function showToast(msg){ const el=document.getElementById('toast');
@@ -210,16 +242,33 @@ function showToast(msg){ const el=document.getElementById('toast');
 /* ---------- 画布触控(菜单/整备点击) ---------- */
 cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.preventDefault();
   if(e.pointerType==='touch')setInMode('touch');
   initAudio();
   const r=cv.getBoundingClientRect();
   const x=(e.clientX-r.left)/r.width*VW, y=(e.clientY-r.top)/r.height*VH;
   const rects=MENU_RECTS.concat(TAP_RECTS);
+  let hit=null;
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
-    if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
+    if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){hit=q;break;} }
+  /* 手机上的 Canvas 控件视觉尺寸较小: 命中失败时按最近目标吸附, 相邻目标以中心距离判定。 */
+  if(!hit&&(e.pointerType==='touch'||e.pointerType==='pen')){
+    const sx=22*VW/r.width, sy=22*VH/r.height;
+    let best=Infinity;
+    for(const q of rects){
+      const dx=x<q.x?q.x-x:(x>q.x+q.w?x-q.x-q.w:0);
+      const dy=y<q.y?q.y-y:(y>q.y+q.h?y-q.y-q.h:0);
+      if(dx<=sx&&dy<=sy){ const score=(dx/sx)**2+(dy/sy)**2+Math.hypot(x-(q.x+q.w/2),y-(q.y+q.h/2))*0.0001;
+        if(score<best){best=score;hit=q;} }
+    }
+  }
+  if(hit){hit.act({x,y,pointerType:e.pointerType});return;}
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||ST.state==='win')onKeyPress('Enter');
-    else if(ST.state==='over')onKeyPress('KeyR');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||(ST.state==='win'&&e.pointerType!=='touch'))onKeyPress('Enter');
+    else if(ST.state==='over'&&e.pointerType!=='touch')onKeyPress('KeyR');
   }
 });
 document.addEventListener('touchmove',e=>{ if(OVL.style.display==='block')e.preventDefault(); },{passive:false});
+addEventListener('blur',resetTouchControls);
+addEventListener('pagehide',resetTouchControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetTouchControls();});

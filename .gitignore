@@ -4,6 +4,7 @@
 .codex-backup/
 .codex-backups/
 .playwright-cli/
+.playwright-mcp/
 
 # Generated Python/runtime cache
 **/__pycache__/
@@ -27,3 +28,5 @@ output/**/*.apk
 # 本地 QA / 开发检查产物
 .codex-qa/
 output/screenshots/
+output/playwright-touch-review/
+output/padmap-fix-review/

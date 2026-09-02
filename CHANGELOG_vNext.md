@@ -2,6 +2,14 @@
 
 基线见 `BASELINE.md`；每阶段完成后须通过回归套件（主流程/触屏/性能）方可合入。
 
+## v1.7.2 — 手柄映射改键修复 + 触屏收尾（2026-09-02）
+
+- **改键捕获状态机（核心修复）**：旧捕获逻辑进入后下一帧即抓"任何按下的按钮"——手柄 A 确认进入捕获时 A 尚未松开、瞬间被绑回自身，手柄玩家永远改不了键；改 `MENU.capture` 为 `{act,hold}` 两段状态机：首帧快照已按住按钮为忽略表 → 全部松开才武装 → 第一个新按键写入并 `saveSet()`。桌面无头 fake-pad 24 断言 + Redmi 真机 E2E（A 按住 0.9s 不误绑、保持等待 → 松开按 Y 正确绑定 → trSet 持久化 → 重载恢复）全过。
+- **HAT 十字键可绑定**：捕获时把 axes[9]/[10] 方向映射为虚拟按钮 12–15，安卓 HID 手柄（盖世小鸡 X2S Android 模式）十字键可绑为动作键。
+- **映射列表友好化**：行值由原始索引"按钮 3"改为友好名（A/B/X/Y/LB/RB/LT/RT/SEL/STA…）；捕获中行值闪烁 `?`；绑定成功 toast 三语言 `padSet`（"已绑定 机关枪 → Y"）；"暂停"动作行标签换新键 `padPause`（原误用暂停菜单标题"已暂停"），删除废弃 `padBtn` 文案。
+- **触屏体验收尾（上轮评审 WIP 定稿）**：画布适配 `visualViewport` + orientationchange（浏览器地址栏收展/旋转不再裁切）；`viewport-fit=cover` + 100dvh + safe-area 变量，摇杆环/按钮簇避让刘海与手势条；虚拟按钮改 `<button>` + pointer capture，`lostpointercapture`/blur/pagehide/visibilitychange 统一复位防卡键；画布菜单点按 22px 最近目标吸附；失败/通关画面触屏实体按钮（重试/标题/第 N 周目/重分配）替代"点按任意处"；菜单 choice 行触屏左右半区双向调节。
+- **发版**：versionCode 12 / versionName 1.7.2；release APK 9.37MB，签名 `700cfdfd…` 与历版一致可覆盖升级；APK 内嵌资产与仓库三方 md5 一致（15295faf）。
+
 ## v1.7 — 手感三改：震动分级 · 残影实体化 · 3D 等离子护罩 · 地形特效增强（2026-09-01）
 
 - **震动分级（当前爆炸强度封顶，仅单位击破触发）**：`kickTier` 四档 `SHAKE_T`——T0 机枪命中 0.35 / T1 主炮命中·冲撞·连击升段 0.9 / T2 导弹·空袭·受伤·Breach 炮击 1.8 / **T3 单位击破 3.0（=原普通爆炸档，zoom 0.014）**；`explodeAt` 增 tier 参数（默认 big?3:1），命中路径传 T1/T2、`onEnemyDead` 统一 T3；玩家开炮后坐力降为微踢 0.5（移除每发 +1.2 随机震动）；BOSS 击破/玩家阵亡 = T3 + `shakeHold` 0.35s（震动延长不增强，hold 期间衰减暂停，衰减逻辑并入 `updCameraFX`）；全文件 ~16 处直接写 `ST.shake` 的散点清理，统一走 `kickTier`。

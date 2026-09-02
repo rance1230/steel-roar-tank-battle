@@ -10,11 +10,15 @@ const uctx=cv.getContext('2d');
 const FONT='"DIN Condensed","Arial Narrow","Roboto Condensed","PingFang SC","Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei",monospace';
 
 
-function fit(){let s=Math.min(innerWidth/VW,innerHeight/VH); s=s>=2?Math.floor(s):Math.max(0.5,s);
+function fit(){const vp=window.visualViewport;
+  const vw=vp?vp.width:innerWidth, vh=vp?vp.height:innerHeight;
+  let s=Math.min(vw/VW,vh/VH); s=s>=2?Math.floor(s):Math.max(0.5,s);
   cv.style.width=(VW*s)+'px';cv.style.height=(VH*s)+'px';
   const d=window.devicePixelRatio||1;
   cv.width=Math.max(VW,Math.round(VW*s*d)); cv.height=Math.max(VH,Math.round(VH*s*d));}
-addEventListener('resize',fit);fit();
+addEventListener('resize',fit); addEventListener('orientationchange',fit);
+if(window.visualViewport)visualViewport.addEventListener('resize',fit);
+fit();
 
 /* ---------- PHASE 2: 渲染插值 ---------- */
 let gAlpha=0; /* 当前渲染处于两个逻辑步之间的比例(0~1) */

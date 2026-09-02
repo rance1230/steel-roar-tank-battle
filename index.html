@@ -2,20 +2,24 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>钢铁咆哮 · 坦克大战</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2305080d'/%3E%3Cpath d='M32 6l22 10v16c0 12-8 21-22 26C18 53 10 44 10 32V16L32 6z' fill='%23162231' stroke='%2322c0ff' stroke-width='4'/%3E%3Cpath d='M19 35h25v7H19zM23 25h17v10H23zM38 29h13v4H38z' fill='%23f6b94e'/%3E%3C/svg%3E">
 <style>
-html,body{margin:0;padding:0;background:#05080d;height:100%;overflow:hidden;touch-action:manipulation}
+html,body{margin:0;padding:0;width:100%;height:100%;height:100dvh;background:#05080d;overflow:hidden;
+  touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
   radial-gradient(circle at 50% 40%,rgba(34,192,255,.10),transparent 34%),
   radial-gradient(circle at 82% 76%,rgba(246,185,78,.08),transparent 28%),
   repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);
   opacity:.75}
-#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
-  box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 24px 80px rgba(0,0,0,.72)}
+  touch-action:none;box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 24px 80px rgba(0,0,0,.72)}
 #touchovl{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;
+  --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(58px,13.5vmin,84px);
+  --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   font-family:"PingFang SC","Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 /* v1.5: 圆形玻璃高透明按钮 (不支持 backdrop-filter 时自动退化为半透明) */
@@ -25,13 +29,14 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   color:rgba(243,247,255,0.82);font-weight:800;letter-spacing:1px;line-height:1.1;
   -webkit-backdrop-filter:blur(9px) saturate(1.35);backdrop-filter:blur(9px) saturate(1.35);
   box-shadow:inset 0 0 0 1px rgba(34,192,255,0.15),inset 0 8px 16px rgba(255,255,255,0.06),0 4px 18px rgba(0,0,0,0.38);
-  font-size:clamp(10px,2.4vmin,14px);touch-action:none}
+  font-size:clamp(10px,2.4vmin,14px);touch-action:none;outline:none;padding:0;appearance:none;-webkit-appearance:none}
 .tbtn .ic{font-size:clamp(14px,3.4vmin,20px);margin-bottom:1px}
 .tbtn.on{background:radial-gradient(circle at 50% 34%,rgba(246,185,78,0.34),rgba(239,83,56,0.20) 70%,rgba(5,8,13,0.34));
   border-color:rgba(246,185,78,0.70);color:#f3f7ff;
   box-shadow:inset 0 0 14px rgba(246,185,78,0.22),0 0 16px rgba(246,185,78,0.20)}
 /* v1.5: 模拟摇杆圆环 (接近全透: 只留清晰环线与方向箭头, 不遮战场) */
-#joy{position:absolute;left:50%;bottom:14px;width:clamp(112px,26vmin,158px);height:clamp(112px,26vmin,158px);
+#joy{position:absolute;left:clamp(calc(76px + var(--safe-left)),28%,calc(118px + var(--safe-left)));
+  bottom:max(12px,calc(var(--safe-bottom) + 10px));width:clamp(116px,27vmin,164px);height:clamp(116px,27vmin,164px);
   transform:translateX(-50%);pointer-events:auto;touch-action:none;border-radius:50%;
   background:radial-gradient(circle at 50% 42%,rgba(34,192,255,0.02),rgba(5,8,13,0.04) 58%,rgba(5,8,13,0.10));
   border:2px solid rgba(255,255,255,0.32);
@@ -52,6 +57,10 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   background:rgba(10,17,28,0.52);-webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
   color:#f6b94e;border:1px solid rgba(246,185,78,0.55);border-radius:999px;padding:6px 16px;font-size:14px;
   font-weight:700;display:none;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 4px 18px rgba(0,0,0,0.35)}
+@media (orientation:portrait){
+  #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(58px,15vmin,72px)}
+  #joy{left:clamp(calc(68px + var(--safe-left)),46%,calc(94px + var(--safe-left)));bottom:max(16px,calc(var(--safe-bottom) + 14px))}
+}
 </style>
 </head>
 <body>
@@ -145,7 +154,8 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  skipP:'{k} 跳过',skipT:'点按跳过',contP:'按 {k} 前往整备',contT:'点按 前往整备',
  ctrlT:'战前键位速览',ctrlSwitch:'◀ ▶ 切换布局',
  overRP:'{k} 重试本关',overTP:'点按屏幕 重试本关',overQP:'{k} 返回标题',
- winOptP:'{c} 进入第 {n} 周目 · {x} 重分配 · {b} 回标题',winOptT:'点按屏幕 进入第 {n} 周目',
+ winOptP:'{c} 进入第 {n} 周目 · {x} 重分配 · {b} 回标题',winOptT:'选择下一步',
+ touchRetry:'重试本关',touchTitle:'返回标题',touchNext:'第 {n} 周目',touchRespec:'重分配',
  ctrlModeP:'手柄布局',ctrlModeT:'触屏布局',ctrlModeK:'键盘布局',
  ctrlGoP:'按 {k} 出击',ctrlGoT:'点按任意处 出击',
  ctrlAlias:'※ RT 同机枪 · LT 同护盾(未改键时) · 可在 OPTION→手柄映射 自定义',
@@ -170,7 +180,7 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  diffNames:['新兵','熟练','老兵','精英','王牌'],
  diffTip:'难度影响:敌军AI/反应/耐久/精准/掉落与回报',
  padConn:'手柄已连接',padNone:'未检测到手柄 · 按手柄任意键激活',padWait:'请按手柄上的新按钮… (Esc取消)',
- padBtn:'按钮 {n}',pauseT:'已暂停',pauseHint:'P/Start 继续 · M 静音',cycle:'周目',
+ padSet:'已绑定 {a} → {b}',padPause:'暂停',pauseT:'已暂停',pauseHint:'P/Start 继续 · M 静音',cycle:'周目',
  restored:'已恢复默认设置',
  h0t:'移动',h0d:'WASD/方向键/摇杆移动坦克;触屏拖动左侧圆盘摇杆(360°+幅度变速)。水面与油污/能量/熔岩区大幅减速。',
  h1t:'机关枪 [J]',h1d:'按住连发。射速快、单发伤害低,适合对付皮卡与消耗敌军装甲。',
@@ -213,7 +223,8 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  skipP:'{k} スキップ',skipT:'タップでスキップ',contP:'{k} で整備へ',contT:'タップで整備へ',
  ctrlT:'出撃前キー確認',ctrlSwitch:'◀ ▶ レイアウト切替',
  overRP:'{k} でリトライ',overTP:'タップでリトライ',overQP:'{k} でタイトルへ',
- winOptP:'{c} 第 {n} 周目へ · {x} 再振分 · {b} タイトル',winOptT:'タップで第 {n} 周目へ',
+ winOptP:'{c} 第 {n} 周目へ · {x} 再振分 · {b} タイトル',winOptT:'次の行動を選択',
+ touchRetry:'リトライ',touchTitle:'タイトルへ',touchNext:'第 {n} 周目',touchRespec:'再振分',
  ctrlModeP:'ゲームパッド',ctrlModeT:'タッチ',ctrlModeK:'キーボード',
  ctrlGoP:'{k} で出撃',ctrlGoT:'タップで出撃',
  ctrlAlias:'※ RT=機銃 · LT=シールド(初期値) · OPTION→パッド設定で変更可',
@@ -238,7 +249,7 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  diffNames:['新兵','熟練','古参','精鋭','エース'],
  diffTip:'難易度:敵AI/反応/耐久/命中/ドロップと報酬に影響',
  padConn:'ゲームパッド接続',padNone:'パッド未検出 · ボタンで活性化',padWait:'新しいボタンを押して… (Esc取消)',
- padBtn:'ボタン {n}',pauseT:'一時停止',pauseHint:'P/Start 再開 · M 消音',cycle:'周回',
+ padSet:'{a} → {b} に設定',padPause:'一時停止',pauseT:'一時停止',pauseHint:'P/Start 再開 · M 消音',cycle:'周回',
  restored:'初期設定に戻しました',
  h0t:'移動',h0d:'WASD/矢印/スティックで移動。タッチ画面は左の円盤スティックをドラッグ(360°+速度調整)。水面と油汚れ/エネルギー/溶岩は大幅減速。',
  h1t:'機銃 [J]',h1d:'押しっぱなしで連射。速射・低威力、トラック掃討に最適。',
@@ -281,7 +292,8 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  skipP:'{k} Skip',skipT:'Tap to skip',contP:'Press {k} for Deploy',contT:'Tap for Deploy',
  ctrlT:'PRE-DEPLOY CONTROLS',ctrlSwitch:'◀ ▶ SWITCH LAYOUT',
  overRP:'{k} Retry stage',overTP:'Tap to retry',overQP:'{k} for Title',
- winOptP:'{c} NG+{n} · {x} Respec · {b} Title',winOptT:'Tap for NG+{n}',
+ winOptP:'{c} NG+{n} · {x} Respec · {b} Title',winOptT:'Choose next action',
+ touchRetry:'Retry',touchTitle:'Title',touchNext:'NG+{n}',touchRespec:'Respec',
  ctrlModeP:'GAMEPAD',ctrlModeT:'TOUCH',ctrlModeK:'KEYBOARD',
  ctrlGoP:'Press {k} to Deploy',ctrlGoT:'Tap anywhere to Deploy',
  ctrlAlias:'※ RT=MG · LT=Shield (defaults) · Remap via OPTION→Pad Map',
@@ -307,7 +319,7 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  diffNames:['Recruit','Regular','Veteran','Elite','Ace'],
  diffTip:'Difficulty: enemy AI / reaction / HP / accuracy / drops & rewards',
  padConn:'Gamepad connected',padNone:'No gamepad · press any pad button',padWait:'Press a new pad button... (Esc cancels)',
- padBtn:'Button {n}',pauseT:'PAUSED',pauseHint:'P/Start resume · M mute',cycle:'Loop',
+ padSet:'{a} → {b} set',padPause:'Pause',pauseT:'PAUSED',pauseHint:'P/Start resume · M mute',cycle:'Loop',
  restored:'Defaults restored',
  h0t:'Move',h0d:'WASD / arrows / stick to move; on touch, drag the left thumbstick ring (360° + analog speed). Water, oil, energy floors and lava slow you down.',
  h1t:'Machine Gun [J]',h1d:'Hold to auto-fire. Fast, low damage per shot. Great against pickups.',
@@ -371,11 +383,15 @@ const uctx=cv.getContext('2d');
 const FONT='"DIN Condensed","Arial Narrow","Roboto Condensed","PingFang SC","Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei",monospace';
 
 
-function fit(){let s=Math.min(innerWidth/VW,innerHeight/VH); s=s>=2?Math.floor(s):Math.max(0.5,s);
+function fit(){const vp=window.visualViewport;
+  const vw=vp?vp.width:innerWidth, vh=vp?vp.height:innerHeight;
+  let s=Math.min(vw/VW,vh/VH); s=s>=2?Math.floor(s):Math.max(0.5,s);
   cv.style.width=(VW*s)+'px';cv.style.height=(VH*s)+'px';
   const d=window.devicePixelRatio||1;
   cv.width=Math.max(VW,Math.round(VW*s*d)); cv.height=Math.max(VH,Math.round(VH*s*d));}
-addEventListener('resize',fit);fit();
+addEventListener('resize',fit); addEventListener('orientationchange',fit);
+if(window.visualViewport)visualViewport.addEventListener('resize',fit);
+fit();
 
 /* ---------- PHASE 2: 渲染插值 ---------- */
 let gAlpha=0; /* 当前渲染处于两个逻辑步之间的比例(0~1) */
@@ -504,8 +520,21 @@ function pollPad(){
         for(const ai of PAD_ALIAS[a]){ if(gp.buttons[ai]&&gp.buttons[ai].pressed){on=true;break;} }
       if(on)h[a]=true; }
     if(!PAD.seen){ PAD.seen=true; showToast(T('padConn')); SFX.pick(); }
-    if(MENU&&MENU.capture){ for(let i=0;i<gp.buttons.length;i++)
-      if(gp.buttons[i].pressed){ SET.pad[MENU.capture]=i; MENU.capture=null; saveSet(); SFX.pick(); break; } }
+    /* 改键捕获: 先快照进入捕获时按住的按钮(如确认键A), 全部松开后才武装, 防止确认键被误绑 */
+    if(MENU&&MENU.capture){
+      const cap=MENU.capture;
+      if(!cap.hold){ cap.hold=[];
+        for(let i=0;i<gp.buttons.length;i++) if(gp.buttons[i]&&gp.buttons[i].pressed) cap.hold.push(i);
+      } else if(!cap.hold.some(i=>gp.buttons[i]&&gp.buttons[i].pressed)){
+        let bi=-1;
+        for(let i=0;i<gp.buttons.length;i++) if(gp.buttons[i]&&gp.buttons[i].pressed){bi=i;break;}
+        if(bi<0&&gp.axes.length>10){   /* HAT 十字键(安卓HID手柄走axes) → 虚拟按钮12-15 */
+          if(hy<-HDZ)bi=12; else if(hy>HDZ)bi=13; else if(hx<-HDZ)bi=14; else if(hx>HDZ)bi=15;
+        }
+        if(bi>=0){ SET.pad[cap.act]=bi; MENU.capture=null; saveSet(); SFX.pick();
+          showToast(TF('padSet',{a:padActLabel(cap.act),b:padBtnName(bi)})); }
+      }
+    }
     /* 任一实体输入(按键/摇杆/十字键)即切换到手柄提示 */
     let act=am>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
     if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
@@ -524,22 +553,31 @@ const OVL=document.getElementById('touchovl');
 const TBTNS=[];
 /* 虚拟摇杆轴: [-1,1], 幅度=速度比例; pollPad 无手柄时合入 PAD.ax/ay */
 const VJ={ax:0,ay:0};
+let RESET_JOY=()=>{};
 function tbtn(label,ic,css,code,press,parent){
-  const el=document.createElement('div'); el.className='tbtn';
+  const el=document.createElement('button'); el.type='button'; el.className='tbtn';
+  el.dataset.action=code; el.setAttribute('aria-label',label);
   el.innerHTML=(ic?'<span class="ic">'+ic+'</span>':'')+'<span>'+label+'</span>';
   for(const k in css)el.style[k]=css[k];
-  const down=e=>{ e.preventDefault(); el.classList.add('on'); setInMode('touch');
+  let pid=null;
+  const down=e=>{ e.preventDefault(); if(pid!==null)return; pid=e.pointerId;
+    try{el.setPointerCapture(pid);}catch(_){ }
+    el.classList.add('on'); setInMode('touch');
     if(press){ onKeyPress(code); VKEYS.add(code); } else { VKEYS.add(code); } };
-  const up=e=>{ e.preventDefault(); el.classList.remove('on'); VKEYS.delete(code); };
+  const up=(e,force=false)=>{ if(pid===null||(!force&&e.pointerId!==pid))return;
+    if(e)e.preventDefault(); const old=pid; pid=null;
+    el.classList.remove('on'); VKEYS.delete(code);
+    try{if(el.hasPointerCapture(old))el.releasePointerCapture(old);}catch(_){ } };
+  el._touchRelease=()=>up(null,true);
   el.addEventListener('pointerdown',down);
-  el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('pointerleave',up);
+  el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up);
   el.addEventListener('contextmenu',e=>e.preventDefault());
   (parent||OVL).appendChild(el); TBTNS.push(el);
   return el;
 }
 (function buildTouch(){
-  /* 双簇布局: 左(摇杆)与右(动作)各占 40% 屏宽, 物理隔离永不重叠; 中心 20% 留给画面 */
-  const S='clamp(44px,11vmin,64px)', L='clamp(54px,13vmin,82px)';
+  /* 双簇布局: 左摇杆靠近拇指自然落点, 右动作区留出安全区并保持两列分层。 */
+  const S='var(--touch-s)', L='var(--touch-l)';
   const mkCluster=(css)=>{ const d=document.createElement('div');
     d.style.cssText='position:absolute;bottom:0;height:100%;width:40%;pointer-events:none;'+css;
     OVL.appendChild(d); return d; };
@@ -579,23 +617,33 @@ function tbtn(label,ic,css,code,press,parent){
   const jend=e=>{ if(jid!==e.pointerId)return; jid=null;
     VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
     DIRS.forEach(k=>VKEYS.delete(k)); };
+  RESET_JOY=()=>{ if(jid!==null){try{if(joy.hasPointerCapture(jid))joy.releasePointerCapture(jid);}catch(_){ }}
+    jid=null; VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
+    DIRS.forEach(k=>VKEYS.delete(k)); };
   joy.addEventListener('pointerup',jend); joy.addEventListener('pointercancel',jend);
+  joy.addEventListener('lostpointercapture',jend);
   joy.addEventListener('contextmenu',e=>e.preventDefault());
   /* ---- 右簇: 2列动作网格(贴最右缘, 全圆形玻璃) ---- */
-  B(cr,'机枪','●',{right:'4px',bottom:'calc('+S+'/2 + 10px)',width:L,height:L},'KeyJ');
-  B(cr,'主炮','◆',{right:'calc('+L+' + 14px)',bottom:'2px',width:S,height:S},'KeyK');
-  B(cr,'加速','»',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*1.18)',width:S,height:S},'ShiftLeft');
-  B(cr,'导弹','▲',{right:'calc('+L+' + 14px)',bottom:'calc('+S+'*2.36)',width:S,height:S},'KeyL');
-  B(cr,'护盾','⬡',{right:'4px',bottom:'calc('+L+' + '+S+'*0.95)',width:S,height:S},'Space',true);
-  B(cr,'空袭','✈',{right:'4px',bottom:'calc('+L+' + '+S+'*2.15)',width:S,height:S},'KeyU',true);
+  const edge='max(12px,calc(var(--safe-right) + 10px))';
+  const inner='calc(var(--safe-right) + '+L+' + 20px)';
+  B(cr,'机枪','●',{right:edge,bottom:'calc(var(--safe-bottom) + 16px)',width:L,height:L},'KeyJ');
+  B(cr,'主炮','◆',{right:inner,bottom:'calc(var(--safe-bottom) + 4px)',width:S,height:S},'KeyK');
+  B(cr,'加速','»',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + 12px)',width:S,height:S},'ShiftLeft');
+  B(cr,'导弹','▲',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + '+S+' + 20px)',width:S,height:S},'KeyL');
+  B(cr,'护盾','⬡',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + 16px)',width:S,height:S},'Space',true);
+  B(cr,'空袭','✈',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + '+S+' + 24px)',width:S,height:S},'KeyU',true);
   /* 暂停: 右上角 */
-  tbtn('暂停','❚❚',{right:'8px',top:'8px',width:'clamp(40px,9vmin,54px)',height:'clamp(40px,9vmin,54px)'},'KeyP',true);
+  tbtn('暂停','❚❚',{right:edge,top:'max(10px,calc(var(--safe-top) + 8px))',width:'clamp(44px,9vmin,56px)',height:'clamp(44px,9vmin,56px)'},'KeyP',true);
 })();
+function resetTouchControls(){
+  for(const el of TBTNS)if(el._touchRelease)el._touchRelease();
+  RESET_JOY(); VKEYS.clear();
+}
 function updOvl(){
   /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
   const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');
   const d=show?'block':'none';
-  if(OVL.style.display!==d)OVL.style.display=d;
+  if(OVL.style.display!==d){ if(d==='none')resetTouchControls(); OVL.style.display=d; }
 }
 let toastT=null;
 function showToast(msg){ const el=document.getElementById('toast');
@@ -604,19 +652,36 @@ function showToast(msg){ const el=document.getElementById('toast');
 /* ---------- 画布触控(菜单/整备点击) ---------- */
 cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.preventDefault();
   if(e.pointerType==='touch')setInMode('touch');
   initAudio();
   const r=cv.getBoundingClientRect();
   const x=(e.clientX-r.left)/r.width*VW, y=(e.clientY-r.top)/r.height*VH;
   const rects=MENU_RECTS.concat(TAP_RECTS);
+  let hit=null;
   for(let i=rects.length-1;i>=0;i--){ const q=rects[i];
-    if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){ q.act(); return; } }
+    if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){hit=q;break;} }
+  /* 手机上的 Canvas 控件视觉尺寸较小: 命中失败时按最近目标吸附, 相邻目标以中心距离判定。 */
+  if(!hit&&(e.pointerType==='touch'||e.pointerType==='pen')){
+    const sx=22*VW/r.width, sy=22*VH/r.height;
+    let best=Infinity;
+    for(const q of rects){
+      const dx=x<q.x?q.x-x:(x>q.x+q.w?x-q.x-q.w:0);
+      const dy=y<q.y?q.y-y:(y>q.y+q.h?y-q.y-q.h:0);
+      if(dx<=sx&&dy<=sy){ const score=(dx/sx)**2+(dy/sy)**2+Math.hypot(x-(q.x+q.w/2),y-(q.y+q.h/2))*0.0001;
+        if(score<best){best=score;hit=q;} }
+    }
+  }
+  if(hit){hit.act({x,y,pointerType:e.pointerType});return;}
   if(!MENU){ // 无菜单时的快捷点击
-    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||ST.state==='win')onKeyPress('Enter');
-    else if(ST.state==='over')onKeyPress('KeyR');
+    if(ST.state==='clear'||ST.state==='intro'||ST.state==='ctrl'||(ST.state==='win'&&e.pointerType!=='touch'))onKeyPress('Enter');
+    else if(ST.state==='over'&&e.pointerType!=='touch')onKeyPress('KeyR');
   }
 });
 document.addEventListener('touchmove',e=>{ if(OVL.style.display==='block')e.preventDefault(); },{passive:false});
+addEventListener('blur',resetTouchControls);
+addEventListener('pagehide',resetTouchControls);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetTouchControls();});
 </script>
 <script>
 "use strict";
@@ -2937,15 +3002,27 @@ function drawClearCard(){
   txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
   txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
   if((ST.t%1.2)<0.86)txtO(contDyn(),VW/2,164,9,PAL.white,'center');
+  if(inMode()==='touch')TAP_RECTS.push({x:VW/2-100,y:146,w:200,h:42,act:()=>afterClear()});
+}
+function drawTouchAction(x,y,w,label,col,act){
+  uPanel(x,y,w,24,col,0.78);
+  txt(label,x+w/2,y+8,8,PAL.white,'center');
+  TAP_RECTS.push({x,y,w,h:24,act});
 }
 function drawOver(){
   uctx.globalAlpha=0.64; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
-  uPanel(VW/2-104,72,208,104,PAL.red,0.78);
-  txtO(T('overT'),VW/2,80,20,PAL.red,'center');
-  txtO(T('overS'),VW/2,110,12,PAL.white,'center');
-  if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
-  const oq=overQDyn();
-  if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
+  const touch=inMode()==='touch';
+  uPanel(VW/2-110,touch?62:72,220,touch?130:104,PAL.red,0.78);
+  txtO(T('overT'),VW/2,touch?70:80,20,PAL.red,'center');
+  txtO(T('overS'),VW/2,touch?101:110,12,PAL.white,'center');
+  if(touch&&ST.overT>0.3){
+    drawTouchAction(VW/2-102,142,98,T('touchRetry'),PAL.gold,()=>retryLevel());
+    drawTouchAction(VW/2+4,142,98,T('touchTitle'),PAL.cyan,()=>toTitle());
+  }else{
+    if(ST.overT>0.3&&(ST.t%1.2)<0.86)txtO(overRDyn(),VW/2,150,11,PAL.gold,'center');
+    const oq=overQDyn();
+    if(ST.overT>0.8&&oq)txt(oq,VW/2,172,9,PAL.white,'center');
+  }
 }
 function drawWinBG(){
   px(0,0,VW,VH,PAL.ink);
@@ -2970,6 +3047,15 @@ function drawWin(){
   }
   uctx.restore();
   upx(0,118,VW,1,PAL.gold); upx(0,VH-8,VW,1,PAL.dark);
+  if(inMode()==='touch'&&ST.winT>2){
+    drawTouchAction(24,VH-35,140,TF('touchNext',{n:RUN.cycle+2}),PAL.gold,()=>{
+      RUN.cycle++; RUN.lvl=0; saveRun(); startLevel();
+    });
+    drawTouchAction(170,VH-35,140,T('touchRespec'),PAL.cyan,()=>{
+      refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'};
+    });
+    drawTouchAction(316,VH-35,140,T('touchTitle'),PAL.red,()=>toTitle());
+  }
 }
 function drawPauseHint(){
   txt(T('pauseHint'),VW/2,VH-12,7,PAL.steel,'center');
@@ -4064,6 +4150,11 @@ function menuBack(){
   else openMenu('title');
 }
 function volBlocks(v){ if(v===0)return T('volOff'); return '▮'.repeat(v)+'▯'.repeat(4-v); }
+/* padmap 行的动作名 (engine 改键成功 toast 也用它); 帮助页标题去掉 [J] 类后缀 */
+function padActLabel(a){
+  const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',pause:'padPause'};
+  return lbls[a]?T(lbls[a]).replace(/\s*\[.*/,''):(a==='confirm'?'⏎ OK':'⎋ '+T('back'));
+}
 function menuItems(id){
   const its=[];
   if(id==='title'){
@@ -4125,13 +4216,12 @@ function menuItems(id){
   }
   if(id==='padmap'){
     const acts=['mg','cannon','msl','strike','sprint','shield','pause','confirm','back'];
-    const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',pause:'pauseT'};
     for(const a of acts){
       its.push({choice:1,act:a,
-        labelFn:()=>lbls[a]?T(lbls[a]).replace(/\s*\[.*/,''):(a==='confirm'?'⏎ OK':'⎋ '+T('back')),
-        value:()=>TF('padBtn',{n:SET.pad[a]}),
+        labelFn:()=>padActLabel(a),
+        value:()=>padBtnName(SET.pad[a]),
         delta:0,
-        enter:()=>{MENU.capture=a;}});
+        enter:()=>{MENU.capture={act:a};}});
     }
     its.push({label:'restore',enter:()=>{SET.pad=JSON.parse(JSON.stringify(SET_DEF.pad));saveSet();showToast(T('restored'));}});
     its.push({label:'back',enter:()=>menuBack()});
@@ -4205,13 +4295,20 @@ function drawMenu(){
     if(sel){ upx(x+12,iy-3,W-24,rowH-2,PAL.panel2); upx(x+12,iy-3,2,rowH-2,PAL.gold); txt('▶',x+18,iy,8,PAL.gold); }
     const label=lbl.startsWith('▶')?lbl.slice(1):lbl;
     txt(label,x+32,iy,8,sel?PAL.white:PAL.lite);
-    MENU_RECTS.push({x:x+6,y:iy-3,w:W-12,h:rowH-3,act:()=>{
+    MENU_RECTS.push({x:x+6,y:iy-3,w:W-12,h:rowH-3,act:p=>{
       MENU.sel=i;
-      if(MENU.id==='padmap'&&it.act){MENU.capture=it.act;return;}
-      if(it.choice&&it.delta){it.delta(1);return;}
+      if(MENU.id==='padmap'&&it.act){MENU.capture={act:it.act};return;}
+      if(it.choice&&it.delta){
+        const d=p&&p.pointerType==='touch'&&p.x<x+W*0.56?-1:1;
+        it.delta(d); return;
+      }
       if(it.enter)it.enter();
     }});
-    if(it.choice){ txt('‹ '+it.value()+' ›',x+W-14,iy,8,sel?PAL.gold:PAL.steel,'right'); }
+    if(it.choice){
+      /* 正在捕获绑定的行: 值闪烁为 ? */
+      const waiting=MENU.id==='padmap'&&MENU.capture&&MENU.capture.act===it.act&&((performance.now()/300|0)%2===0);
+      txt('‹ '+(waiting?'?':it.value())+' ›',x+W-14,iy,8,sel?PAL.gold:PAL.steel,'right');
+    }
   });
   let foot='';
   if(id==='padmap')foot=PAD.gp?(PAD.gp.id||'').slice(0,26):T('padNone');
