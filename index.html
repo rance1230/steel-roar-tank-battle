@@ -830,20 +830,29 @@ let SET=(function(){try{const s=JSON.parse(localStorage.getItem('trSet'));
 function saveSet(){try{localStorage.setItem('trSet',JSON.stringify(SET));}catch(e){}}
 const VOLS=[0,0.12,0.24,0.36,0.50], SEVOLS=[0,0.20,0.40,0.60,0.85];
 
-/* ---------- 三机体 (v3计划 §17/§19/§20, 均衡型=基准100) ---------- */
+/* ---------- 三机体 (v3计划 §17/§19/§20, 均衡型=基准100; v1.8 CONTROL_CONTRACT §2/§4: move/turret/missile 数据化) ---------- */
 const HULLS={
-  assault:{i18n:'hullA',hp:0.90,taken:1.15,spd:1.10,accel:1.12,cannon:1.05,blast:1.00,
-    mgDps:1.10,sprint:1.20,breach:1.25,mslN:3,mslCd:0.85,
+  assault:{i18n:'hullA',hp:0.90,taken:1.15,spd:1.10,cannon:1.05,blast:1.00,
+    mgDps:1.10,breach:1.25,
+    move:{mass:0.8,accel:1.12,turnRate:10,lateralGrip:0.78,brake:1.2,sprint:1.20},
+    turret:{rate:14},
+    missile:{maxLocks:3,lockStep:0.15,cd:0.85,blast:1.0},
     shield:{dur:0.22,perfect:0.08,cd:0.95},
     vis:{s:0.94,hull:'#c9702a',hi:'#ffe0b0',dk:'#7a4315',trim:'#f6b94e',turret:'#a85a20',
       barrel:'#3a3f46',track:'#6a4a28',glow:'#f6b94e',ring:'#f6b94e',twin:false,callsign:'STRIDER-03'}},
-  balanced:{i18n:'hullB',hp:1.00,taken:1.00,spd:1.00,accel:1.00,cannon:1.00,blast:1.00,
-    mgDps:1.00,sprint:1.00,breach:1.00,mslN:1,mslCd:1.00,
+  balanced:{i18n:'hullB',hp:1.00,taken:1.00,spd:1.00,cannon:1.00,blast:1.00,
+    mgDps:1.00,breach:1.00,
+    move:{mass:1.0,accel:1.00,turnRate:10,lateralGrip:1.0,brake:1.0,sprint:1.00},
+    turret:{rate:10},
+    missile:{maxLocks:1,lockStep:0.18,cd:1.00,blast:1.0},
     shield:{dur:0.42,perfect:0.12,cd:0.75},
     vis:{s:1,hull:null,hi:null,dk:null,trim:null,turret:null,barrel:null,track:null,
       glow:null,ring:null,twin:false,callsign:'IRONCLAD-07'}},
-  heavy:{i18n:'hullC',hp:1.25,taken:0.85,spd:0.88,accel:0.88,cannon:1.18,blast:1.20,
-    mgDps:0.90,sprint:0.85,breach:1.10,mslN:1,mslCd:1.25,
+  heavy:{i18n:'hullC',hp:1.25,taken:0.85,spd:0.88,cannon:1.18,blast:1.20,
+    mgDps:0.90,breach:1.10,
+    move:{mass:1.45,accel:0.88,turnRate:10,lateralGrip:1.0,brake:0.8,sprint:0.85},
+    turret:{rate:7},
+    missile:{maxLocks:1,lockStep:0.22,cd:1.25,blast:1.5},
     shield:{dur:4.0,perfect:0.18,cd:1.5,fortress:true},
     vis:{s:1.15,hull:'#3d4652',hi:'#c8d2da',dk:'#252b33',trim:'#f6b94e',turret:'#2f3742',
       barrel:'#20262e',track:'#2a323c',glow:'#8fd8e8',ring:'#ff7a5c',twin:true,callsign:'BASTION-09'}}};
@@ -866,23 +875,26 @@ const DIFFS=[
  {ai:1.30,react:1.30,hp:1.55,acc:1.30,drop:1.50,reward:2.00}];
 
 const RUN_DEF=()=>({lvl:0,score:0,kills:0,time:0,cycle:0,pts:0,
-  up:{hp:0,spd:0,atk:0,def:0},eq:{armor:0,track:0,fire:0,comp:0},
+  up:{hp:0,spd:0,atk:0,def:0,cdr:0},eq:{armor:0,track:0,fire:0,comp:0},
   hull:'balanced',wing:'flex'});
 let RUN=RUN_DEF(),lvlSnap=null;
 function saveRun(){ if(ST&&ST.debugActive)return;   /* §27: Debug 会话不写正式存档 */
   try{localStorage.setItem('trSave',JSON.stringify(RUN));}catch(e){} }
 function loadRun(){try{const s=localStorage.getItem('trSave');
-  if(s){const r=JSON.parse(s);RUN=Object.assign(RUN_DEF(),r);RUN.up=Object.assign({hp:0,spd:0,atk:0,def:0},r.up||{});RUN.eq=Object.assign({armor:0,track:0,fire:0,comp:0},r.eq||{});return true;}}catch(e){}return false;}
+  if(s){const r=JSON.parse(s);RUN=Object.assign(RUN_DEF(),r);RUN.up=Object.assign({hp:0,spd:0,atk:0,def:0,cdr:0},r.up||{});RUN.eq=Object.assign({armor:0,track:0,fire:0,comp:0},r.eq||{});return true;}}catch(e){}return false;}
 function hasSave(){try{return !!localStorage.getItem('trSave');}catch(e){return false;}}
 function calcStats(){const u=RUN.up,e=RUN.eq,h=hullCfg();
   const dbg=(typeof ST!=='undefined'&&ST.debugActive&&ST.dbg)||{};
+  /* v1.8 CONTROL_CONTRACT §4: 冷却分级 — 技能全额 / 武器弱化 (cdr=0 时均为 1, 行为不变) */
+  const cdMul=clamp(1/(1+0.04*(u.cdr||0)),0.55,1);
   return{
     maxHp:Math.round((100+15*u.hp+10*e.armor)*h.hp)+(dbg.hpBonus|0),
     speed:88*(1+0.05*u.spd+0.03*e.track)*h.spd*(dbg.spd||1),
     atk:(1+0.08*u.atk+0.05*e.fire)*h.cannon*(dbg.atk||1),
-    def:Math.min(0.85,0.06*u.def+0.04*e.comp+(dbg.defBonus||0))};}
+    def:Math.min(0.85,0.06*u.def+0.04*e.comp+(dbg.defBonus||0)),
+    cdMul, wcdMul:0.65+0.35*cdMul};}
 function rewardMul(){return DIFFS[SET.diff].reward*(1+0.3*RUN.cycle);}
-function refundAll(){RUN.pts+=RUN.up.hp+RUN.up.spd+RUN.up.atk+RUN.up.def;RUN.up={hp:0,spd:0,atk:0,def:0};}
+function refundAll(){RUN.pts+=RUN.up.hp+RUN.up.spd+RUN.up.atk+RUN.up.def+(RUN.up.cdr||0);RUN.up={hp:0,spd:0,atk:0,def:0,cdr:0};}
 </script>
 <script>
 "use strict";
@@ -1170,6 +1182,7 @@ let HITSTOP=0;              /* 全局顿帧(秒): 期间逻辑冻结, 仅渲染 
 /* Perfect Parry 精准窗口改随机体读取 (原固定0.12=均衡型基准) */
 const SHIELD_PERFECT_LEGACY=0.12;
 const CHAIN_MAX=3;          /* 连锁深度上限, 防止无限连锁 */
+const SHIELD_GRACE=0.18;    /* v1.8 §4: 护盾收尾宽限, 硬不变量用 */
 
 /* 连击权重表 (第三版计划·第六章) */
 const CAUSE_COMBO={
@@ -1330,7 +1343,8 @@ function ghostCount(){ return player?Math.min(6,Math.floor((player.ghostLen||0)/
 /* ---------- 玩家 ---------- */
 function makePlayer(){
   const s=calcStats();
-  return {x:WORLDW/2,y:WORLDH/2,ox:WORLDW/2,oy:WORLDH/2,a:-Math.PI/2,hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
+  return {x:WORLDW/2,y:WORLDH/2,ox:WORLDW/2,oy:WORLDH/2,a:-Math.PI/2,bodyA:-Math.PI/2,ta:-Math.PI/2,moveAx:0,moveAy:0,
+    hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
     shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
@@ -1355,7 +1369,7 @@ function edgePoint(){
 }
 function spawnEnemyAt(kind,boss,x,y){
   const dm=diffMul(); const isTank=kind==='tank';
-  const base={kind,boss:!!boss,x:x,y:y,ox:x,oy:y,a:0,
+  const base={id:(ST.nextEnemyId=(ST.nextEnemyId||0)+1),kind,boss:!!boss,x:x,y:y,ox:x,oy:y,a:0,
     stun:0,flash:0,ramCd:0,touchCd:0,dist:0,jitter:0,flying:null,
     mass:boss?'fortress':(isTank?'medium':'light')};
   if(isTank) enemies.push(Object.assign(base,{r:9,
@@ -1393,7 +1407,7 @@ function spawnBoss(){
     if(sc>bs){bs=sc;best={x,y};}
   }
   const p=best||{x:(sx0+sx1)/2,y:(sy0+sy1)/2},isTank=cfg.boss==='tank',dm=diffMul();
-  enemies.push({kind:isTank?'tank':'truck',boss:true,x:p.x,y:p.y,ox:p.x,oy:p.y,a:0,mass:'fortress',jitter:0,flying:null,
+  enemies.push({id:(ST.nextEnemyId=(ST.nextEnemyId||0)+1),kind:isTank?'tank':'truck',boss:true,x:p.x,y:p.y,ox:p.x,oy:p.y,a:0,mass:'fortress',jitter:0,flying:null,
     r:isTank?20:19,hp:cfg.bossHp*dm.hp*cycHp(),maxHp:cfg.bossHp*dm.hp*cycHp(),speed:isTank?62:95,
     prefMin:isTank?110:150,prefMax:isTank?220:260,range:300,
     fireT:1.2,fireCd:(isTank?1.3/cfg.rate:1.0/cfg.rate)/dm.react,burst:0,burstT:0,
@@ -1492,7 +1506,7 @@ function fireMissile(){
   /* §18 突击型三枚分锁: ≥3敌 各锁其一; 单体时按 100/65/50 衰减 */
   const alive=enemies.filter(e=>!e.dead).sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
   const fall=[1,0.65,0.5];
-  for(let i=0;i<h.mslN;i++){
+  for(let i=0;i<h.missile.maxLocks;i++){
     const mx=player.x+Math.cos(player.a)*15,my=player.y+Math.sin(player.a)*15;
     const dmg=46*st.atk*(alive.length===1?fall[i]:1);
     const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
@@ -1555,8 +1569,8 @@ function updPlayer(dt){
   let sprint=false;
   if(IN.sprint()&&!p.sprintLock&&p.sprintG>0){ sprint=true; p.sprintG-=dt/2.6; if(p.sprintG<=0){p.sprintG=0;p.sprintLock=true;} }
   else { p.sprintG=Math.min(1,p.sprintG+dt/3); if(p.sprintLock&&p.sprintG>0.45)p.sprintLock=false; }
-  const maxSpd=p.speed*mul*(sprint?1.9*hullCfg().sprint:1)*(COMBO.od?1.1:1);
-  const ACCEL=maxSpd/0.16*hullCfg().accel, FRICT=maxSpd/0.2;
+  const maxSpd=p.speed*mul*(sprint?1.9*hullCfg().move.sprint:1)*(COMBO.od?1.1:1);
+  const ACCEL=maxSpd/0.16*hullCfg().move.accel, FRICT=maxSpd/0.2;
   const tvx=ix*maxSpd, tvy=iy*maxSpd;
   const dv=(im>0.01?ACCEL:FRICT)*dt;
   p.vx+=clamp(tvx-p.vx,-dv,dv);
@@ -1574,17 +1588,17 @@ function updPlayer(dt){
   p.shieldGrace=Math.max(0,p.shieldGrace-dt);
   if(p.shieldFlash>1)p.shieldFlash=Math.max(1,p.shieldFlash);   /* >1=摆拍冻结 */ 
   else p.shieldFlash=Math.max(0,p.shieldFlash-dt);
-  if(p.shieldT===0&&p.shieldGrace===0&&p.lastShieldWasActive){p.shieldGrace=0.18;p.lastShieldWasActive=false;}
+  if(p.shieldT===0&&p.shieldGrace===0&&p.lastShieldWasActive){p.shieldGrace=SHIELD_GRACE;p.lastShieldWasActive=false;}
   if(p.shieldT>0)p.lastShieldWasActive=true;
   p.strikeCd=Math.max(0,p.strikeCd-dt);
   p.fireM-=dt; p.fireC-=dt;
   if(p.maxHp!==calcStats().maxHp){ const ns=calcStats(); p.hp=Math.min(p.hp+Math.max(0,ns.maxHp-p.maxHp),ns.maxHp); p.maxHp=ns.maxHp; }
-  if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)/hullCfg().mgDps; fireMG(); }
-  if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1); fireCannon(); }
+  if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)*calcStats().wcdMul/hullCfg().mgDps; fireMG(); }
+  if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1)*calcStats().wcdMul; fireCannon(); }
   if(IN.msl()){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); }
-  else if(p.charging){ if(p.charge>=0.45*hullCfg().mslCd)fireMissile(); p.charging=false; p.charge=0; }
-  if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5; callAirstrike(); }
-  if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=sc.cd; p.shieldAge=0; SFX.shield(p.x,p.y); }
+  else if(p.charging){ if(p.charge>=0.45*hullCfg().missile.cd)fireMissile(); p.charging=false; p.charge=0; }
+  if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5*calcStats().cdMul; callAirstrike(); }
+  if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); p.shieldAge=0; SFX.shield(p.x,p.y); }
   const tid=tileAtPx(p.x,p.y);
   const disp=Math.hypot(p.x-px0,p.y-py0);   /* v1.7: 实际位移(顶墙卡住时≈0) — 特效与残影共用的判定 */
   p.dustT-=dt;
@@ -2358,7 +2372,7 @@ function drawHullPreview(k,x,y,w,h){
   ctx.strokeStyle=rgba(v.trim||PAL.cyan,0.6*(1-rp)); ctx.lineWidth=1;
   ctx.beginPath(); ctx.arc(cx,cy,8+rp*22,0,Math.PI*2); ctx.stroke();
   gtxt(v.callsign||'IRONCLAD-07',x+w-6,y+6,7,v.trim?rgba(v.trim,0.9):PAL.cyan,'right');
-  for(let i=0;i<HULLS[k].mslN;i++)gtxt('➤',x+8+i*10,y+6,8,PAL.gold);
+  for(let i=0;i<HULLS[k].missile.maxLocks;i++)gtxt('➤',x+8+i*10,y+6,8,PAL.gold);
   ctx.restore();
   ctx.strokeStyle=PAL.steel; ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
 }
@@ -3617,7 +3631,7 @@ function drawHullPreviewAI(k,x,y,w,h){
   uctx.strokeStyle=rgba(col,0.6*(1-rp)); uctx.lineWidth=1;
   uctx.beginPath(); uctx.arc(cx,cy,9+rp*24,0,Math.PI*2); uctx.stroke();
   txt(v.callsign||spec.role||'IRONCLAD-07',x+w-6,y+6,7,rgba(col,0.95),'right');
-  for(let i=0;i<HULLS[k].mslN;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
+  for(let i=0;i<HULLS[k].missile.maxLocks;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
   uctx.restore();
   uctx.strokeStyle=PAL.steel; uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
   return true;
@@ -3986,7 +4000,7 @@ window.drawHullPreviewAI=function(k,x,y,w,h){
       uctx.strokeStyle=rgba(col,0.85*(1-rp)); uctx.lineWidth=1;
       uctx.beginPath(); uctx.arc(cx+pl,cy,7+rp*19,0,Math.PI*2); uctx.stroke();
       txt(v.callsign||'IRONCLAD-07',x+w-6,y+6,7,rgba(col,0.95),'right');
-      for(let i=0;i<HULLS[k].mslN;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
+      for(let i=0;i<HULLS[k].missile.maxLocks;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
       uctx.restore();
       uctx.strokeStyle=PAL.steel; uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
       return true;
@@ -4598,7 +4612,7 @@ function drawCtrlKeys(hot){
 let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam,dynLights=[],lightPools=[];
 let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
-  bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
+  bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,nextEnemyId:0,paused:false,muted:false,
   shake:0,shakeHold:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
   upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
@@ -4616,7 +4630,7 @@ function startLevel(){
   for(let i=0;i<3;i++){ let bx=0,by=0,ok=false;
     for(let t=0;t<30&&!ok;t++){ bx=rnd(2,MAPW-2)|0; by=rnd(2,MAPH-2)|0; if(tileAt(bx,by)===5)ok=true; }
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
-  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;
+  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;ST.nextEnemyId=0;
   ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
@@ -4628,7 +4642,7 @@ function startLevel(){
 function retryLevel(){
   const s=JSON.parse(lvlSnap?JSON.stringify(lvlSnap):'{}');
   RUN.score=s.score||0;RUN.kills=s.kills||0;RUN.time=s.time||0;RUN.pts=s.pts||0;
-  RUN.up=s.up||{hp:0,spd:0,atk:0,def:0};RUN.eq=s.eq||{armor:0,track:0,fire:0,comp:0};
+  RUN.up=Object.assign({hp:0,spd:0,atk:0,def:0,cdr:0},s.up||{});RUN.eq=Object.assign({armor:0,track:0,fire:0,comp:0},s.eq||{});
   startLevel();
 }
 function levelClear(){
@@ -4714,8 +4728,8 @@ function onKeyPress(code){
       break;
     case 'play':
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
-      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=sc.cd; player.shieldAge=0; SFX.shield(player.x,player.y); } }
-      if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5; callAirstrike(); }
+      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); player.shieldAge=0; SFX.shield(player.x,player.y); } }
+      if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5*calcStats().cdMul; callAirstrike(); }
       break;
   }
 }

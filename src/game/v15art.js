@@ -221,7 +221,7 @@ window.drawHullPreviewAI=function(k,x,y,w,h){
       uctx.strokeStyle=rgba(col,0.85*(1-rp)); uctx.lineWidth=1;
       uctx.beginPath(); uctx.arc(cx+pl,cy,7+rp*19,0,Math.PI*2); uctx.stroke();
       txt(v.callsign||'IRONCLAD-07',x+w-6,y+6,7,rgba(col,0.95),'right');
-      for(let i=0;i<HULLS[k].mslN;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
+      for(let i=0;i<HULLS[k].missile.maxLocks;i++)txt('>',x+8+i*10,y+6,8,PAL.gold);
       uctx.restore();
       uctx.strokeStyle=PAL.steel; uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
       return true;

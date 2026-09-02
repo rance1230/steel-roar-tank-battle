@@ -4,7 +4,7 @@
 let ST,cfg,terr,player,enemies,shots,bombs,planes,pickups,parts,floats,rains,cam,dynLights=[],lightPools=[];
 let MENU=null, MENU_RECTS=[], TAP_RECTS=[];
 function newGame(){ ST={state:'title',t:0,levelTime:0,killsLevel:0,introT:0,clearT:0,winT:0,creditsBgm:false,
-  bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,paused:false,muted:false,
+  bossSpawned:false,bossWarn:0,spawnedN:0,spawnT:0,nextEnemyId:0,paused:false,muted:false,
   shake:0,shakeHold:0,flash:0,bolt:null,lightT:5,clearBonus:0,overT:0,best:0,
   upg:{sel:0,from:'clear'},padNavT:0,ctrlT:0,ctrlIdx:0,ctrlMode:null};
   try{ST.best=parseInt(localStorage.getItem('trBest')||'0')||0;}catch(e){}
@@ -22,7 +22,7 @@ function startLevel(){
   for(let i=0;i<3;i++){ let bx=0,by=0,ok=false;
     for(let t=0;t<30&&!ok;t++){ bx=rnd(2,MAPW-2)|0; by=rnd(2,MAPH-2)|0; if(tileAt(bx,by)===5)ok=true; }
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
-  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;
+  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;ST.nextEnemyId=0;
   ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
@@ -34,7 +34,7 @@ function startLevel(){
 function retryLevel(){
   const s=JSON.parse(lvlSnap?JSON.stringify(lvlSnap):'{}');
   RUN.score=s.score||0;RUN.kills=s.kills||0;RUN.time=s.time||0;RUN.pts=s.pts||0;
-  RUN.up=s.up||{hp:0,spd:0,atk:0,def:0};RUN.eq=s.eq||{armor:0,track:0,fire:0,comp:0};
+  RUN.up=Object.assign({hp:0,spd:0,atk:0,def:0,cdr:0},s.up||{});RUN.eq=Object.assign({armor:0,track:0,fire:0,comp:0},s.eq||{});
   startLevel();
 }
 function levelClear(){
@@ -120,8 +120,8 @@ function onKeyPress(code){
       break;
     case 'play':
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
-      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=sc.cd; player.shieldAge=0; SFX.shield(player.x,player.y); } }
-      if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5; callAirstrike(); }
+      if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); player.shieldAge=0; SFX.shield(player.x,player.y); } }
+      if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5*calcStats().cdMul; callAirstrike(); }
       break;
   }
 }

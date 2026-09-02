@@ -338,7 +338,7 @@ function drawHullPreview(k,x,y,w,h){
   ctx.strokeStyle=rgba(v.trim||PAL.cyan,0.6*(1-rp)); ctx.lineWidth=1;
   ctx.beginPath(); ctx.arc(cx,cy,8+rp*22,0,Math.PI*2); ctx.stroke();
   gtxt(v.callsign||'IRONCLAD-07',x+w-6,y+6,7,v.trim?rgba(v.trim,0.9):PAL.cyan,'right');
-  for(let i=0;i<HULLS[k].mslN;i++)gtxt('➤',x+8+i*10,y+6,8,PAL.gold);
+  for(let i=0;i<HULLS[k].missile.maxLocks;i++)gtxt('➤',x+8+i*10,y+6,8,PAL.gold);
   ctx.restore();
   ctx.strokeStyle=PAL.steel; ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
 }

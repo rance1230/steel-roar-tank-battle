@@ -8,6 +8,7 @@ let HITSTOP=0;              /* 全局顿帧(秒): 期间逻辑冻结, 仅渲染 
 /* Perfect Parry 精准窗口改随机体读取 (原固定0.12=均衡型基准) */
 const SHIELD_PERFECT_LEGACY=0.12;
 const CHAIN_MAX=3;          /* 连锁深度上限, 防止无限连锁 */
+const SHIELD_GRACE=0.18;    /* v1.8 §4: 护盾收尾宽限, 硬不变量用 */
 
 /* 连击权重表 (第三版计划·第六章) */
 const CAUSE_COMBO={
