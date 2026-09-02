@@ -365,6 +365,13 @@ function drawTank(x,y,ang,o){
     px(-8*s,-3*s,3*s,6*s,o.turret);
     px(-11.5*s,-3*s,1.5*s,2*s,PAL.ember); px(-11.5*s,1*s,1.5*s,2*s,PAL.ember);   /* 尾部排气光点 */
   }
+  px(-9*s,-7*s,2*s,2*s,accent); px(-9*s,5*s,2*s,2*s,accent);
+  if(o.antenna){ px(-7*s,-8*s,1*s,5*s,PAL.lite); px(-8*s,-9*s,3*s,1*s,accent); }
+  /* v1.8 W2: 炮塔独立旋转 (o.ta 给定时, 偏差>0.12rad 才二次转向) */
+  if(o.ta!==undefined&&Math.abs(angDiff(ang,o.ta))>0.12){
+    ctx.restore(); ctx.save(); ctx.translate(Math.round(x),Math.round(y));
+    ctx.rotate(Math.round(o.ta/(Math.PI/24))*(Math.PI/24));
+  }
   px(-5*s,-4*s,9*s,8*s,o.turret);
   px(-2*s,-2*s,4*s,4*s,o.hi);
   if(o.core)px(-1.2*s,-1.2*s,2.4*s,2.4*s,PAL.cyan);   /* 蓝色能量核心 (§五) */
@@ -373,10 +380,42 @@ function drawTank(x,y,ang,o){
     px(17*s,-4.5*s,3*s,3*s,o.muzzle||accent); px(17*s,1.5*s,3*s,3*s,o.muzzle||accent);
   }
   else { px(3*s,-1.5*s,16*s,3*s,o.barrel); px(18*s,-2.5*s,3*s,5*s,o.muzzle||accent); }
-  px(-9*s,-7*s,2*s,2*s,accent); px(-9*s,5*s,2*s,2*s,accent);
-  if(o.antenna){ px(-7*s,-8*s,1*s,5*s,PAL.lite); px(-8*s,-9*s,3*s,1*s,accent); }
   if(o.flash>0){ ctx.globalAlpha=0.62; px(-11*s,-9*s,22*s,18*s,PAL.white); ctx.globalAlpha=1; }
   ctx.restore();
+}
+/* v1.8 W2: HD 层炮塔覆盖 — 整帧立绘时代替"盖盘+炮管"表达独立炮塔 (分层素材落地前的兜底渲染) */
+function drawTurretOverlay(c,x,y,bodyA,ta,sc,vis){
+  if(ta===undefined||Math.abs(angDiff(bodyA||0,ta))<=0.15)return;
+  vis=vis||{}; sc=sc||1;
+  const tur=vis.turret||'#3a4450', hull=vis.hull||'#4a5560', barrel=vis.barrel||'#20262e', trim=vis.trim||'#22c0ff';
+  c.save(); c.translate(x,y);
+  c.fillStyle=hull; c.beginPath(); c.arc(0,0,10.5*sc,0,Math.PI*2); c.fill();   /* 盘面盖住原帧炮管根部 */
+  c.rotate(ta);
+  c.fillStyle=barrel; c.fillRect(4*sc,-1.9*sc,15*sc,3.8*sc);
+  c.fillStyle=trim; c.fillRect(17.5*sc,-2.7*sc,3*sc,5.4*sc);
+  c.rotate(-ta);
+  c.fillStyle=tur; c.beginPath(); c.arc(0,0,7.5*sc,0,Math.PI*2); c.fill();
+  c.strokeStyle=trim; c.globalAlpha=0.85; c.lineWidth=1; c.stroke(); c.globalAlpha=1;
+  c.fillStyle=PAL.white; c.globalAlpha=0.7; c.beginPath(); c.arc(-1.5*sc,-2*sc,1.6*sc,0,Math.PI*2); c.fill(); c.globalAlpha=1;
+  c.restore();
+}
+/* v1.8 W2: 瞄准指示 — 瞄准输入后 0.35s 内显示金色虚线+箭头 (uctx 世界坐标) */
+function drawAim(){
+  if(!player||!player.aimT||player.aimT<=0||MENU||ST.state!=='play')return;
+  const px0=IPx(player),py0=IPy(player),a=player.ta,r=player.r+6;
+  uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
+  uctx.globalAlpha=Math.min(0.55,player.aimT*1.8);
+  uctx.strokeStyle=PAL.gold; uctx.lineWidth=1.5;
+  uctx.setLineDash([5,4]); uctx.lineDashOffset=-ST.t*30;
+  uctx.beginPath(); uctx.moveTo(px0+Math.cos(a)*r,py0+Math.sin(a)*r);
+  uctx.lineTo(px0+Math.cos(a)*(r+24),py0+Math.sin(a)*(r+24)); uctx.stroke();
+  uctx.setLineDash([]);
+  const tx=px0+Math.cos(a)*(r+31),ty=py0+Math.sin(a)*(r+31);
+  uctx.beginPath(); uctx.moveTo(tx,ty);
+  uctx.lineTo(tx-Math.cos(a-0.5)*6,ty-Math.sin(a-0.5)*6);
+  uctx.lineTo(tx-Math.cos(a+0.5)*6,ty-Math.sin(a+0.5)*6);
+  uctx.closePath(); uctx.fillStyle=PAL.gold; uctx.fill();
+  uctx.globalAlpha=1; uctx.restore();
 }
 function drawTruck(x,y,ang,o){
   const s=o.s, accent=o.trim||PAL.red;
@@ -420,8 +459,8 @@ function drawPlayer(){
   const v=hullCfg().vis||{}, hasV=!!v.hull;   /* 机体专属外观 (vis.hull=null=均衡型默认涂装) */
   const vc=c=>hasV&&c?c:undefined;
   if(p.sprintG<0.95||COMBO.od)glow(pxp,pyp,24,COMBO.od?PAL.gold:PAL.blue,COMBO.od?0.18:0.12);
-  glow(pxp+Math.cos(p.a)*2,pyp+Math.sin(p.a)*2,7+Math.sin(ST.t*5)*1.6,v.glow||PAL.cyan,0.13);   /* 能量核心脉动光 */
-  drawTank(pxp,pyp,p.a,{s:v.s||1,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
+  glow(pxp+Math.cos(p.bodyA)*2,pyp+Math.sin(p.bodyA)*2,7+Math.sin(ST.t*5)*1.6,v.glow||PAL.cyan,0.13);   /* 能量核心脉动光 */
+  drawTank(pxp,pyp,p.bodyA,{s:v.s||1,ta:player.ta,hull:vc(v.hull)||PAL.steel,hi:vc(v.hi)||PAL.white,trim:vc(v.trim)||PAL.cyan,
     turret:vc(v.turret)||PAL.lite,barrel:vc(v.barrel)||PAL.steel,hullDk:v.dk,track:v.track,
     muzzle:v.trim,twin:!!v.twin,antenna:true,core:true,dist:p.dist,flash:0});
   if(p.shieldT>0||p.shieldGrace>0){   /* v1.7: 3D 等离子护罩球, 半径随机体适配 */

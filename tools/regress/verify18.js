@@ -116,9 +116,9 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   g = await ev(() => ({rax: +PAD.rax.toFixed(2), ray: +PAD.ray.toFixed(2)}));
   ok(G3 && g.rax > 0.7 && Math.abs(g.ray) < 0.15, 'G3 #rjoy 推右→PAD 瞄准轴 (' + g.rax + ')');
   await page.evaluate(() => document.getElementById('rjoy').dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 21})));
-  await sleep(150);
-  g = await ev(() => ({rax: PAD.rax, ray: PAD.ray}));
-  ok(g.rax === 0 && g.ray === 0, 'G3b 松开右杆归零');
+  let g3b = null;                                            /* 无头偶发节流: 重试读数 */
+  for (let i = 0; i < 8; i++) { await sleep(120); g3b = await ev(() => ({rax: PAD.rax, ray: PAD.ray})); if (g3b.rax === 0 && g3b.ray === 0) break; }
+  ok(g3b.rax === 0 && g3b.ray === 0, 'G3b 松开右杆归零');
   /* G4 双杆指针独立: 左杆持住(id 31), 右杆 cancel(id 32) 不影响左杆 */
   const G4 = await page.evaluate(() => {
     const jl = document.getElementById('joy'), jr = document.getElementById('rjoy');
@@ -143,14 +143,43 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await page.keyboard.up('KeyJ'); await page.keyboard.up('ArrowLeft');
   ok(G5.keys === 0 && G5.vkeys === 0 && G5.vj === 0 && G5.rax === 0 && G5.cls.indexOf('on') < 0, 'G5 resetTransientInput 清 keys/VKEYS/双杆/瞄准轴/视觉态');
   /* G6 visibilitychange hidden → 取消蓄力不放弹 */
-  await ev(() => { player.charging = true; player.charge = 0.8; window.__shots0 = shots.length; });
+  await ev(() => { enemies.length = 0; if (typeof wingman !== 'undefined' && wingman) wingman.downT = 99;   /* 僚机会持续开火产生友方mg */
+    player.charging = true; player.charge = 0.8; window.__shots0 = shots.filter(x => x.friendly).length; });   /* 只计友方弹 */
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', {value: true, configurable: true});
     document.dispatchEvent(new Event('visibilitychange'));
     Object.defineProperty(document, 'hidden', {value: false, configurable: true}); });
   await sleep(300);
-  g = await ev(() => ({chg: player.charging, c0: player.charge, sn: shots.length - window.__shots0}));
+  g = await ev(() => ({chg: player.charging, c0: player.charge, sn: shots.filter(x => x.friendly).length - window.__shots0}));
   ok(g.chg === false && g.c0 === 0 && g.sn <= 0, 'G6 后台取消蓄力不发射 (charging=' + g.chg + ', 新弹' + g.sn + ')');
   await ev(() => { window.__fp.connected = false; });
+
+  /* ---- H. W2 炮塔模型: bodyA/ta 分离 + 沿ta开火 + 松手保持 ---- */
+  const H1 = await ev(() => ({noA: !('a' in player), hasBody: typeof player.bodyA === 'number', hasTa: typeof player.ta === 'number'}));
+  ok(H1.noA && H1.hasBody && H1.hasTa, 'H1 玩家角度字段= bodyA/ta, p.a 已消灭 (契约§2)');
+  const b0 = await ev(() => player.bodyA);
+  await page.keyboard.down('ArrowRight'); await sleep(450);
+  const H2 = await ev(() => ({ta: +player.ta.toFixed(3), bodyA: +player.bodyA.toFixed(3)}));
+  await page.keyboard.up('ArrowRight');
+  ok(Math.abs(H2.ta) < 0.15 && Math.abs(H2.bodyA - b0) < 0.01, 'H2 方向键驱动炮塔且车身不动 (ta=' + H2.ta + ' bodyA=' + H2.bodyA + ')');
+  await ev(() => { window.__fp.connected = true; window.__fp.axes = [0, 0, 0, 1]; }); await sleep(450);
+  const H3 = await ev(() => +player.ta.toFixed(3));
+  await ev(() => { window.__fp.axes = [0, 0, 0, 0]; window.__fp.connected = false; });
+  ok(Math.abs(H3 - Math.PI / 2) < 0.15, 'H3 手柄右杆驱动炮塔向下 (ta=' + H3 + '≈π/2)');
+  await sleep(650);
+  const H5 = await ev(() => +player.ta.toFixed(3));
+  ok(Math.abs(H5 - Math.PI / 2) < 0.15, 'H5 松手永久保持瞄准角 (ta=' + H5 + ')');
+  await ev(() => { player.bodyA = 0; player.ta = Math.PI / 2; player.vx = player.vy = 0; });
+  await page.keyboard.down('KeyJ'); await sleep(120); await page.keyboard.up('KeyJ'); await sleep(80);
+  const H4 = await ev(() => { const m = shots.filter(x => x.friendly && x.kind === 'mg').slice(-1)[0];
+    return m ? +Math.atan2(m.vy, m.vx).toFixed(3) : null; });
+  ok(H4 !== null && Math.abs(H4 - Math.PI / 2) < 0.12, 'H4 机枪沿炮塔角发射 (弹角=' + H4 + '≈π/2, 车身=0)');
+  const H6 = await page.evaluate(() => new Promise(res => {      /* Breach 锁定: 车身+炮塔同轴指敌 */
+    player.bodyA = 0; player.ta = 0; player.vx = 190; player.vy = 0;
+    const t = G.dummy('tank', player.x + 40, player.y); t.stun = 99;
+    let n = 0; const iv = setInterval(() => {
+      if ((player.breach && player.vx === 0) || ++n > 90) { clearInterval(iv);
+        res({lock: !!player.breach, bodyA: +player.bodyA.toFixed(3), ta: +player.ta.toFixed(3)}); } }, 16); }));
+  ok(H6.lock && Math.abs(H6.bodyA - 0) < 0.05 && Math.abs(H6.ta - H6.bodyA) < 0.01, 'H6 Breach锁定→车身/炮塔同轴指敌 (bodyA=' + H6.bodyA + ' ta=' + H6.ta + ')');
 
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();

@@ -239,6 +239,7 @@ function draw(alpha){
     if(errStr)txt('ERR:'+errStr,4,VH-30,8,PAL.red); return; }
   if(ST.state==='ctrl'){ drawCtrlIntro(); return; }
   drawFloats();
+  drawAim();   /* v1.8 W2: 瞄准指示 */
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
   if(ST.state==='clear')drawClearCard();
@@ -320,7 +321,7 @@ window.G={
     COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;
     const CX=WORLDW/2, CY=WORLDH/2;
     this.tp(CX,CY);
-    player.vx=player.vy=0; player.a=-Math.PI/2; player.inv=0; player.flash=0;
+    player.vx=player.vy=0; player.bodyA=player.ta=-Math.PI/2; player.inv=0; player.flash=0;
     player.hp=player.maxHp=100; player.maxHp=100; player.shieldT=0; player.shieldGrace=0; player.breach=null;
     const pose=(kind,boss,dx,dy,a)=>{ spawnEnemyAt(kind,!!boss,CX+dx,CY+dy);
       const e=enemies[enemies.length-1]; e.a=a; e.stun=99; e.jitter=0;

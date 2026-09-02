@@ -128,7 +128,7 @@ function drawPlayerAI(){
   const spec=unitSpec('player',RUN.hull||'balanced');
   if(!spec||!readyImage(spec.image))return false;
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;
-  AIART.queue.push({spec,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
+  AIART.queue.push({spec,x:IPx(p),y:IPy(p),ang:p.bodyA,ta:p.ta,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
     shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||spec.glow||PAL.aqua,od:COMBO.od,sprintG:p.sprintG,kind:'player'});
@@ -185,6 +185,7 @@ AIART.flushHd=function(ox,oy){
       uctx.beginPath(); uctx.ellipse(0,0,w*0.36,h*0.30,0,0,Math.PI*2); uctx.fill(); }
     uctx.restore();
     if(q.kind==='player'){
+      drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);   /* v1.8 W2: 独立炮塔 */
       if(q.shield){   /* v1.7: 3D 等离子护罩球 (随机体适配) */
         const vv=(HULLS[RUN.hull]||HULLS.balanced).vis||{};
         drawShieldOrb(uctx,q.x,q.y,shieldOrbR(vv.s,w),q.ringCol,q.shieldA,
@@ -343,7 +344,7 @@ function stage1Showcase(hull,wing){
   MENU=null; ST.state='play'; ST.introT=0; ST.spawnT=1e9; ST.spawnedN=cfg.quota; ST.bossSpawned=true; ST.bossWarn=0;
   enemies.length=0; shots.length=0; bombs.length=0; planes.length=0; pickups.length=0; parts.length=0; floats.length=0; dynLights.length=0;
   clearDecals();
-  player.x=420; player.y=285; player.ox=player.x; player.oy=player.y; player.a=-0.08; player.inv=0; player.shieldT=0.42; player.shieldAge=0;
+  player.x=420; player.y=285; player.ox=player.x; player.oy=player.y; player.bodyA=player.ta=-0.08; player.inv=0; player.shieldT=0.42; player.shieldAge=0;
   if(wingman){ wingman.x=player.x-56; wingman.y=player.y+40; wingman.ox=wingman.x; wingman.oy=wingman.y; wingman.a=-0.08; }
   spawnEnemyAt('tank',false,player.x+118,player.y-55);
   spawnEnemyAt('truck',false,player.x+132,player.y+64);

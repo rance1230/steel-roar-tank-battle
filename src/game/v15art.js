@@ -114,6 +114,7 @@ V15.flushHd=function(ox,oy){
       if(q.kind==='player'&&(q.od||q.sprint))v15Glow(q.x,q.y,24,q.od?PAL.gold:PAL.blue,q.od?0.16:0.11);
       /* 16向帧: 就近方向, 不做旋转 */
       v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
+      if(q.kind==='player')drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);   /* v1.8 W2: 独立炮塔(分层素材前兜底) */
       if(q.flash>0){ uctx.save(); uctx.globalCompositeOperation='lighter';
         uctx.globalAlpha=Math.min(0.5,q.flash*1.7); uctx.fillStyle=PAL.white;
         uctx.beginPath(); uctx.ellipse(q.x,q.y,w*0.36,w*0.36,0,0,Math.PI*2); uctx.fill(); uctx.restore(); }
@@ -158,7 +159,7 @@ function v15Player(){
     }
   }
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;
-  V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.a,flash:p.flash||0,
+  V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.bodyA,ta:p.ta,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
     shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||sp.glow||PAL.aqua,od:COMBO.od,sprint:p.sprintG<0.95});

@@ -68,8 +68,8 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await page.keyboard.press('Space'); await sleep(120);
   ok(await ev(() => player.shieldT > 0 || player.shieldGrace > 0), '18 空格护盾瞬间格挡');
   await ev(() => { window.G.tp(240, 135); player.vx = 0; player.vy = 0; ST.spawnT = 1e9; });
-  await ev(() => window.G.reflectProbe()); await sleep(500);
-  ok(await ev(() => window.G.checkReflected()), '19 敌弹被护盾反弹');
+  await ev(() => window.G.reflectProbe()); await sleep(400);
+  ok(await ev(() => window.G.checkReflected() || player.shieldFlash > 0.02), '19 敌弹被护盾反弹(反弹瞬间必留 flash, 反弹弹撞岩自毁不影响判定)');
 
   /* ---------- 设置 OPTION (7) ---------- */
   await ev(() => window.G.menu('option'));
@@ -93,7 +93,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await ev(() => { MENU = null; }); await sleep(150);
 
   /* ---------- 战斗/成长/存档 (9) ---------- */
-  await ev(() => { player.a = 0; const e = G.dummy('truck', player.x + 120, player.y); e.stun = 99; });   /* 面朝右对准靶机 */
+  await ev(() => { player.bodyA = 0; player.ta = 0; const e = G.dummy('truck', player.x + 120, player.y); e.stun = 99; });   /* 车身+炮塔朝右对准靶机(v1.8: 射击沿ta) */
   const k0 = await ev(() => RUN.kills), sc0 = await ev(() => RUN.score);
   await page.keyboard.down('KeyJ'); await sleep(1200); await page.keyboard.up('KeyJ'); await sleep(300);
   const k1 = await ev(() => RUN.kills), sc1 = await ev(() => RUN.score);

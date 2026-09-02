@@ -43,7 +43,7 @@ let shotsFired=0;
    每走 GHOST_GAP(26px≈一个身位)多一条剪影, 封顶 GHOST_TAILMAX(156px=6条);
    停冲或卡住(实际位移≈0, 顶墙速度再大也不算)时尾长收缩 → 残影逐条消失 */
 const GHOST_GAP=30, GHOST_TAILMAX=180, GHOST_SHRINK=380;
-function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.a}); if(p.trail.length>90)p.trail.shift(); }
+function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.bodyA}); if(p.trail.length>90)p.trail.shift(); }
 function trailAtDist(p,distBack){
   const t=p.trail; if(!t||t.length<2)return null;
   let need=distBack;
@@ -60,7 +60,7 @@ function ghostCount(){ return player?Math.min(6,Math.floor((player.ghostLen||0)/
 /* ---------- 玩家 ---------- */
 function makePlayer(){
   const s=calcStats();
-  return {x:WORLDW/2,y:WORLDH/2,ox:WORLDW/2,oy:WORLDH/2,a:-Math.PI/2,bodyA:-Math.PI/2,ta:-Math.PI/2,moveAx:0,moveAy:0,
+  return {x:WORLDW/2,y:WORLDH/2,ox:WORLDW/2,oy:WORLDH/2,bodyA:-Math.PI/2,ta:-Math.PI/2,moveAx:0,moveAy:0,
     hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
@@ -203,15 +203,15 @@ function shot(x,y,ang,spd,dmg,friendly,kind,extra){
     life:kind==='missile'?3.5:1.5,refl:false,trailT:0},extra||{});
   shots.push(s); return s;
 }
-function fireMG(){ shotsFired++; const st=calcStats(); const a=player.a+rnd(-0.05,0.05);
-  const mx=player.x+Math.cos(player.a)*15,my=player.y+Math.sin(player.a)*15;
+function fireMG(){ shotsFired++; const st=calcStats(); const a=player.ta+rnd(-0.05,0.05);   /* v1.8 W2: 沿炮塔 */
+  const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
   shot(mx,my,a,430,3*st.atk,true,'mg');
   part(mx,my,rnd(-15,15),rnd(-15,15),0.08,PAL.gold,2);
   part(mx,my,0,0,0.05,PAL.gold,3.2,0).core=true;     /* 枪口焰芯 */
   addLight(mx,my,12,PAL.gold,0.18,0.055);
   if(ST.t-mgSndT>0.055){ SFX.mg(mx,my); mgSndT=ST.t; } }
-function fireCannon(){ const st=calcStats(); const a=player.a+rnd(-0.02,0.02);
-  const mx=player.x+Math.cos(player.a)*17,my=player.y+Math.sin(player.a)*17;
+function fireCannon(){ const st=calcStats(); const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮塔 */
+  const mx=player.x+Math.cos(player.ta)*17,my=player.y+Math.sin(player.ta)*17;
   shot(mx,my,a,320,24*st.atk,true,'shell',{cause:'shot'});
   player.x-=Math.cos(a)*1.5;player.y-=Math.sin(a)*1.5;
   flashFx(mx,my,9);                                   /* 炮口火光 (§VFX) */
@@ -224,15 +224,15 @@ function fireMissile(){
   const alive=enemies.filter(e=>!e.dead).sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
   const fall=[1,0.65,0.5];
   for(let i=0;i<h.missile.maxLocks;i++){
-    const mx=player.x+Math.cos(player.a)*15,my=player.y+Math.sin(player.a)*15;
+    const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
     const dmg=46*st.atk*(alive.length===1?fall[i]:1);
     const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
-    const s=shot(mx,my,player.a+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});
+    const s=shot(mx,my,player.ta+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});   /* v1.8 W2: 出膛沿炮塔 */
     if(tgt)s.lock=tgt;
     part(mx,my,0,0,0.08,PAL.white,4,0).core=true;       /* 发射烟闪 */
     addLight(mx,my,18,PAL.white,0.24,0.1);
   }
-  cameraKick(0.45,player.a,0.0015);   /* v1.7: 发射微踢 */
+  cameraKick(0.45,player.ta,0.0015);   /* v1.7: 发射微踢(沿炮塔方向) */
   SFX.missile(player.x,player.y);
 }
 function callAirstrike(){
@@ -259,7 +259,7 @@ function updPlayer(dt){
       const dx=p.x-be.x,dy=p.y-be.y,l=Math.hypot(dx,dy)||1;
       const hold=be.r+p.r-4;
       p.x=be.x+dx/l*hold; p.y=be.y+dy/l*hold;
-      p.vx=0; p.vy=0; p.a=Math.atan2(-dy,-dx);
+      p.vx=0; p.vy=0; p.bodyA=p.ta=Math.atan2(-dy,-dx);   /* v1.8 W2: 锁定转向=车身+炮塔同轴 */
       be.stun=Math.max(be.stun,0.15); be.jitter=0.08;
       if(Math.random()<0.9)part(be.x-dx/l*be.r,be.y-dy/l*be.r,rnd(-55,55),rnd(-55,55),0.22,Math.random()<0.5?PAL.white:PAL.gold,2.4);
       if(IN.cannon()){ const tgt=be,stag=p.breach.stagger; p.breach=null; breachFire(tgt,stag); }
@@ -297,8 +297,13 @@ function updPlayer(dt){
   const px0=p.x, py0=p.y;   /* v1.7: 彗尾按实际位移增长(顶墙卡住时位移≈0, 尾巴收缩) */
   moveCirc(p,p.vx*dt,p.vy*dt,p.r);
   if(spd>1)p.dist+=spd*dt;
-  if(p.moving){ const ta=Math.atan2(p.vy,p.vx);
-    p.a+=clamp(angDiff(p.a,ta),-10*dt,10*dt); }
+  if(p.moving){ const mA=Math.atan2(p.vy,p.vx);   /* v1.8 W2: 车体跟随速度方向(局部更名防与炮塔ta混淆) */
+    p.bodyA+=clamp(angDiff(p.bodyA,mA),-10*dt,10*dt); }
+  /* v1.8 W2: 炮塔 — 有瞄准输入按 turret.rate 平滑跟随, 松手永久保持最后方向(契约§2) */
+  { const ram=Math.hypot(PAD.rax,PAD.ray);
+    if(ram>0.18){ const want=Math.atan2(PAD.ray,PAD.rax), tr=hullCfg().turret.rate*dt;
+      p.ta+=clamp(angDiff(p.ta,want),-tr,tr); p.aimT=0.35; } }
+  p.aimT=Math.max(0,(p.aimT||0)-dt);
   p.inv=Math.max(0,p.inv-dt); p.flash=Math.max(0,p.flash-dt);
   p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt);
   p.shieldAge+=dt;
@@ -321,16 +326,16 @@ function updPlayer(dt){
   p.dustT-=dt;
   if(p.moving&&disp>0.1&&p.dustT<=0){   /* v1.7.1: 实际位移才出特效——顶墙时不再原地堆粒子/履带印(0.10×60次盖章≈实心黑) */
     p.dustT=sprint?0.03:0.09;
-    stampTracks(p.x-Math.cos(p.a)*10,p.y-Math.sin(p.a)*10,p.a,sprint);   /* §7 履带痕迹 decal */
-    terrainMoveFx(p.x,p.y,p.a,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
+    stampTracks(p.x-Math.cos(p.bodyA)*10,p.y-Math.sin(p.bodyA)*10,p.bodyA,sprint);   /* §7 履带痕迹 decal */
+    terrainMoveFx(p.x,p.y,p.bodyA,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
   }
   /* v1.7: 残影彗尾 — 尾长随冲刺实际位移增长(每26px一条, 封顶6条; 卡住位移≈0即收缩), 松开淡出 */
   if(sprint&&disp>0.1){ p.ghostLen=Math.min(GHOST_TAILMAX,(p.ghostLen||0)+disp);
     p.ghostA=Math.min(1,p.ghostA+dt*8); }
   else { p.ghostLen=Math.max(0,(p.ghostLen||0)-dt*GHOST_SHRINK);
     p.ghostA=Math.max(0,p.ghostA-dt*4); }
-  if(sprint&&p.moving&&Math.random()<0.5)part(p.x-Math.cos(p.a)*12,p.y-Math.sin(p.a)*12,-Math.cos(p.a)*30+rnd(-10,10),-Math.sin(p.a)*30+rnd(-10,10),0.25,PAL.gold,2);
-  if(COMBO.od&&p.moving&&Math.random()<0.7)part(p.x-Math.cos(p.a)*11,p.y-Math.sin(p.a)*11,-Math.cos(p.a)*45+rnd(-12,12),-Math.sin(p.a)*45+rnd(-12,12),0.3,PAL.gold,rnd(1.5,2.5));
+  if(sprint&&p.moving&&Math.random()<0.5)part(p.x-Math.cos(p.bodyA)*12,p.y-Math.sin(p.bodyA)*12,-Math.cos(p.bodyA)*30+rnd(-10,10),-Math.sin(p.bodyA)*30+rnd(-10,10),0.25,PAL.gold,2);
+  if(COMBO.od&&p.moving&&Math.random()<0.7)part(p.x-Math.cos(p.bodyA)*11,p.y-Math.sin(p.bodyA)*11,-Math.cos(p.bodyA)*45+rnd(-12,12),-Math.sin(p.bodyA)*45+rnd(-12,12),0.3,PAL.gold,rnd(1.5,2.5));
   trailRec(p);   /* v1.7: 残影位置历史 */
 }
 
@@ -342,7 +347,7 @@ function tryContact(e){
       e.ramCd=0.55;
       const sp2=Math.hypot(pl.vx,pl.vy);
       const nx2=pl.x-e.x,ny2=pl.y-e.y,nl=Math.hypot(nx2,ny2)||1;
-      const facing=Math.abs(angDiff(pl.a,Math.atan2(-ny2,-nx2)))<Math.PI/3;
+      const facing=Math.abs(angDiff(pl.bodyA,Math.atan2(-ny2,-nx2)))<Math.PI/3;   /* v1.8 W2: 车身角(原 pl.a 迁移遗漏致 NaN 永false) */
       if(sp2>120&&facing&&!pl.breach&&!e.flying){ enterBreach(e); }
       else if(sp2>40){
         const crit=Math.random()<0.6;

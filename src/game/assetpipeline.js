@@ -126,14 +126,14 @@ function drawPlayerAP(){
   const M=AP.M.tank, draw=M.draw, sc=draw/M.fw;
   const ayOff=(M.anchor[1]-M.fh/2)*sc;          /* 地面锚点对齐: 帧 80,~103 → 世界y即脚点 */
   const dy=pyp-LB/2*sc-ayOff;
-  if(p.ta===undefined)p.ta=p.a;
+  if(p.ta===undefined)p.ta=p.bodyA;
   /* shadow */
   ctx.save(); ctx.imageSmoothingEnabled=true; ctx.globalAlpha=0.94;
-  const sk=AP.frameOf(p.a);
+  const sk=AP.frameOf(p.bodyA);
   ctx.drawImage(AP.imgs.shadow, sk*M.fw,0,M.fw,M.fh, pxp-LB/2*sc, dy, LB*sc, LB*sc);
   ctx.restore();
   if(p.sprintG<0.95||COMBO.od)glow(pxp,pyp,26,COMBO.od?PAL.gold:PAL.blue,COMBO.od?0.16:0.11);
-  AP.drawLitTank(pxp,pyp,p.a,p.ta,{},dy);
+  AP.drawLitTank(pxp,pyp,p.bodyA,p.ta,{},dy);
   if(p.flash>0){ ctx.save(); ctx.globalAlpha=0.5*p.flash/0.25; ctx.globalCompositeOperation='lighter';
     ctx.fillStyle=PAL.white; ctx.fillRect(pxp-draw*0.42,pyp-draw*0.42,draw*0.84,draw*0.84); ctx.restore(); }
   if(p.shieldT>0||p.shieldGrace>0){
@@ -268,7 +268,7 @@ AP.setupScene=function(){
   AP.active=true; AP.fx.length=0; AP.lights.length=0;
   const CX=AP.sceneRect[0]+AP.sceneRect[2]/2, CY=AP.sceneRect[1]+AP.sceneRect[3]/2;
   window.G.tp(CX,CY);
-  player.vx=player.vy=0; player.a=-Math.PI/2; player.ta=player.a+0.5;
+  player.vx=player.vy=0; player.bodyA=-Math.PI/2; player.ta=player.bodyA+0.5;
   player.inv=0; player.flash=0; player.hp=player.maxHp=100; player.shieldT=0; player.shieldGrace=0; player.breach=null;
   AP.nextBoom=1.1; AP.boomT=3.4;
   cam.x=AP.sceneRect[0]; cam.y=AP.sceneRect[1]; cam.ox=cam.x; cam.oy=cam.y;
@@ -277,7 +277,7 @@ AP.setupScene=function(){
 AP.tick=function(dt){
   if(!AP.active)return;
   /* 炮塔缓慢随动 + 演示摆动 */
-  player.ta+=angDiff(player.ta,player.a)*Math.min(1,dt*1.6)+Math.sin(ST.t*0.7)*dt*0.22;
+  player.ta+=angDiff(player.ta,player.bodyA)*Math.min(1,dt*1.6)+Math.sin(ST.t*0.7)*dt*0.22;
   /* 周期性炸弹: 玩家左侧爆炸 → 验证法线光照 */
   AP.nextBoom-=dt;
   if(AP.nextBoom<=0){ AP.nextBoom=AP.boomT;
@@ -305,7 +305,7 @@ requestAnimationFrame(function(){
     anchor:AP.M?AP.M.tank.anchor:null,litMs:+AP.debug.litMs.toFixed(2),
     props:AP.M&&AP.M.scene?AP.M.scene.props.length:0}; },
   setTurret(a){ player.ta=a; },
-  setHull(a){ player.a=a; },
+  setHull(a){ player.bodyA=a; },
   boom(dx,dy){ AP.explode(player.x+(dx===undefined?-92:dx), player.y+(dy===undefined?46:dy), 22, true); },
   lightAt(x,y){ AP.lights.push({x,y,r:70,color:[0.4,0.8,1],i:2,ttl:2,t:0}); },
   };

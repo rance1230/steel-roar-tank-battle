@@ -18,7 +18,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   const setup = `() => { G.dbg.god = true; G.dbg.lab = true; enemies.length = 0; shots.length = 0; pickups.length = 0;
       parts.length = 0; floats.length = 0; COMBO.n = 0; COMBO.t = 0; planes.length=0; bombs.length=0;
       cfg.quota=1; ST.spawnedN=1; ST.bossSpawned=true; ST.bossWarn=-1;
-      terr.m.fill(0); G.tp(240, 135); player.a = 0; player.vx = 0; player.vy = 0; player.breach = null; }`;
+      terr.m.fill(0); G.tp(240, 135); player.bodyA = 0; player.ta = 0; player.vx = 0; player.vy = 0; player.breach = null; }`;
   await page.evaluate('(' + setup + ')()'); await sleep(200);
 
   // 1) DamageEvent 归因: 机枪击杀 = 命中+1 + 击破+1

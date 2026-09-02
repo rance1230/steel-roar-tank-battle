@@ -27,7 +27,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await sleep(1000);
   const m1 = await page.evaluate(() => {
     const sp = Math.hypot(player.vx, player.vy);
-    return {va: Math.atan2(player.vy, player.vx), ba: player.a, sp, max: player.speed, px: player.x, py: player.y};
+    return {va: Math.atan2(player.vy, player.vx), ba: player.bodyA, sp, max: player.speed, px: player.x, py: player.y};
   });
   const want = Math.atan2(0.42, 0.71);
   ok(Math.abs(m1.va - want) < 0.15, '速度向量=摇杆任意角度 (' + (m1.va * 57.3).toFixed(1) + '° vs ' + (want * 57.3).toFixed(1) + '°)');

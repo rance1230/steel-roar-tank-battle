@@ -60,10 +60,10 @@ function breachFire(e,stagger){
   const dmg=24*st.atk*1.35*hullCfg().breach;   /* 零距离炮击 ×1.35 ×机型Breach倍率 */
   HITSTOP=0.05;
   STATS.breachFires++;
-  const fx=p.x+Math.cos(p.a)*(p.r+10), fy=p.y+Math.sin(p.a)*(p.r+10);   /* 特效前移到接触点, 不糊玩家 */
+  const fx=p.x+Math.cos(p.bodyA)*(p.r+10), fy=p.y+Math.sin(p.bodyA)*(p.r+10);   /* 特效前移到接触点, 不糊玩家 */
   flashFx(fx,fy,26,true);
   burst(fx,fy,12,[PAL.gold,PAL.white,PAL.red],130,0.45);
-  kickTier(2,p.a);   /* v1.7: 零距炮击→中档; 若击杀由 onEnemyDead 补最大档 */
+  kickTier(2,p.bodyA);   /* v1.7: 零距炮击→中档; 若击杀由 onEnemyDead 补最大档 */
   SFX.cannon(fx,fy); SFX.bigboom(fx,fy);
   const ev=applyDamage(e,dmg,'breach');
   if(stagger||e.boss){                          /* Fortress: 不可击飞, 大幅硬直 */
@@ -73,7 +73,7 @@ function breachFire(e,stagger){
   }
   if(e.dead){ return; }   /* 殉爆连锁已由 onEnemyDead 的归因链处理, 不重复爆炸 */
   const kp=KNOCK[e.mass||'medium'];             /* 击飞 */
-  e.flying={vx:Math.cos(p.a)*kp.v,vy:Math.sin(p.a)*kp.v,t:kp.t};
+  e.flying={vx:Math.cos(p.bodyA)*kp.v,vy:Math.sin(p.bodyA)*kp.v,t:kp.t};
   e.stun=kp.t+0.3; e.jitter=0;
   floater(e.x,e.y-e.r-12,T('launchMsg'),PAL.red,9,0.5);
 }
