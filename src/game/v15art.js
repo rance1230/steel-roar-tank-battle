@@ -17,6 +17,56 @@ window.V15={ok:false,ready:false,enabled:true,imgs:{},M:null,queue:[]};
     V15.imgs[k]=im;
   }
 })();
+/* ---------- v1.8 W2: 分层机体素材 (hull@bodyA + turret@ta; 6 张 512 atlas, pivot=帧中心) ---------- */
+window.V18={ok:false,ready:false,imgs:{},meta:{}};
+(function(){
+  if(typeof V18L==='undefined')return;
+  let left=0;
+  for(const kind of ['hulls','turrets'])for(const key of Object.keys(V18L[kind]||{})){
+    const d=V18L[kind][key], im=new Image(); left++;
+    im.onload=im.onerror=()=>{ if(--left===0){V18.ok=true;V18.ready=true;} };
+    im.src=d.img;
+    V18.imgs[kind+'_'+key]=im;
+    V18.meta[kind+'_'+key]={angles:d.angles,scales:d.scales};
+  }
+})();
+V18.frameIndex=function(id,ang){
+  const m=V18.meta[id]; if(!m)return 0;
+  let best=0,bd=1e9;
+  for(let i=0;i<16;i++){
+    const a=m.angles[i], d=Math.abs(Math.atan2(Math.sin(ang-a),Math.cos(ang-a)));
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+};
+V18.paint=function(g,id,x,y,ang,w){   /* w=参考车宽; ×scale 保持 hull/turret 生成期源比例 */
+  const im=V18.imgs[id];
+  if(!im||!im.complete||im.naturalWidth===0)return false;
+  const m=V18.meta[id], idx=V18.frameIndex(id,ang), W=w*m.scales[idx];
+  g.drawImage(im,(idx%4)*128,(idx>>2)*128,128,128,x-W/2,y-W/2,W,W);
+  return true;
+};
+V18.playerLayers=function(g,x,y,bodyA,ta,w){
+  const hk=RUN.hull||'balanced';
+  return V18.paint(g,'hulls_'+hk,x,y,bodyA,w)&&V18.paint(g,'turrets_'+hk,x,y,ta,w);
+};
+/* v1.7 残影: v18 hull 帧 → 纯色剪影 (与 V15.ghostFrame 同技法) */
+V18.ghostFrame=function(id,idx,lv){
+  if(!V18._gh)V18._gh=new Map();
+  const key=id+':'+idx+':'+lv;
+  if(V18._gh.has(key))return V18._gh.get(key);
+  const im=V18.imgs[id];
+  if(!im||!im.complete||im.naturalWidth===0)return null;
+  const cv2=document.createElement('canvas'); cv2.width=128; cv2.height=128;
+  const g2=cv2.getContext('2d');
+  g2.imageSmoothingEnabled=false;
+  g2.drawImage(im,(idx%4)*128,(idx>>2)*128,128,128,0,0,128,128);
+  g2.globalCompositeOperation='source-in';
+  g2.fillStyle=GHOST_COL[lv]||GHOST_COL[0];
+  g2.fillRect(0,0,128,128);
+  V18._gh.set(key,cv2);
+  return cv2;
+};
 /* ---------- 规格与帧选择 ----------
    生成 sheet 的帧序不统一: 各单位顺/逆时针混用、步进不均、部分方向缺失
    (逐帧实测见 tools/assemble_v15_data.py FRAME_ANGLES), 故按 manifest
@@ -93,11 +143,15 @@ V15.flushHd=function(ox,oy){
     for(const q of V15.queue){
       if(!isFinite(q.x)||!isFinite(q.y))continue;
       const sp=q.spec, w=q.w||sp.w;
-      if(q.kind==='ghost'){   /* v1.7: 深色剪影帧, 无影无光, 关平滑保轮廓锐利 */
-        const f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
+      if(q.kind==='ghost'){   /* v1.7: 深色剪影帧, 无影无光, 关平滑保轮廓锐利; v1.8: 有 id 时用 v18 hull 帧 */
+        let f=null, wg=w;
+        if(q.id){
+          const m=V18.meta[q.id];
+          if(m){ const gi=V18.frameIndex(q.id,q.ang||0); f=V18.ghostFrame(q.id,gi,q.lv||0); wg=w*m.scales[gi]; }
+        } else f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
         uctx.save(); uctx.imageSmoothingEnabled=false;
         uctx.globalAlpha=q.alpha!==undefined?q.alpha:0.8;
-        if(f)uctx.drawImage(f,Math.round(q.x-w/2),Math.round(q.y-w/2),w,w);
+        if(f)uctx.drawImage(f,Math.round(q.x-wg/2),Math.round(q.y-wg/2),wg,wg);
         else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha);
         uctx.restore(); continue;
       }
@@ -112,9 +166,13 @@ V15.flushHd=function(ox,oy){
       else if(sp.glow){ v15Glow(q.x+Math.cos(q.ang||0)*w*0.28,q.y+Math.sin(q.ang||0)*w*0.28,
         7+Math.sin(ST.t*5)*1.6,sp.glow,0.13); }
       if(q.kind==='player'&&(q.od||q.sprint))v15Glow(q.x,q.y,24,q.od?PAL.gold:PAL.blue,q.od?0.16:0.11);
-      /* 16向帧: 就近方向, 不做旋转 */
-      v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
-      if(q.kind==='player')drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);   /* v1.8 W2: 独立炮塔(分层素材前兜底) */
+      /* 16向帧: 就近方向, 不做旋转; v1.8 W2: 玩家=分层 hull@bodyA + turret@ta, 失败回退整图+ctx炮塔帽 */
+      if(q.kind==='player'){
+        if(!V18.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w)){
+          v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
+          drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);
+        }
+      } else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
       if(q.flash>0){ uctx.save(); uctx.globalCompositeOperation='lighter';
         uctx.globalAlpha=Math.min(0.5,q.flash*1.7); uctx.fillStyle=PAL.white;
         uctx.beginPath(); uctx.ellipse(q.x,q.y,w*0.36,w*0.36,0,0,Math.PI*2); uctx.fill(); uctx.restore(); }
@@ -152,9 +210,10 @@ function v15Player(){
   /* v1.7: 残影彗尾 — 条数随冲刺位移增长(ghostLen/GHOST_GAP, 封顶6), 逐条变浅变淡, 先于本体入队 */
   const gn=ghostCount();
   if(player.ghostA>0.02&&gn>0&&player.trail&&player.trail.length>4){
+    const gid=V18.ready?('hulls_'+(RUN.hull||'balanced')):null;   /* v1.8: 残影用分层 hull 帧 */
     for(let i=0;i<gn;i++){
       const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
-      V15.queue.push({kind:'ghost',spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
+      V15.queue.push({kind:'ghost',id:gid,spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
         alpha:Math.max(0.35,0.85-i*0.1)*player.ghostA,lv:Math.min(5,i)});
     }
   }
@@ -217,7 +276,10 @@ window.drawHullPreviewAI=function(k,x,y,w,h){
       const cx=x+w/2, cy=y+h/2-4, dw=h-14;
       const pl=Math.sin(ST.t*1.1)*w*0.06;
       v15Glow(cx,cy,24,col,0.13);
-      v15Paint(uctx,sp,cx+pl,cy,-Math.PI/2,dw);
+      if(!V18.playerLayers(uctx,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw)){   /* v1.8: 分层预览 */
+        v15Paint(uctx,sp,cx+pl,cy,-Math.PI/2,dw);
+        drawTurretOverlay(uctx,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw/54,HULLS[k].vis);
+      }
       const rp=(ST.t*0.5)%1;
       uctx.strokeStyle=rgba(col,0.85*(1-rp)); uctx.lineWidth=1;
       uctx.beginPath(); uctx.arc(cx+pl,cy,7+rp*19,0,Math.PI*2); uctx.stroke();
@@ -259,6 +321,9 @@ function hookG15(){
     info(){return {ok:V15.ok,ready:V15.ready,enabled:V15.enabled,version:V15.M&&V15.M.version,
       sheets:Object.keys(V15.imgs).length,queued:V15.queue.length};},
     enable(v){V15.enabled=v!==false;return V15.enabled;},
+  };
+  G.v18={
+    info(){return {ok:V18.ok,ready:V18.ready,imgs:Object.keys(V18.imgs).length};},
   };
 }
 requestAnimationFrame(hookG15);
