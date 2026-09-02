@@ -202,10 +202,10 @@ function explodeAt(x,y,r,dmg,big,cause,chainDepth,kick){
   kickTier(kick===undefined?(big?3:1):kick,rnd(Math.PI*2));   /* v1.7: 震动按档位, 命中轻/击破重 */
   if(big)SFX.bigboom(x,y);else SFX.boom(x,y);
   chainDepth=chainDepth||0;
-  if(dmg>0&&chainDepth<=CHAIN_MAX){ const st=calcStats();   /* 连锁深度上限 */
+  if(dmg>0&&chainDepth<=CHAIN_MAX){   /* 连锁深度上限; dmg=raw, atk 由§3 管线统一乘 (effects 只管表现) */
     Grid.query(x,y,r+24,_gqBoom);
     for(const e of _gqBoom){ if(!e.dead&&dist2(x,y,e.x,e.y)<(r+e.r)*(r+e.r))
-      applyDamage(e,dmg*st.atk,chainDepth>=1?'chainExplosion':(cause||'explosion'),{chainDepth}); } }
+      applyDamage(e,dmg,chainDepth>=1?'chainExplosion':(cause||'explosion'),{chainDepth}); } }
 }
 
 

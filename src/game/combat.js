@@ -14,7 +14,7 @@ const SHIELD_GRACE=0.18;    /* v1.8 §4: 护盾收尾宽限, 硬不变量用 */
 const CAUSE_COMBO={
   machinegun:1, cannon:2, missile:2, reflect:2, perfectParry:0,
   ram:2, breach:3, knockback:0, collision:2,
-  explosion:0, chainExplosion:1, wingman:1, lightning:1, shot:0,
+  explosion:0, chainExplosion:1, wingman:1, lightning:1, shot:0, airstrike:0,
 };
 
 /* 战斗统计 (供验收/平衡QA) */
@@ -22,13 +22,22 @@ const STATS={dmg:{},kills:0,parryN:0,parryP:0,hitstopN:0,breachLocks:0,breachFir
   breachStaggers:0,knockHits:0,chainBoom:0,maxCombo:0};
 
 let DEVID=1;
-/* 统一伤害入口: 构造 DamageEvent 并归因 */
-function applyDamage(e,dmg,cause,opts){
+/* §3 DAMAGE_MATRIX: atk 乘算统一在管线执行(恰好一次), 调用方传 rawDamage。
+   true=PlayerAtk 类; false=ATK-independent 类(reflect=来袭×格挡倍率 /
+   敌方伤害走 damagePlayer 的 def×taken / 闪电惩罚与调试击杀 flat / 空袭 34 flat)。
+   UNUSED 遗留 cause(wingman/lightning/perfectParry) 不新增调用。 */
+const DMG_ATK={machinegun:1,cannon:1,missile:1,explosion:1,chainExplosion:1,
+  ram:1,breach:1,collision:1,airstrike:1,knockback:0,shot:0,reflect:0};
+/* 统一伤害入口: DamageEvent {cause, rawDamage, statPolicy} → resolve */
+function applyDamage(e,raw,cause,opts){
   opts=opts||{};
-  const ev={id:DEVID++,cause:cause||'shot',dmg,
+  const ev={id:DEVID++,cause:cause||'shot',rawDamage:raw,
+    statPolicy:DMG_ATK[cause||'shot']===1,
     parentId:opts.parentId||0,chainDepth:opts.chainDepth||0,
     comboEligible:opts.comboEligible!==false};
   if(e.dead)return ev;
+  const dmg=raw*(ev.statPolicy?calcStats().atk:1);   /* atk 恰好乘一次 */
+  ev.dmg=dmg;
   e.hp-=dmg; e.flash=0.1;
   STATS.dmg[ev.cause]=(STATS.dmg[ev.cause]||0)+dmg;
   if(ev.comboEligible&&CAUSE_COMBO[ev.cause])addCombo(CAUSE_COMBO[ev.cause]);
@@ -55,9 +64,9 @@ function enterBreach(e){
   floater(e.x,e.y-e.r-10,T('breachMsg'),PAL.gold,8,0.35);
 }
 function breachFire(e,stagger){
-  const p=player, st=calcStats();
+  const p=player;
   if(p.breach&&p.breach.e===e)p.breach=null;   /* 防御: 清掉锁定, 避免残pin拖拽玩家 */
-  const dmg=24*st.atk*1.35*hullCfg().breach;   /* 零距离炮击 ×1.35 ×机型Breach倍率 */
+  const dmg=24*1.35*hullCfg().breach;          /* raw; atk 由 §3 管线统一乘 (×1.35 ×机型Breach倍率) */
   HITSTOP=0.05;
   STATS.breachFires++;
   const fx=p.x+Math.cos(p.bodyA)*(p.r+10), fy=p.y+Math.sin(p.bodyA)*(p.r+10);   /* 特效前移到接触点, 不糊玩家 */

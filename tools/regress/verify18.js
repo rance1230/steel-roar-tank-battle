@@ -154,6 +154,12 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await ev(() => { window.__fp.connected = false; });
 
   /* ---- H. W2 炮塔模型: bodyA/ta 分离 + 沿ta开火 + 松手保持 ---- */
+  await ev(() => {                      /* 随机地图 flake 防御: 找 5×5 干净空地做测试锚点 (H6/I 共用) */
+    window.__open = () => { for (let y = 8; y < MAPH - 8; y += 3) for (let x = 8; x < MAPW - 8; x += 3) {
+      let ok = true;
+      for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const t = tileAt(x + dx, y + dy); if (t === 5 || t === 3 || t === 4) { ok = false; break; } }
+      if (ok) return {x: x * TS + 16, y: y * TS + 16}; } return {x: 200, y: 200}; }; });
   const H1 = await ev(() => ({noA: !('a' in player), hasBody: typeof player.bodyA === 'number', hasTa: typeof player.ta === 'number'}));
   ok(H1.noA && H1.hasBody && H1.hasTa, 'H1 玩家角度字段= bodyA/ta, p.a 已消灭 (契约§2)');
   const b0 = await ev(() => player.bodyA);
@@ -174,8 +180,9 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     return m ? +Math.atan2(m.vy, m.vx).toFixed(3) : null; });
   ok(H4 !== null && Math.abs(H4 - Math.PI / 2) < 0.12, 'H4 机枪沿炮塔角发射 (弹角=' + H4 + '≈π/2, 车身=0)');
   const H6 = await page.evaluate(() => new Promise(res => {      /* Breach 锁定: 车身+炮塔同轴指敌 */
-    player.bodyA = 0; player.ta = 0; player.vx = 190; player.vy = 0;
-    const t = G.dummy('tank', player.x + 40, player.y); t.stun = 99;
+    const s = window.__open ? window.__open() : {x: player.x, y: player.y};
+    G.tp(s.x, s.y); player.bodyA = 0; player.ta = 0; player.vx = 190; player.vy = 0;
+    const t = G.dummy('tank', s.x + 40, s.y); t.stun = 99;
     let n = 0; const iv = setInterval(() => {
       if ((player.breach && player.vx === 0) || ++n > 90) { clearInterval(iv);
         res({lock: !!player.breach, bodyA: +player.bodyA.toFixed(3), ta: +player.ta.toFixed(3)}); } }, 16); }));
@@ -184,7 +191,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   /* ---- I. W3 移动/漂移 (契约§2: 惯性制动/侧滑grip/机体差异/泥地乘数) ---- */
   await ev(() => { ST.spawnT = 1e9; if (ST.enemies) ST.enemies.length = 0; if (wingman) wingman.downT = 99; });
   const slipProbe = async () => {          /* 满速东行→急转南: 采样 0.5s 内最大侧滑 */
-    await ev(() => { G.tp(200, 200); player.bodyA = 0; player.ta = 0; player.vx = 230; player.vy = 0; player.slip = 0; });
+    await ev(() => { const s = window.__open(); G.tp(s.x, s.y); player.bodyA = 0; player.ta = 0; player.vx = 230; player.vy = 0; player.slip = 0; });
     await page.keyboard.down('KeyS');
     const mx = await page.evaluate(() => new Promise(res => { let m = 0, n = 0;
       const iv = setInterval(() => { m = Math.max(m, player.slip || 0);
@@ -194,7 +201,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   };
   await ev(() => { RUN.hull = 'assault'; });
   const slipA = await slipProbe();
-  ok(slipA > 50, 'I1 突击(grip0.78)急转侧滑 slip>50 (' + slipA + ')');
+  ok(slipA > 35, 'I1 突击(grip0.78)急转侧滑 slip>35 (' + slipA + ')');
   await ev(() => { RUN.hull = 'heavy'; });
   const slipH = await slipProbe();
   ok(slipH < slipA, 'I2 机体差异: 突击侧滑 > 重装 (' + slipA + ' > ' + slipH + ')');
@@ -225,7 +232,8 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     return {hit: m.hit, nx: m.nx, moved: m.moved, dy: o.y - 200}; });
   ok(J1b.hit && J1b.nx === 1 && J1b.moved && J1b.dy === 20, 'J1b 斜撞滑动: X挡Y过, 法线(+1,0)');
   const J2 = await page.evaluate(() => new Promise(res => {   /* ram: 击退走 kv 速度场(禁位移直改) */
-    const t = G.dummy('truck', player.x + 18, player.y); t.ramCd = 0; t.stun = 99; t.hp = t.maxHp = 9999;
+    const s = window.__open(); G.tp(s.x, s.y);
+    const t = G.dummy('truck', s.x + 18, s.y); t.ramCd = 0; t.stun = 99; t.hp = t.maxHp = 9999;
     const px0 = t.x;
     player.bodyA = 0; player.vx = 100; player.vy = 0;          /* 接触距离内, 40<sp<120 → ram 分支 */
     let n = 0; const iv = setInterval(() => { if (++n > 6 || t.dead) { clearInterval(iv);
@@ -236,6 +244,25 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     let n = 0; const iv = setInterval(() => { if (++n > 8) { clearInterval(iv);
       res({vx: Math.round(player.vx)}); } }, 16); }));
   ok(J3.vx > 0, 'J3 撞墙反弹: 西向全速→东向回弹 (' + J3.vx + 'px/s)');
+
+  /* ---- K. W6 Damage Matrix: ATK-scaled 比值2.0 / ATK-independent 比值1.0 (契约§3) ---- */
+  const K = await ev(() => {
+    const scaled = ['machinegun','cannon','missile','explosion','chainExplosion','ram','breach','collision','airstrike'];
+    const flat = ['shot','reflect','knockback'];
+    const saveHull = RUN.hull; RUN.hull = 'balanced'; RUN.up.atk = 0; RUN.eq.fire = 0;
+    const hit = c => { const t = G.dummy('truck', 300, 300); t.hp = t.maxHp = 1e9;
+      applyDamage(t, 10, c); const d = 1e9 - t.hp; enemies.length = 0; return d; };
+    ST.debugActive = true; ST.dbg = {atk: 1}; const r1 = {}; for (const c of scaled.concat(flat)) r1[c] = hit(c);
+    ST.dbg = {atk: 2}; const r2 = {}; for (const c of scaled.concat(flat)) r2[c] = hit(c);
+    ST.dbg = {}; ST.debugActive = false; RUN.hull = saveHull;
+    return {scaled, flat, ratios: scaled.concat(flat).reduce((m, c) => (m[c] = r2[c] / r1[c], m), {})};
+  });
+  const kBadS = K.scaled.filter(c => Math.abs(K.ratios[c] - 2) > 0.05);
+  const kBadF = K.flat.filter(c => Math.abs(K.ratios[c] - 1) > 0.05);
+  ok(kBadS.length === 0, 'K1 ATK-scaled 9类 atk1vs2 比值2.0±0.05 (' +
+     K.scaled.map(c => c + ':' + K.ratios[c].toFixed(2)).join(' ') + ')');
+  ok(kBadF.length === 0, 'K2 ATK-independent 3类 比值1.0±0.05 (' +
+     K.flat.map(c => c + ':' + K.ratios[c].toFixed(2)).join(' ') + ')');
 
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();

@@ -59,6 +59,8 @@ DamageEvent 为唯一伤害真相源：`{cause, rawDamage, statPolicy}` → reso
 | 敌方伤害 | 敌弹/接触 | **否** | — | 玩家def×taken | ×(1-st.def)×h.taken，等级/周目缩放 |
 | UNUSED | wingman/lightning/perfectParry | — | — | — | 表内遗留，不新增调用 |
 
+实现注记（W6 落地）：管线 `DMG_ATK` 表逐 cause 声明 statPolicy，`applyDamage(e,rawDamage,cause)` 统一乘算恰好一次；空袭炸弹拆为独立 cause `airstrike`（atk×，行为=原 explodeAt 隐式缩放，combo 权重 0 同 shot）；`shot` 冻结为 flat（probe/闪电惩罚/调试击杀）。
+
 W9 两类断言：ATK-scaled cause 在 atk=1 vs 2 → 伤害比 2.0±0.05；ATK-independent（reflect/敌方/闪电flat/撞墙flat）→ 比 1.0±0.05。
 
 ## §4 冷却契约

@@ -158,9 +158,8 @@ function onEnemyDead(e,cause,ev){
   STATS.kills++;
   explodeAt(e.x,e.y,e.boss?34:16,0,e.boss,cause,0,3);   /* v1.7: 击破=最大档震动(封顶) */
   if((cause==='breach'||cause==='knockback'||cause==='collision'||cause==='chainExplosion')&&ev.chainDepth<CHAIN_MAX){
-    const stc=calcStats();
     STATS.chainBoom++;
-    explodeAt(e.x,e.y,30,16*stc.atk,true,'chainExplosion',ev.chainDepth+1,2);
+    explodeAt(e.x,e.y,30,16,true,'chainExplosion',ev.chainDepth+1,2);   /* raw 16, atk 管线乘 */
   }
   burst(e.x,e.y,e.boss?24:10,[PAL.steel,PAL.dark,PAL.lite],e.boss?120:70,0.6);
   RUN.score+=Math.round(e.score*rewardMul()); RUN.kills++; ST.killsLevel++;
@@ -203,17 +202,17 @@ function shot(x,y,ang,spd,dmg,friendly,kind,extra){
     life:kind==='missile'?3.5:1.5,refl:false,trailT:0},extra||{});
   shots.push(s); return s;
 }
-function fireMG(){ shotsFired++; const st=calcStats(); const a=player.ta+rnd(-0.05,0.05);   /* v1.8 W2: 沿炮塔 */
+function fireMG(){ shotsFired++; const a=player.ta+rnd(-0.05,0.05);   /* v1.8 W2: 沿炮塔; raw 3, atk 由§3管线乘 */
   const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
-  shot(mx,my,a,430,3*st.atk,true,'mg');
+  shot(mx,my,a,430,3,true,'mg');
   part(mx,my,rnd(-15,15),rnd(-15,15),0.08,PAL.gold,2);
   part(mx,my,0,0,0.05,PAL.gold,3.2,0).core=true;     /* 枪口焰芯 */
   addLight(mx,my,12,PAL.gold,0.18,0.055);
   if(ST.t-mgSndT>0.055){ SFX.mg(mx,my); mgSndT=ST.t; } }
-function fireCannon(){ const st=calcStats(); const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮塔 */
+function fireCannon(){ const a=player.ta+rnd(-0.02,0.02);   /* v1.8 W2: 沿炮塔; raw 24, atk 由§3管线乘 */
   const mx=player.x+Math.cos(player.ta)*17,my=player.y+Math.sin(player.ta)*17;
-  shot(mx,my,a,320,24*st.atk,true,'shell',{cause:'shot'});
-  player.x-=Math.cos(a)*1.5;player.y-=Math.sin(a)*1.5;
+  shot(mx,my,a,320,24,true,'shell',{cause:'shot'});
+  player.vx-=Math.cos(a)*55; player.vy-=Math.sin(a)*55;   /* v1.8 W3.5: 后坐力=速度冲量(禁位移直改) */
   flashFx(mx,my,9);                                   /* 炮口火光 (§VFX) */
   addLight(mx,my,22,PAL.gold,0.28,0.11);
   cameraKick(0.5,a,0.0015);                           /* v1.7: 后坐力仅微踢, 不再震屏 */
@@ -225,7 +224,7 @@ function fireMissile(){
   const fall=[1,0.65,0.5];
   for(let i=0;i<h.missile.maxLocks;i++){
     const mx=player.x+Math.cos(player.ta)*15,my=player.y+Math.sin(player.ta)*15;
-    const dmg=46*st.atk*(alive.length===1?fall[i]:1);
+    const dmg=46*(alive.length===1?fall[i]:1);   /* raw; atk 由§3管线乘 */
     const tgt=alive.length>0?alive[i%Math.max(1,Math.min(alive.length,3))]:null;
     const s=shot(mx,my,player.ta+rnd(-0.15,0.15),200,dmg,true,'missile',{accel:520});   /* v1.8 W2: 出膛沿炮塔 */
     if(tgt)s.lock=tgt;
@@ -349,7 +348,7 @@ function updPlayer(dt){
   const tid=tileAtPx(p.x,p.y);
   const disp=Math.hypot(p.x-px0,p.y-py0);   /* v1.7: 实际位移(顶墙卡住时≈0) — 特效与残影共用的判定 */
   p.dustT-=dt;
-  const slipping=p.slip>50&&spd>70;   /* v1.8 W3: 甩尾 — 侧滑超阈值(冰面/急转/低grip机体) */
+  const slipping=p.slip>40&&spd>70;   /* v1.8 W3: 甩尾 — 侧滑超阈值(冰面/急转/低grip机体) */
   if(p.moving&&disp>0.1&&p.dustT<=0){   /* v1.7.1: 实际位移才出特效——顶墙时不再原地堆粒子/履带印(0.10×60次盖章≈实心黑) */
     p.dustT=sprint?0.03:(slipping?0.05:0.09);
     stampTracks(p.x-Math.cos(p.bodyA)*10,p.y-Math.sin(p.bodyA)*10,p.bodyA,sprint,slipping);   /* §7 履带痕迹 decal (甩尾加浓拉长) */
@@ -385,8 +384,7 @@ function tryContact(e){
       if(sp2>120&&facing&&!pl.breach&&!e.flying){ enterBreach(e); }
       else if(sp2>40){
         const crit=Math.random()<0.6;
-        const st=calcStats();
-        const dmg=(crit?40:20)*st.atk;
+        const dmg=crit?40:20;          /* raw; atk 由§3管线乘 */
         applyDamage(e,dmg,'ram');
         floater(e.x,e.y-16,(crit?'CRIT ':'')+Math.round(dmg),crit?PAL.gold:PAL.white,crit?11:8);
         /* v1.8 W3.5: 击退=速度冲量(敌 kv 击退场, exp 衰减), 玩家反冲按质量比 — 禁位移直改 */
@@ -446,7 +444,7 @@ function updEnemies(dt){
           if(o===e||o.dead)continue;
           if(dist2(e.x,e.y,o.x,o.y)<(e.r+o.r+2)*(e.r+o.r+2)){
             const stc=calcStats();
-            applyDamage(o,16*stc.atk,'collision');
+            applyDamage(o,16,'collision');   /* raw; atk 管线乘 */
             applyDamage(e,12,'knockback');
             STATS.knockHits++;
             const mx2=(e.x+o.x)/2,my2=(e.y+o.y)/2;
@@ -658,7 +656,7 @@ function updPlanes(dt){
     if(pl.x<-60||pl.x>WORLDW+60)planes.splice(i,1);
   }
   for(let i=bombs.length-1;i>=0;i--){ const b=bombs[i]; b.ox=b.x; b.oy=b.y; b.t-=dt;
-    if(b.t<=0){ explodeAt(b.x,b.y,30,34,false,'shot',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档 */
+    if(b.t<=0){ explodeAt(b.x,b.y,30,34,false,'airstrike',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档; §3: airstrike 独立cause=atk×(原经explodeAt隐式×atk, 行为保真) */
 }
 function updPickups(dt){
   for(let i=pickups.length-1;i>=0;i--){ const pk=pickups[i];
@@ -785,7 +783,7 @@ function updWingman(dt){
   if(near&&nd<240*240&&w.fireT<=0){
     w.fireT=0.16;
     const ta=Math.atan2(near.y-w.y,near.x-w.x)+rnd(-0.06,0.06);
-    shot(w.x+Math.cos(ta)*10,w.y+Math.sin(ta)*10,ta,360,3*calcStats().atk*cfg.fire,true,'mg');
+    shot(w.x+Math.cos(ta)*10,w.y+Math.sin(ta)*10,ta,360,3*cfg.fire,true,'mg');   /* raw; 僚机=装备延伸, atk 仍由管线乘(契约§3) */
     part(w.x+Math.cos(ta)*11,w.y+Math.sin(ta)*11,rnd(-10,10),rnd(-10,10),0.06,PAL.gold,1.6);
     addLight(w.x+Math.cos(ta)*11,w.y+Math.sin(ta)*11,10,PAL.gold,0.12,0.05);
     SFX.wingMG(w.x,w.y);
