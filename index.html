@@ -940,7 +940,7 @@ function refundAll(){RUN.pts+=RUN.up.hp+RUN.up.spd+RUN.up.atk+RUN.up.def+(RUN.up
 const MAPW=60,MAPH=34, WORLDW=MAPW*TS, WORLDH=MAPH*TS;
 function tileAt(tx,ty){ if(tx<0||ty<0||tx>=MAPW||ty>=MAPH)return 5; return terr.m[ty*MAPW+tx]; }
 function tileAtPx(x,y){ return tileAt(Math.floor(x/TS),Math.floor(y/TS)); }
-function slowMul(id){ return id===3?0.5 : id===4?0.45 : 1; }
+function slowMul(id){ return id===3?0.5 : id===4?0.55 : 1; }   /* v1.8 W3: 泥地 0.45→0.55 (契约§2) */
 function genMap(){
   const m=new Uint8Array(MAPW*MAPH);
   const base=(cfg.ground==='dry'||cfg.ground==='waste')?1:0;
@@ -1000,12 +1000,12 @@ function stampScorch(x,y,r){
     dctx.fillStyle='rgba(96,92,88,0.28)'; dctx.fillRect(x+Math.cos(a)*d,y+Math.sin(a)*d,1,1); }
   dctx.globalAlpha=1;
 }
-function stampTracks(x,y,ang,heavy){
-  const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=heavy?5:4;
+function stampTracks(x,y,ang,heavy,skid){
+  const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=skid?6.5:(heavy?5:4),W=skid?3:(heavy?2.4:2);
   dctx.save(); dctx.translate(x,y); dctx.rotate(ang);
-  dctx.globalAlpha=heavy?0.10:0.09; dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档, 亮冰面不突兀 */
-  dctx.fillRect(-L/2,oy*gap-(heavy?1.2:1),L,heavy?2.4:2);   /* 沿行进方向的履带压痕短划 */
-  dctx.fillRect(-L/2,-oy*gap-(heavy?1.2:1),L,heavy?2.4:2);
+  dctx.globalAlpha=skid?0.16:(heavy?0.10:0.09); dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档; v1.8 W3: 甩尾印加浓拉长 */
+  dctx.fillRect(-L/2,oy*gap-W/2,L,W);   /* 沿行进方向的履带压痕短划 */
+  dctx.fillRect(-L/2,-oy*gap-W/2,L,W);
   dctx.restore(); dctx.globalAlpha=1;
 }
 
@@ -1593,32 +1593,45 @@ function updPlayer(dt){
       }
     }
   }
-  /* ---- vNext PHASE 1: 360° 速度向量移动 ----
-     输入向量(键盘叠加或手柄模拟轴) → 目标速度, 加速/摩擦推进,
-     车体朝向以10rad/s平滑跟随速度方向。 */
+  /* ---- v1.8 W3: 移动/漂移 5参数模型 (契约§2) ----
+     左杆=desired velocity → 世界系 accel 逼近; bodyA 以 turnRate 逼近速度方向;
+     速度投影车体系 forward/lateral, lateral 以 lateralGrip 衰减 → 车身跟不上即侧滑甩尾;
+     制动按速度插值(松键不急停, 满速松0.3s仍>30%速度);
+     地形: 冰 grip×0.3 / 河 grip×0.6 / 熔岩 grip×1(仅减速) / 泥 speed×0.55。 */
   let ix=(IN.right()?1:0)-(IN.left()?1:0), iy=(IN.down()?1:0)-(IN.up()?1:0);
   let im=Math.hypot(ix,iy);
   const am=Math.hypot(PAD.ax,PAD.ay);
   if(am>0.01){ ix=PAD.ax; iy=PAD.ay; im=Math.min(1,am); if(am>1){ix/=am;iy/=am;} }
   else if(im>0){ ix/=im; iy/=im; im=1; }
+  const mv=hullCfg().move;
   const tid0=tileAtPx(p.x,p.y);
   const mul=slowMul(tid0);
+  const ice=tid0===3&&RUN.lvl===4, river=tid0===3&&!ice&&RUN.lvl!==6;
+  const gripMul=ice?0.3:river?0.6:1;
   let sprint=false;
   if(IN.sprint()&&!p.sprintLock&&p.sprintG>0){ sprint=true; p.sprintG-=dt/2.6; if(p.sprintG<=0){p.sprintG=0;p.sprintLock=true;} }
   else { p.sprintG=Math.min(1,p.sprintG+dt/3); if(p.sprintLock&&p.sprintG>0.45)p.sprintLock=false; }
-  const maxSpd=p.speed*mul*(sprint?1.9*hullCfg().move.sprint:1)*(COMBO.od?1.1:1);
-  const ACCEL=maxSpd/0.16*hullCfg().move.accel, FRICT=maxSpd/0.2;
+  const maxSpd=p.speed*mul*(sprint?1.9*mv.sprint:1)*(COMBO.od?1.1:1);
+  const spd0=Math.hypot(p.vx,p.vy);
+  const ACCEL=maxSpd/0.16*mv.accel;
+  const FRICT=maxSpd/0.55*mv.brake*(0.3+0.7*Math.min(1,spd0/maxSpd));   /* 低速尾段更缓, 不硬锁零 */
   const tvx=ix*maxSpd, tvy=iy*maxSpd;
   const dv=(im>0.01?ACCEL:FRICT)*dt;
   p.vx+=clamp(tvx-p.vx,-dv,dv);
   p.vy+=clamp(tvy-p.vy,-dv,dv);
+  /* 车体系分解: 侧向分量按 grip 指数衰减 (grip低→侧滑持续→甩尾) */
+  const ca=Math.cos(p.bodyA), sa=Math.sin(p.bodyA);
+  let fV=p.vx*ca+p.vy*sa, lV=-p.vx*sa+p.vy*ca;
+  lV*=Math.exp(-mv.lateralGrip*gripMul*7*dt);
+  p.vx=fV*ca-lV*sa; p.vy=fV*sa+lV*ca;
+  p.slip=Math.abs(lV);
   const spd=Math.hypot(p.vx,p.vy);
   p.moving=spd>15;
   const px0=p.x, py0=p.y;   /* v1.7: 彗尾按实际位移增长(顶墙卡住时位移≈0, 尾巴收缩) */
   moveCirc(p,p.vx*dt,p.vy*dt,p.r);
   if(spd>1)p.dist+=spd*dt;
-  if(p.moving){ const mA=Math.atan2(p.vy,p.vx);   /* v1.8 W2: 车体跟随速度方向(局部更名防与炮塔ta混淆) */
-    p.bodyA+=clamp(angDiff(p.bodyA,mA),-10*dt,10*dt); }
+  if(p.moving){ const mA=Math.atan2(p.vy,p.vx);
+    p.bodyA+=clamp(angDiff(p.bodyA,mA),-mv.turnRate*dt,mv.turnRate*dt); }
   /* v1.8 W2: 炮塔 — 有瞄准输入按 turret.rate 平滑跟随, 松手永久保持最后方向(契约§2) */
   { const ram=Math.hypot(PAD.rax,PAD.ray);
     if(ram>0.18){ const want=Math.atan2(PAD.ray,PAD.rax), tr=hullCfg().turret.rate*dt;
@@ -1644,10 +1657,19 @@ function updPlayer(dt){
   const tid=tileAtPx(p.x,p.y);
   const disp=Math.hypot(p.x-px0,p.y-py0);   /* v1.7: 实际位移(顶墙卡住时≈0) — 特效与残影共用的判定 */
   p.dustT-=dt;
+  const slipping=p.slip>50&&spd>70;   /* v1.8 W3: 甩尾 — 侧滑超阈值(冰面/急转/低grip机体) */
   if(p.moving&&disp>0.1&&p.dustT<=0){   /* v1.7.1: 实际位移才出特效——顶墙时不再原地堆粒子/履带印(0.10×60次盖章≈实心黑) */
-    p.dustT=sprint?0.03:0.09;
-    stampTracks(p.x-Math.cos(p.bodyA)*10,p.y-Math.sin(p.bodyA)*10,p.bodyA,sprint);   /* §7 履带痕迹 decal */
-    terrainMoveFx(p.x,p.y,p.bodyA,tid,sprint,false);   /* v1.6: 主题行进特效(扬尘/水花/雪沫) */
+    p.dustT=sprint?0.03:(slipping?0.05:0.09);
+    stampTracks(p.x-Math.cos(p.bodyA)*10,p.y-Math.sin(p.bodyA)*10,p.bodyA,sprint,slipping);   /* §7 履带痕迹 decal (甩尾加浓拉长) */
+    terrainMoveFx(p.x,p.y,p.bodyA,tid,sprint,slipping);   /* v1.6: 主题行进特效(扬尘/水花/雪沫; 甩尾加量) */
+    if(slipping){   /* v1.8 W3: 侧向扬尘/溅水 — 沿车体侧滑方向喷出 */
+      const fx=themeCfg().fx, sd=lV>=0?1:-1;
+      const sx2=-Math.sin(p.bodyA)*sd, sy2=Math.cos(p.bodyA)*sd;
+      const wc=tid===3?(fx.water||'#9bdcff'):(fx.dust||PAL.sand);
+      for(let i=0;i<2;i++)part(p.x+sx2*10+rnd(-3,3),p.y+sy2*10+rnd(-3,3),
+        sx2*rnd(28,62)+rnd(-8,8),sy2*rnd(28,62)+rnd(-8,8)-(tid===3?12:0),
+        rnd(0.25,0.45),wc,rnd(1.5,2.8),tid===3?140:0);
+    }
   }
   /* v1.7: 残影彗尾 — 尾长随冲刺实际位移增长(每26px一条, 封顶6条; 卡住位移≈0即收缩), 松开淡出 */
   if(sprint&&disp>0.1){ p.ghostLen=Math.min(GHOST_TAILMAX,(p.ghostLen||0)+disp);

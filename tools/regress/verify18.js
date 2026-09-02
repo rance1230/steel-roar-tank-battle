@@ -181,6 +181,40 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
         res({lock: !!player.breach, bodyA: +player.bodyA.toFixed(3), ta: +player.ta.toFixed(3)}); } }, 16); }));
   ok(H6.lock && Math.abs(H6.bodyA - 0) < 0.05 && Math.abs(H6.ta - H6.bodyA) < 0.01, 'H6 Breach锁定→车身/炮塔同轴指敌 (bodyA=' + H6.bodyA + ' ta=' + H6.ta + ')');
 
+  /* ---- I. W3 移动/漂移 (契约§2: 惯性制动/侧滑grip/机体差异/泥地乘数) ---- */
+  await ev(() => { ST.spawnT = 1e9; if (ST.enemies) ST.enemies.length = 0; if (wingman) wingman.downT = 99; });
+  const slipProbe = async () => {          /* 满速东行→急转南: 采样 0.5s 内最大侧滑 */
+    await ev(() => { G.tp(200, 200); player.bodyA = 0; player.ta = 0; player.vx = 230; player.vy = 0; player.slip = 0; });
+    await page.keyboard.down('KeyS');
+    const mx = await page.evaluate(() => new Promise(res => { let m = 0, n = 0;
+      const iv = setInterval(() => { m = Math.max(m, player.slip || 0);
+        if (++n > 30) { clearInterval(iv); res(Math.round(m)); } }, 16); }));
+    await page.keyboard.up('KeyS');
+    return mx;
+  };
+  await ev(() => { RUN.hull = 'assault'; });
+  const slipA = await slipProbe();
+  ok(slipA > 50, 'I1 突击(grip0.78)急转侧滑 slip>50 (' + slipA + ')');
+  await ev(() => { RUN.hull = 'heavy'; });
+  const slipH = await slipProbe();
+  ok(slipH < slipA, 'I2 机体差异: 突击侧滑 > 重装 (' + slipA + ' > ' + slipH + ')');
+  await ev(() => { RUN.hull = 'balanced'; });
+  const mud = await page.evaluate(() => {              /* 跨关找 tile4 泥地格 (L1 沙漠无泥地) */
+    for (let lv = 0; lv < LEVELS.length; lv++) { RUN.lvl = lv; startLevel();
+      ST.state = 'play'; ST.introT = 0; ST.spawnT = 1e9;
+      for (let i = 0; i < terr.m.length; i++) if (terr.m[i] === 4)
+        return {x: (i % MAPW) * TS + 16, y: ((i / MAPW) | 0) * TS + 16, lv}; }
+    return null; });
+  if (mud) {
+    const sm = await page.evaluate(mm => new Promise(res => {   /* 页内原子: tp→按W, 50ms 采样速度比 (格小, 0.7s末已冲出泥地) */
+      G.tp(mm.x, mm.y); player.vx = 0; player.vy = 0;
+      keys.add('KeyW'); const rs = [];
+      const iv = setInterval(() => rs.push(Math.hypot(player.vx, player.vy) / player.speed), 50);
+      setTimeout(() => { keys.delete('KeyW'); clearInterval(iv);
+        res(Math.min(...rs)); }, 700); }), mud);
+    ok(sm < 0.68, 'I3 泥地减速≈0.55× (L' + (mud.lv + 1) + ', 采样最小 ' + (sm * 100).toFixed(0) + '%)');
+  } else ok(false, 'I3 泥地: 全关卡无 tile4');
+
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
   log(fails === 0 && errors.length === 0 ? '=== V18 (G0-5+W0) ALL PASS ===' : '=== ' + fails + ' FAILS ===');

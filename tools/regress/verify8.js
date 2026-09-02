@@ -46,7 +46,11 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await sleep(300);
   const s0 = await page.evaluate(() => Math.hypot(player.vx, player.vy));
   ok(s01 < s06 * 0.75, '起步有加速过程 (' + s01.toFixed(0) + ' → ' + s06.toFixed(0) + ')');
-  ok(s0 < 15, '松手摩擦刹停 (' + s0.toFixed(1) + ')');
+  /* v1.8 W3 SUPERSEDED: 旧=松手<15px/s急停; 新契约§2=惯性制动(满速松0.3s仍>30%, 1.2s内停) */
+  ok(s0 > s06 * 0.3, '松手0.3s惯性滑行>30% (SUPERSEDED急停) (' + (s0 / s06 * 100).toFixed(0) + '%)');
+  await sleep(900);
+  const s0b = await page.evaluate(() => Math.hypot(player.vx, player.vy));
+  ok(s0b < 15, '松手1.2s内刹停 (' + s0b.toFixed(1) + ')');
 
   // --- 3) 键盘对角线 45° ---
   await page.evaluate(() => { G.tp(300, 300); player.vx = 0; player.vy = 0; });

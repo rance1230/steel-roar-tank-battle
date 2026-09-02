@@ -18,12 +18,12 @@ function stampScorch(x,y,r){
     dctx.fillStyle='rgba(96,92,88,0.28)'; dctx.fillRect(x+Math.cos(a)*d,y+Math.sin(a)*d,1,1); }
   dctx.globalAlpha=1;
 }
-function stampTracks(x,y,ang,heavy){
-  const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=heavy?5:4;
+function stampTracks(x,y,ang,heavy,skid){
+  const c=Math.cos(ang),s=Math.sin(ang),ox=-s,oy=c,gap=heavy?4.5:3.5,L=skid?6.5:(heavy?5:4),W=skid?3:(heavy?2.4:2);
   dctx.save(); dctx.translate(x,y); dctx.rotate(ang);
-  dctx.globalAlpha=heavy?0.10:0.09; dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档, 亮冰面不突兀 */
-  dctx.fillRect(-L/2,oy*gap-(heavy?1.2:1),L,heavy?2.4:2);   /* 沿行进方向的履带压痕短划 */
-  dctx.fillRect(-L/2,-oy*gap-(heavy?1.2:1),L,heavy?2.4:2);
+  dctx.globalAlpha=skid?0.16:(heavy?0.10:0.09); dctx.fillStyle='#020407';   /* v1.7.1: 冲刺印降一档; v1.8 W3: 甩尾印加浓拉长 */
+  dctx.fillRect(-L/2,oy*gap-W/2,L,W);   /* 沿行进方向的履带压痕短划 */
+  dctx.fillRect(-L/2,-oy*gap-W/2,L,W);
   dctx.restore(); dctx.globalAlpha=1;
 }
 

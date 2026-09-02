@@ -4,7 +4,7 @@
 const MAPW=60,MAPH=34, WORLDW=MAPW*TS, WORLDH=MAPH*TS;
 function tileAt(tx,ty){ if(tx<0||ty<0||tx>=MAPW||ty>=MAPH)return 5; return terr.m[ty*MAPW+tx]; }
 function tileAtPx(x,y){ return tileAt(Math.floor(x/TS),Math.floor(y/TS)); }
-function slowMul(id){ return id===3?0.5 : id===4?0.45 : 1; }
+function slowMul(id){ return id===3?0.5 : id===4?0.55 : 1; }   /* v1.8 W3: 泥地 0.45→0.55 (契约§2) */
 function genMap(){
   const m=new Uint8Array(MAPW*MAPH);
   const base=(cfg.ground==='dry'||cfg.ground==='waste')?1:0;
