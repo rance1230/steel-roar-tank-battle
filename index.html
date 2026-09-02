@@ -42,17 +42,26 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   border:2px solid rgba(255,255,255,0.32);
   -webkit-backdrop-filter:blur(3px) saturate(1.15);backdrop-filter:blur(3px) saturate(1.15);
   box-shadow:inset 0 0 0 1px rgba(34,192,255,0.20),0 3px 12px rgba(0,0,0,0.22)}
-#joy .jstick{position:absolute;left:50%;top:50%;width:38%;height:38%;margin:-19% 0 0 -19%;border-radius:50%;
+#joy .jstick,#rjoy .jstick{position:absolute;left:50%;top:50%;width:38%;height:38%;margin:-19% 0 0 -19%;border-radius:50%;
   background:radial-gradient(circle at 50% 38%,rgba(243,247,255,0.16),rgba(22,34,49,0.24) 72%);
   border:1.5px solid rgba(255,255,255,0.42);
   box-shadow:inset 0 2px 5px rgba(255,255,255,0.14),0 3px 9px rgba(0,0,0,0.28);
   transition:transform 0.09s ease-out}
-#joy.on .jstick{background:radial-gradient(circle at 50% 38%,rgba(246,185,78,0.26),rgba(22,34,49,0.24) 72%);
+#joy.on .jstick,#rjoy.on .jstick{background:radial-gradient(circle at 50% 38%,rgba(246,185,78,0.26),rgba(22,34,49,0.24) 72%);
   border-color:rgba(246,185,78,0.55)}
 .jd{position:absolute;color:rgba(243,247,255,0.52);font-size:clamp(9px,2vmin,12px);pointer-events:none;transition:color 0.1s;text-shadow:0 0 4px rgba(2,4,7,0.8)}
 .jt{top:5%;left:50%;transform:translateX(-50%)}.jb{bottom:5%;left:50%;transform:translateX(-50%)}
 .jl{left:6%;top:50%;transform:translateY(-50%)}.jr{right:6%;top:50%;transform:translateY(-50%)}
-#joy.jU .jt,#joy.jD .jb,#joy.jL .jl,#joy.jR .jr{color:#f6b94e;text-shadow:0 0 6px rgba(246,185,78,0.6)}
+#joy.jU .jt,#joy.jD .jb,#joy.jL .jl,#joy.jR .jr,#rjoy.jU .jt,#rjoy.jD .jb,#rjoy.jL .jl,#rjoy.jR .jr{color:#f6b94e;text-shadow:0 0 6px rgba(246,185,78,0.6)}
+/* v1.8 W1: 右摇杆(瞄准) — 金色环区别于左移动杆, 置于右簇按钮栈上方空带 */
+#rjoy{position:absolute;right:calc(var(--safe-right) + var(--touch-l) + 20px);
+  bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 44px);
+  width:clamp(88px,20vmin,132px);height:clamp(88px,20vmin,132px);
+  pointer-events:auto;touch-action:none;border-radius:50%;
+  background:radial-gradient(circle at 50% 42%,rgba(246,185,78,0.03),rgba(5,8,13,0.04) 58%,rgba(5,8,13,0.10));
+  border:2px solid rgba(246,185,78,0.38);
+  -webkit-backdrop-filter:blur(3px) saturate(1.15);backdrop-filter:blur(3px) saturate(1.15);
+  box-shadow:inset 0 0 0 1px rgba(246,185,78,0.22),0 3px 12px rgba(0,0,0,0.22)}
 #toast{position:fixed;top:8%;left:50%;transform:translateX(-50%);z-index:20;
   background:rgba(10,17,28,0.52);-webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
   color:#f6b94e;border:1px solid rgba(246,185,78,0.55);border-radius:999px;padding:6px 16px;font-size:14px;
@@ -60,6 +69,8 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 @media (orientation:portrait){
   #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(58px,15vmin,72px)}
   #joy{left:clamp(calc(68px + var(--safe-left)),46%,calc(94px + var(--safe-left)));bottom:max(16px,calc(var(--safe-bottom) + 14px))}
+  #rjoy{right:calc(var(--safe-right) + var(--touch-l) + 12px);bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 40px);
+    width:clamp(76px,18vmin,104px);height:clamp(76px,18vmin,104px)}
 }
 </style>
 </head>
@@ -470,11 +481,11 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 function anyHold(c){ return keys.has(c)||VKEYS.has(c); }
-const IN={
-  up:()=>anyHold('KeyW')||anyHold('ArrowUp')||PAD.hold.up,
-  down:()=>anyHold('KeyS')||anyHold('ArrowDown')||PAD.hold.down,
-  left:()=>anyHold('KeyA')||anyHold('ArrowLeft')||PAD.hold.left,
-  right:()=>anyHold('KeyD')||anyHold('ArrowRight')||PAD.hold.right,
+const IN={   /* v1.8 契约§1: 方向键由移动改为瞄准(8向数字量→pollPad 合入 PAD.rax/ray), 移动=WASD/左摇杆 */
+  up:()=>anyHold('KeyW')||PAD.hold.up,
+  down:()=>anyHold('KeyS')||PAD.hold.down,
+  left:()=>anyHold('KeyA')||PAD.hold.left,
+  right:()=>anyHold('KeyD')||PAD.hold.right,
   mg:()=>anyHold('KeyJ')||PAD.hold.mg,
   cannon:()=>anyHold('KeyK')||PAD.hold.cannon,
   msl:()=>anyHold('KeyL')||PAD.hold.msl,
@@ -482,7 +493,7 @@ const IN={
   sprint:()=>anyHold('ShiftLeft')||anyHold('ShiftRight')||PAD.hold.sprint,
 };
 /* ---------- 手柄 (Gamepad API: 蓝牙/有线统一) ---------- */
-const PAD={hold:{},just:{},prev:{},gp:null,seen:false,ax:0,ay:0};
+const PAD={hold:{},just:{},prev:{},gp:null,seen:false,ax:0,ay:0,rax:0,ray:0};   /* rax/ray: 右摇杆瞄准轴(v1.8) */
 /* 扳机别名: 未自定义该动作时,扳机键同步生效(适配盖世小鸡X2S等带ZL/ZR的手柄) */
 const PAD_ALIAS={mg:[7],shield:[6]};
 const PAD_BTN_NAMES=['A','B','X','Y','LB','RB','LT','RT','SEL','STA','L3','R3','↑','↓','←','→'];
@@ -512,6 +523,8 @@ function pollPad(){
     const hx=gp.axes.length>10?(gp.axes[9]||0):0, hy=gp.axes.length>10?(gp.axes[10]||0):0, HDZ=0.5;
     const am=Math.hypot(ax,ay);   /* vNext: 模拟轴原生360°输入(死区0.18) */
     PAD.ax=am>0.18?ax:0; PAD.ay=am>0.18?ay:0;
+    const rax0=gp.axes[2]||0, ray0=gp.axes[3]||0, rmag=Math.hypot(rax0,ray0);   /* v1.8 W1: 右摇杆→瞄准 */
+    PAD.rax=rmag>0.18?rax0:0; PAD.ray=rmag>0.18?ray0:0;
     if(ax<-DZ||hx<-HDZ||b(14))h.left=true; if(ax>DZ||hx>HDZ||b(15))h.right=true;
     if(ay<-DZ||hy<-HDZ||b(12))h.up=true;   if(ay>DZ||hy>HDZ||b(13))h.down=true;
     for(const a in SET.pad){ const bi=SET.pad[a];
@@ -542,6 +555,13 @@ function pollPad(){
   }
   if(!gp){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}
   else if(Math.abs(VJ.ax)+Math.abs(VJ.ay)>0.02){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}   /* 触屏摇杆优先于闲置手柄轴 */
+  /* v1.8 W1: 瞄准轴合并 — 手柄右杆 > 触屏右杆 > 键盘方向键(8向归一) */
+  if(Math.abs(VR.ax)+Math.abs(VR.ay)>0.02){PAD.rax=VR.ax;PAD.ray=VR.ay;}
+  else if(Math.abs(PAD.rax)+Math.abs(PAD.ray)<=0.02){
+    const kx=(anyHold('ArrowRight')?1:0)-(anyHold('ArrowLeft')?1:0),
+          ky=(anyHold('ArrowDown')?1:0)-(anyHold('ArrowUp')?1:0);
+    if(kx||ky){const km=Math.hypot(kx,ky);PAD.rax=kx/km;PAD.ray=ky/km;}
+  }
   PAD.just={}; for(const k in h)PAD.just[k]=h[k]&&!PAD.prev[k];
   for(const k in PAD.prev)if(!(k in h))PAD.just[k]=false;
   PAD.hold=h; PAD.prev=h;
@@ -553,7 +573,9 @@ const OVL=document.getElementById('touchovl');
 const TBTNS=[];
 /* 虚拟摇杆轴: [-1,1], 幅度=速度比例; pollPad 无手柄时合入 PAD.ax/ay */
 const VJ={ax:0,ay:0};
+const VR={ax:0,ay:0};          /* v1.8 W1: 右虚拟摇杆(瞄准), 合入 PAD.rax/ray */
 let RESET_JOY=()=>{};
+const STICKS=[];               /* v1.8: 双摇杆统一登记, resetTransientInput 用 */
 function tbtn(label,ic,css,code,press,parent){
   const el=document.createElement('button'); el.type='button'; el.className='tbtn';
   el.dataset.action=code; el.setAttribute('aria-label',label);
@@ -583,46 +605,55 @@ function tbtn(label,ic,css,code,press,parent){
     OVL.appendChild(d); return d; };
   const cl=mkCluster('left:0;'), cr=mkCluster('right:0;');
   const B=(pa,label,ic,css,code,press)=>tbtn(label,ic,css,code,press,pa);
-  /* ---- 左簇: 模拟摇杆圆环 (v1.5 替代四方向键; 360°+幅度, 数字方向仅作菜单兼容) ---- */
-  const joy=document.createElement('div'); joy.id='joy';
-  joy.innerHTML='<div class="jstick"></div>'+
-    '<span class="jd jt">▲</span><span class="jd jb">▼</span>'+
-    '<span class="jd jl">◀</span><span class="jd jr">▶</span>';
-  cl.appendChild(joy);
-  const stick=joy.querySelector('.jstick');
-  const setStick=(dx,dy)=>{ stick.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)'; };
-  const jcenter=()=>{ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,max:r.width/2*0.62}; };
-  let jid=null;
-  const DIRS=['KeyW','KeyS','KeyA','KeyD'];
-  const jmove=e=>{
-    if(jid!==e.pointerId)return;
-    const c=jcenter();
-    let dx=e.clientX-c.x, dy=e.clientY-c.y;
-    const d=Math.hypot(dx,dy);
-    if(d>c.max){ dx*=c.max/d; dy*=c.max/d; }
-    setStick(dx,dy);
-    const m=Math.hypot(dx,dy)/c.max;
-    if(m<0.12){ VJ.ax=0; VJ.ay=0; }                 /* 死区 */
-    else { VJ.ax=dx/c.max; VJ.ay=dy/c.max; }
-    DIRS.forEach(k=>VKEYS.delete(k));
-    const on=VJ.ay<-0.38, down=VJ.ay>0.38, lf=VJ.ax<-0.38, rt=VJ.ax>0.38;
-    if(on)VKEYS.add('KeyW'); if(down)VKEYS.add('KeyS'); if(lf)VKEYS.add('KeyA'); if(rt)VKEYS.add('KeyD');
-    joy.classList.toggle('jU',on); joy.classList.toggle('jD',down);
-    joy.classList.toggle('jL',lf); joy.classList.toggle('jR',rt);
+  /* ---- v1.8 W1: makeStick 摇杆工厂 (双摇杆共用, 完整 pointer ownership: id+capture+cancel+lostcapture) ---- */
+  const makeStick=(parent,id,onAxis,onDirs)=>{
+    const joy=document.createElement('div'); joy.id=id;
+    joy.innerHTML='<div class="jstick"></div>'+
+      '<span class="jd jt">▲</span><span class="jd jb">▼</span>'+
+      '<span class="jd jl">◀</span><span class="jd jr">▶</span>';
+    parent.appendChild(joy);
+    const stick=joy.querySelector('.jstick');
+    const setStick=(dx,dy)=>{ stick.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)'; };
+    const center=()=>{ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,max:r.width/2*0.62}; };
+    let pid=null;
+    const apply=(dx,dy,c)=>{
+      const m=Math.hypot(dx,dy)/c, dead=m<0.12;      /* 死区 */
+      const ax=dead?0:dx/c, ay=dead?0:dy/c;
+      onAxis(ax,ay);
+      const u=ay<-0.38, d=ay>0.38, l=ax<-0.38, r=ax>0.38;
+      joy.classList.toggle('jU',u); joy.classList.toggle('jD',d);
+      joy.classList.toggle('jL',l); joy.classList.toggle('jR',r);
+      if(onDirs)onDirs(ax,ay,u,d,l,r);
+    };
+    const move=e=>{
+      if(pid!==e.pointerId)return;
+      const c=center();
+      let dx=e.clientX-c.x, dy=e.clientY-c.y;
+      const dd=Math.hypot(dx,dy);
+      if(dd>c.max){ dx*=c.max/dd; dy*=c.max/dd; }
+      setStick(dx,dy); apply(dx,dy,c.max);
+    };
+    const end=e=>{ if(e&&pid!==e.pointerId)return; pid=null;
+      setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR'); onAxis(0,0); if(onDirs)onDirs(0,0,false,false,false,false); };
+    joy.addEventListener('pointerdown',e=>{ e.preventDefault(); if(pid!==null)return; pid=e.pointerId;
+      try{joy.setPointerCapture(pid);}catch(_){ }
+      joy.classList.add('on'); setInMode('touch'); move(e); });
+    joy.addEventListener('pointermove',move);
+    joy.addEventListener('pointerup',end); joy.addEventListener('pointercancel',end);
+    joy.addEventListener('lostpointercapture',end);
+    joy.addEventListener('contextmenu',e=>e.preventDefault());
+    const api={reset(){ if(pid!==null){try{if(joy.hasPointerCapture(pid))joy.releasePointerCapture(pid);}catch(_){ }} end(null); }};
+    STICKS.push(api);
+    return joy;
   };
-  joy.addEventListener('pointerdown',e=>{ e.preventDefault(); jid=e.pointerId;
-    try{joy.setPointerCapture(jid);}catch(_){ }
-    joy.classList.add('on'); setInMode('touch'); jmove(e); });
-  joy.addEventListener('pointermove',jmove);
-  const jend=e=>{ if(jid!==e.pointerId)return; jid=null;
-    VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
-    DIRS.forEach(k=>VKEYS.delete(k)); };
-  RESET_JOY=()=>{ if(jid!==null){try{if(joy.hasPointerCapture(jid))joy.releasePointerCapture(jid);}catch(_){ }}
-    jid=null; VJ.ax=0; VJ.ay=0; setStick(0,0); joy.classList.remove('on','jU','jD','jL','jR');
-    DIRS.forEach(k=>VKEYS.delete(k)); };
-  joy.addEventListener('pointerup',jend); joy.addEventListener('pointercancel',jend);
-  joy.addEventListener('lostpointercapture',jend);
-  joy.addEventListener('contextmenu',e=>e.preventDefault());
+  /* 左簇: 移动摇杆 (v1.5 替代四方向键; 360°+幅度, 数字方向仅作菜单兼容) */
+  const DIRS=['KeyW','KeyS','KeyA','KeyD'];
+  makeStick(cl,'joy',
+    (ax,ay)=>{ VJ.ax=ax; VJ.ay=ay; },
+    (ax,ay,u,d,l,r)=>{ DIRS.forEach(k=>VKEYS.delete(k));
+      if(u)VKEYS.add('KeyW'); if(d)VKEYS.add('KeyS'); if(l)VKEYS.add('KeyA'); if(r)VKEYS.add('KeyD'); });
+  /* 右簇: 瞄准摇杆 (v1.8 W1: 置于按钮栈上方空带, 金色环) */
+  makeStick(cr,'rjoy',(ax,ay)=>{ VR.ax=ax; VR.ay=ay; },null);
   /* ---- 右簇: 2列动作网格(贴最右缘, 全圆形玻璃) ---- */
   const edge='max(12px,calc(var(--safe-right) + 10px))';
   const inner='calc(var(--safe-right) + '+L+' + 20px)';
@@ -635,10 +666,16 @@ function tbtn(label,ic,css,code,press,parent){
   /* 暂停: 右上角 */
   tbtn('暂停','❚❚',{right:edge,top:'max(10px,calc(var(--safe-top) + 8px))',width:'clamp(44px,9vmin,56px)',height:'clamp(44px,9vmin,56px)'},'KeyP',true);
 })();
-function resetTouchControls(){
+function resetTransientInput(){
   for(const el of TBTNS)if(el._touchRelease)el._touchRelease();
-  RESET_JOY(); VKEYS.clear();
+  for(const st of STICKS)st.reset();
+  VKEYS.clear(); keys.clear();
+  VJ.ax=0; VJ.ay=0; VR.ax=0; VR.ay=0;
+  PAD.ax=0; PAD.ay=0; PAD.rax=0; PAD.ray=0;
+  /* 后台/失焦丢 pointerup 时取消本次导弹蓄力, 不允许自动放弹 (契约§1) */
+  if(typeof player!=='undefined'&&player&&player.charging){ player.charging=false; player.charge=0; }
 }
+function resetTouchControls(){ resetTransientInput(); }   /* 兼容别名(updOvl/失焦监听沿用) */
 function updOvl(){
   /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
   const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');

@@ -52,13 +52,14 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
 
   // 4) Breach 全链: 击杀路径(击飞目标死亡→连锁爆炸)
   await page.evaluate('(' + setup + ')()');
-  await page.evaluate(() => {           // 先给速度, 同帧生成目标 → 首帧即高速接触
-    player.a = 0; player.vx = 170; player.vy = 0;
+  const pre = await page.evaluate(() => new Promise(res => {   // 页内原子轮询: 桥往返>0.34s保持窗会读到释放后状态
+    player.a = 0; player.vx = 170; player.vy = 0;                 // 先给速度, 同帧生成目标 → 首帧即高速接触
     const t1 = G.dummy('tank', 258, 135); t1.stun = 99;           // 顶入目标(将死于零距离炮击)
     const t3 = G.dummy('truck', 290, 130); t3.stun = 99;          // 连锁爆炸受害者
-  });
-  const locked4 = await waitLock();
-  const pre = await page.evaluate(() => ({lock: !!player.breach, locks: STATS.breachLocks, vx: player.vx}));
+    let n = 0; const iv = setInterval(() => {
+      if ((player.breach && player.vx === 0 && player.vy === 0) || ++n > 90) { clearInterval(iv); res({lock: !!player.breach, locks: STATS.breachLocks, vx: player.vx}); } }, 16);   /* 首帧仅×0.05, 保持帧才归零 */
+  }));
+  const locked4 = pre.lock;
   ok(locked4 && pre.locks >= 1, 'Breach锁定 (locks=' + pre.locks + ')');
   ok(pre.vx === 0, '锁定期间玩家速度归零');
   const post = await page.evaluate(() => {          // 同步零距离炮击: 消除按键往返竞态

@@ -78,6 +78,80 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   const Fh = F.find(o => o.hk === 'heavy' && o.cdr === 0);
   ok(Fh.eff > 4, 'F2 重装旧数值下不变量生效 (有效CD ' + Fh.eff.toFixed(2) + 's > 旧实际1.5s, 永久盾bug已封)');
 
+  /* ---- G. W1 双摇杆输入: 三通道瞄准轴 ---- */
+  await ev(() => { window.G.start(); menuActivate(); menuActivate(); onKeyPress('Enter'); }); await sleep(3400);
+  await ev(() => { ST.spawnT = 1e9; G.tp(240, 135); player.vx = 0; player.vy = 0; });
+  /* G1 手柄右杆 axes[2]/[3] */
+  const G1 = await ev(() => {
+    window.__fp = {index: 0, id: 'Pad', connected: true, mapping: 'standard',
+      buttons: Array.from({length: 16}, () => ({pressed: false, value: 0})), axes: [0, 0, 0, 0]};
+    Object.defineProperty(navigator, 'getGamepads', {value: () => [window.__fp], configurable: true});
+    return true;
+  });
+  await ev(() => { window.__fp.axes = [0, 0, 0.6, -0.3]; }); await sleep(200);
+  let g = await ev(() => ({rax: +PAD.rax.toFixed(2), ray: +PAD.ray.toFixed(2)}));
+  ok(G1 && Math.abs(g.rax - 0.6) < 0.03 && Math.abs(g.ray + 0.3) < 0.03, 'G1 手柄右杆→PAD.rax/ray (原值模拟量, ' + g.rax + ',' + g.ray + ')');
+  await ev(() => { window.__fp.axes = [0, 0, 0.05, 0.05]; }); await sleep(150);
+  g = await ev(() => ({rax: PAD.rax, ray: PAD.ray}));
+  ok(g.rax === 0 && g.ray === 0, 'G1b 右杆死区0.18内归零');
+  await ev(() => { window.__fp.axes = [0, 0, 0, 0]; }); await sleep(150);
+  /* G2 键盘方向键=瞄准且不再移动 */
+  await page.keyboard.down('ArrowRight'); await sleep(200);
+  g = await ev(() => ({rax: +PAD.rax.toFixed(2), ray: +PAD.ray.toFixed(2), vx: Math.round(player.vx), vy: Math.round(player.vy)}));
+  await page.keyboard.up('ArrowRight');
+  ok(g.rax === 1 && g.ray === 0 && Math.abs(g.vx) < 1 && Math.abs(g.vy) < 1, 'G2 方向键→瞄准轴且不产生移动 (' + g.rax + ', v=' + g.vx + ',' + g.vy + ')');
+  await page.keyboard.down('ArrowUp'); await page.keyboard.down('ArrowRight'); await sleep(200);
+  g = await ev(() => ({rax: +PAD.rax.toFixed(2), ray: +PAD.ray.toFixed(2)}));
+  await page.keyboard.up('ArrowUp'); await page.keyboard.up('ArrowRight');
+  ok(Math.abs(g.rax - 0.707) < 0.02 && Math.abs(g.ray + 0.707) < 0.02, 'G2b 对角瞄准归一化 (45°)');
+  /* G3 触屏右摇杆 (#rjoy → VR → PAD.rax/ray) — 强制显示触屏层(桌面无头默认隐藏, 零尺寸会 0/0=NaN) */
+  await ev(() => { SET.touch = 'on'; }); await sleep(200);
+  const G3 = await page.evaluate(() => { const j = document.getElementById('rjoy'); if (!j) return null;
+    const r = j.getBoundingClientRect();
+    window.__rc = {x: r.left + r.width / 2, y: r.top + r.height / 2, max: r.width / 2 * 0.62};
+    j.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 21, clientX: __rc.x, clientY: __rc.y}));
+    j.dispatchEvent(new PointerEvent('pointermove', {bubbles: true, pointerId: 21, clientX: __rc.x + __rc.max * 0.9, clientY: __rc.y}));
+    return true; });
+  await sleep(200);
+  g = await ev(() => ({rax: +PAD.rax.toFixed(2), ray: +PAD.ray.toFixed(2)}));
+  ok(G3 && g.rax > 0.7 && Math.abs(g.ray) < 0.15, 'G3 #rjoy 推右→PAD 瞄准轴 (' + g.rax + ')');
+  await page.evaluate(() => document.getElementById('rjoy').dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 21})));
+  await sleep(150);
+  g = await ev(() => ({rax: PAD.rax, ray: PAD.ray}));
+  ok(g.rax === 0 && g.ray === 0, 'G3b 松开右杆归零');
+  /* G4 双杆指针独立: 左杆持住(id 31), 右杆 cancel(id 32) 不影响左杆 */
+  const G4 = await page.evaluate(() => {
+    const jl = document.getElementById('joy'), jr = document.getElementById('rjoy');
+    const rl = jl.getBoundingClientRect(), rr = jr.getBoundingClientRect();
+    const lc = {x: rl.left + rl.width / 2, y: rl.top + rl.height / 2}, rc = {x: rr.left + rr.width / 2, y: rr.top + rr.height / 2};
+    jl.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 31, clientX: lc.x, clientY: lc.y}));
+    jl.dispatchEvent(new PointerEvent('pointermove', {bubbles: true, pointerId: 31, clientX: lc.x, clientY: lc.y - rl.width * 0.3}));
+    jr.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 32, clientX: rc.x, clientY: rc.y}));
+    jr.dispatchEvent(new PointerEvent('pointercancel', {bubbles: true, pointerId: 32}));
+    return {vax: +VJ.ax.toFixed(2), vay: +VJ.ay.toFixed(2), vr: Math.abs(VR.ax) + Math.abs(VR.ay)};
+  });
+  ok(G4.vay < -0.4 && G4.vr === 0, 'G4 右杆 pointercancel 不影响左杆 (VJ ' + G4.vax + ',' + G4.vay + ', VR清零)');
+  await page.evaluate(() => document.getElementById('joy').dispatchEvent(new PointerEvent('pointerup', {bubbles: true, pointerId: 31})));
+  await ev(() => { SET.touch = 'auto'; }); await sleep(200);
+  /* G5 resetTransientInput 全清 */
+  await page.keyboard.down('KeyJ'); await page.keyboard.down('ArrowLeft');
+  await page.evaluate(() => { const jl = document.getElementById('joy'); const r = jl.getBoundingClientRect();
+    jl.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, pointerId: 41, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2})); });
+  await sleep(150);
+  const G5 = await ev(() => { resetTransientInput();
+    return {keys: keys.size, vkeys: VKEYS.size, vj: Math.abs(VJ.ax) + Math.abs(VJ.ay), rax: PAD.rax, cls: document.getElementById('joy').className}; });
+  await page.keyboard.up('KeyJ'); await page.keyboard.up('ArrowLeft');
+  ok(G5.keys === 0 && G5.vkeys === 0 && G5.vj === 0 && G5.rax === 0 && G5.cls.indexOf('on') < 0, 'G5 resetTransientInput 清 keys/VKEYS/双杆/瞄准轴/视觉态');
+  /* G6 visibilitychange hidden → 取消蓄力不放弹 */
+  await ev(() => { player.charging = true; player.charge = 0.8; window.__shots0 = shots.length; });
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', {value: true, configurable: true});
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'hidden', {value: false, configurable: true}); });
+  await sleep(300);
+  g = await ev(() => ({chg: player.charging, c0: player.charge, sn: shots.length - window.__shots0}));
+  ok(g.chg === false && g.c0 === 0 && g.sn <= 0, 'G6 后台取消蓄力不发射 (charging=' + g.chg + ', 新弹' + g.sn + ')');
+  await ev(() => { window.__fp.connected = false; });
+
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
   log(fails === 0 && errors.length === 0 ? '=== V18 (G0-5+W0) ALL PASS ===' : '=== ' + fails + ' FAILS ===');
