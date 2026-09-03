@@ -285,10 +285,10 @@ function drawUpgrade(){
     bg.addColorStop(0,'rgba(5,8,13,0)'); bg.addColorStop(1,'rgba(5,8,13,0.55)');
     uctx.fillStyle=bg; uctx.fillRect(0,0,VW,VH);
     uctx.restore();
-    /* 左中维修台: 徽章框 + 实时分层坦克 (车体朝上, 炮塔缓转; 不烘焙进背景) */
+    /* 左中维修台: 徽章框 + 实时分层坦克 (车体朝上, 炮塔侧摆展示立体感; 不烘焙进背景) */
     const ax=Math.round(0.34*VW), ay=Math.round(0.72*VH);
     const v=hullCfg().vis||{};
-    V18UIR.badge(uctx,ax,ay,116,{ta:-Math.PI/2+ST.t*0.35});
+    V18UIR.badge(uctx,ax,ay,116,{ta:-Math.PI/2+0.7+Math.sin(ST.t*0.35)*0.45});
     txtO(T(HULLS[RUN.hull].i18n),ax,ay-70,9,PAL.gold,'center');
     txt(v.callsign||'IRONCLAD-07',ax,ay+64,6,rgba(v.trim||PAL.cyan,0.95),'center');
     upx(ax-22,ay+72,44,2,v.trim||PAL.cyan);           /* 机体职业色条 (阵营色仍走 IFF) */
@@ -303,13 +303,13 @@ function drawUpgrade(){
       const lv=RUN.up[r[1]];
       if(sel){ upx(PX+8,y-5,PW-16,18,PAL.panel2); upx(PX+8,y-5,2,18,PAL.gold); txt('▶',PX+14,y,9,PAL.gold); }
       txt(T(r[0]),PX+26,y,9,sel?PAL.white:PAL.lite);
-      uMiniBar(PX+72,y+2,62,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
-      txt('Lv'+lv,PX+138,y,8,sel?PAL.gold:PAL.steel);
-      txt('-',PX+152,y,11,sel&&lv>0?PAL.red:PAL.steel,'center');
-      txt('+',PX+165,y,11,sel&&RUN.pts>0?PAL.lime:PAL.steel,'center');
-      TAP_RECTS.push({x:PX+6,y:y-4,w:140,h:20,act:()=>{ST.upg.sel=i;}});
-      TAP_RECTS.push({x:PX+144,y:y-6,w:16,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
-      TAP_RECTS.push({x:PX+158,y:y-6,w:16,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
+      uMiniBar(PX+70,y+2,48,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
+      txt('Lv'+lv,PX+122,y,8,sel?PAL.gold:PAL.lite);
+      txt('-',PX+148,y,11,sel&&lv>0?PAL.red:PAL.lite,'center');
+      txt('+',PX+162,y,11,sel&&RUN.pts>0?PAL.lime:PAL.lite,'center');
+      TAP_RECTS.push({x:PX+6,y:y-4,w:130,h:20,act:()=>{ST.upg.sel=i;}});
+      TAP_RECTS.push({x:PX+141,y:y-6,w:14,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
+      TAP_RECTS.push({x:PX+155,y:y-6,w:14,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
     });
     const st=calcStats();
     wrapTxt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),PW-26,8)

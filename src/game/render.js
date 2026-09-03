@@ -469,8 +469,8 @@ function drawLocks(){
         uctx.fillStyle=main; uctx.beginPath(); uctx.arc(nx,ny,1.7,0,Math.PI*2); uctx.fill();
       }
     }
-    if(n>1){                                          /* 叠数标记 ×N */
-      uctx.font='bold 8px '+FONT; uctx.textAlign='center';
+    if(n>1){                                          /* 叠数标记 ×N (真机审校: 8px 在手机上过小 → 10px) */
+      uctx.font='bold 10px '+FONT; uctx.textAlign='center';
       uctx.fillStyle='#06121e'; uctx.fillText('×'+n, ex+R*0.72+1, ey-R*0.72+1);
       uctx.fillStyle=main; uctx.fillText('×'+n, ex+R*0.72, ey-R*0.72);
     }
@@ -703,7 +703,7 @@ function drawHUD(){
   txt(v.callsign||'IRONCLAD-07',6,4,7,PAL.gold);
   uMiniBar(70,6,54,4,p.hp/p.maxHp,p.hp>30?PAL.acid:PAL.red,PAL.panel2);
   txt(Math.ceil(p.hp)+'/'+Math.ceil(p.maxHp),132,3,7,PAL.white,'right');
-  txt('EN',138,4,6,PAL.steel);
+  txt('EN',138,4,6,PAL.lite);
   uMiniBar(154,6,38,4,p.sprintG,p.sprintLock?PAL.red:PAL.gold,PAL.panel2);
   const remain=cfg.quota-ST.killsLevel;
   txtO((RUN.cycle>0?'#'+(RUN.cycle+1)+' · ':'')+I18N[SET.lang].lvNames[RUN.lvl],VW/2,3,8,PAL.white,'center');

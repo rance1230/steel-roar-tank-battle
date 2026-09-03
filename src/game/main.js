@@ -253,7 +253,7 @@ function draw(alpha){
       const k=HULL_KEYS[MENU.sel];
       if(!(window.AIART&&AIART.ok&&drawHullPreviewAI(k,127,200,226,62)))drawHullPreview(k,127,200,226,62);
     }
-    if(MENU.id==='pause')drawPauseHint(); }
+    if(MENU.id==='pause'&&inMode()!=='touch')drawPauseHint(); }   /* 触屏无键盘键位行 (真机审校) */
   if(errStr){ txt('ERR:'+errStr,4,VH-30,7,PAL.red); }
 }
 /* ---------- 调试/测试钩子 ---------- */

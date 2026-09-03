@@ -17,7 +17,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   touch-action:none;box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 24px 80px rgba(0,0,0,.72)}
 #touchovl{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;
-  --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(58px,13.5vmin,84px);
+  --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(64px,13.5vmin,84px);
   --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   font-family:"PingFang SC","Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
@@ -39,13 +39,15 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 .tbtn .ic .vic{width:clamp(16px,4vmin,26px);height:clamp(16px,4vmin,26px);pointer-events:none;box-sizing:content-box;
   background:rgba(6,12,20,0.74);border:1px solid rgba(238,246,255,0.30);border-radius:26%;padding:5%}
 .tbtn.v18 .vring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;display:none;
-  -webkit-mask:radial-gradient(closest-side,transparent 82%,#000 83%);
-  mask:radial-gradient(closest-side,transparent 82%,#000 83%)}
+  -webkit-mask:radial-gradient(closest-side,transparent 78%,#000 80%);
+  mask:radial-gradient(closest-side,transparent 78%,#000 80%)}
 .tbtn.v18 .vcnt{position:absolute;top:-8px;right:-6px;font-size:clamp(11px,2.4vmin,14px);font-weight:800;
   color:#f6b94e;background:rgba(6,12,20,0.88);border:1px solid rgba(246,185,78,0.55);border-radius:8px;
   padding:0 4px;line-height:1.35;pointer-events:none;display:none;text-shadow:0 0 3px rgba(2,4,7,0.95)}
 .tbtn.v18crit{box-shadow:inset 0 0 0 1px rgba(53,200,255,0.55),inset 0 0 14px rgba(53,200,255,0.18),0 0 18px rgba(53,200,255,0.30);
   border-color:rgba(53,200,255,0.80)}
+/* 主武器(机枪)常就绪暗示: 淡白常亮环 (真机 R2 polish) */
+.tbtn.v18[data-action="KeyJ"]{border-color:rgba(238,246,255,0.55)}
 /* v1.5: 模拟摇杆圆环 (接近全透: 只留清晰环线与方向箭头, 不遮战场) */
 #joy{position:absolute;left:clamp(calc(76px + var(--safe-left)),28%,calc(118px + var(--safe-left)));
   bottom:max(12px,calc(var(--safe-bottom) + 10px));width:clamp(116px,27vmin,164px);height:clamp(116px,27vmin,164px);
@@ -79,7 +81,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   color:#f6b94e;border:1px solid rgba(246,185,78,0.55);border-radius:999px;padding:6px 16px;font-size:14px;
   font-weight:700;display:none;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 4px 18px rgba(0,0,0,0.35)}
 @media (orientation:portrait){
-  #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(58px,15vmin,72px)}
+  #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(64px,15vmin,76px)}
   #joy{left:clamp(calc(68px + var(--safe-left)),46%,calc(94px + var(--safe-left)));bottom:max(16px,calc(var(--safe-bottom) + 14px))}
   #rjoy{right:calc(var(--safe-right) + var(--touch-l) + 12px);bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 40px);
     width:clamp(76px,18vmin,104px);height:clamp(76px,18vmin,104px)}

@@ -220,12 +220,13 @@ function setCnt(el,n,col){
   if(!n){ c.style.display='none'; return; }
   c.style.display='block'; c.textContent='×'+n; c.style.color=col;
 }
-/* doc §11 透明度态: idle 0.5 / 主武器常亮 0.65 / 触摸·蓄力 0.75 / 战斗关键 0.9 / 冷却 0.55 */
+/* doc §11 透明度态: idle 0.5 / 主武器常亮 0.8 (真机审校: 0.65 在暗背景仍像禁用) /
+   触摸·蓄力 0.75 / 战斗关键 0.9 / 冷却 0.55 */
 function setBtnState(el,mode){
   const v=el._vl||{};
   const on=el.classList.contains('on');
   if(on)mode='act';
-  const opacity=mode==='crit'?0.9:(mode==='act'?0.75:(mode==='fire'?0.65:(mode==='dim'?0.55:0.5)));
+  const opacity=mode==='crit'?0.9:(mode==='act'?0.75:(mode==='fire'?0.8:(mode==='dim'?0.55:0.5)));
   if(v.op!==opacity){ v.op=opacity; el.style.opacity=(''+opacity); }
   const wantCrit=mode==='crit';
   if(!!v.crit!==wantCrit){ v.crit=wantCrit; el.classList.toggle('v18crit',wantCrit); }
@@ -243,10 +244,10 @@ function touchHud(state){
   const p=player, h=(typeof hullCfg==='function')?hullCfg():null;
   const cdMul=(typeof calcStats==='function')?calcStats().cdMul:1;
   let el;
-  /* 导弹: 蓄力环+×N (蓄力=激活亮度, 满蓄=关键脉冲) / 冷却逆环灰化 / 就绪=关键 */
+  /* 导弹: 蓄力环+×N (蓄力=激活亮度, 满蓄=关键脉冲) / 冷却逆环灰化(恢复弧用亮钢白, 真机审校: 暗钢不可读) / 就绪=关键 */
   if((el=byAct('KeyL'))){
     if(p.mslCd>0){ const mc=h?h.missile.cd*cdMul:6;
-      setRing(el,rgba(PAL.steel,0.9),1-p.mslCd/mc); setCnt(el,0); setBtnState(el,'dim');
+      setRing(el,rgba(PAL.lite,0.95),1-p.mslCd/mc); setCnt(el,0); setBtnState(el,'dim');
     } else if(p.charging){
       const f=p.charge/1.2, cnt=(typeof mslCount==='function')?mslCount(p.charge):0;
       setRing(el,T.friendly,f); setCnt(el,cnt,T.gold);
@@ -255,7 +256,7 @@ function touchHud(state){
   }
   /* 空袭 */
   if((el=byAct('KeyU'))){
-    if(p.strikeCd>0){ setRing(el,rgba(PAL.steel,0.9),1-p.strikeCd/(5*cdMul)); setBtnState(el,'dim'); }
+    if(p.strikeCd>0){ setRing(el,rgba(PAL.lite,0.95),1-p.strikeCd/(5*cdMul)); setBtnState(el,'dim'); }
     else { setRing(el,T.gold,0); setBtnState(el,'crit'); }
   }
   /* 加速 (能量环; 锁定=红) */
@@ -267,7 +268,7 @@ function touchHud(state){
   if((el=byAct('Space'))){
     if(p.shieldT>0){ setRing(el,T.friendly,1); setBtnState(el,'crit'); }
     else if(p.shieldCd>0){ const sc=h?h.shield:{cd:1};
-      setRing(el,rgba(PAL.steel,0.9),1-p.shieldCd/Math.max(0.5,sc.cd*cdMul)); setBtnState(el,'dim');
+      setRing(el,rgba(PAL.lite,0.95),1-p.shieldCd/Math.max(0.5,sc.cd*cdMul)); setBtnState(el,'dim');
     } else { setRing(el,T.friendly,0); setBtnState(el,'crit'); }
   }
   /* 机枪/主炮: 主武器常亮 (0.65), 图标暗色底板保雪地可读 */

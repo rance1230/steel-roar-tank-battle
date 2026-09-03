@@ -17,7 +17,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   touch-action:none;box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 24px 80px rgba(0,0,0,.72)}
 #touchovl{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;
-  --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(58px,13.5vmin,84px);
+  --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(64px,13.5vmin,84px);
   --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
   --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   font-family:"PingFang SC","Hiragino Sans","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
@@ -39,13 +39,15 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 .tbtn .ic .vic{width:clamp(16px,4vmin,26px);height:clamp(16px,4vmin,26px);pointer-events:none;box-sizing:content-box;
   background:rgba(6,12,20,0.74);border:1px solid rgba(238,246,255,0.30);border-radius:26%;padding:5%}
 .tbtn.v18 .vring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;display:none;
-  -webkit-mask:radial-gradient(closest-side,transparent 82%,#000 83%);
-  mask:radial-gradient(closest-side,transparent 82%,#000 83%)}
+  -webkit-mask:radial-gradient(closest-side,transparent 78%,#000 80%);
+  mask:radial-gradient(closest-side,transparent 78%,#000 80%)}
 .tbtn.v18 .vcnt{position:absolute;top:-8px;right:-6px;font-size:clamp(11px,2.4vmin,14px);font-weight:800;
   color:#f6b94e;background:rgba(6,12,20,0.88);border:1px solid rgba(246,185,78,0.55);border-radius:8px;
   padding:0 4px;line-height:1.35;pointer-events:none;display:none;text-shadow:0 0 3px rgba(2,4,7,0.95)}
 .tbtn.v18crit{box-shadow:inset 0 0 0 1px rgba(53,200,255,0.55),inset 0 0 14px rgba(53,200,255,0.18),0 0 18px rgba(53,200,255,0.30);
   border-color:rgba(53,200,255,0.80)}
+/* 主武器(机枪)常就绪暗示: 淡白常亮环 (真机 R2 polish) */
+.tbtn.v18[data-action="KeyJ"]{border-color:rgba(238,246,255,0.55)}
 /* v1.5: 模拟摇杆圆环 (接近全透: 只留清晰环线与方向箭头, 不遮战场) */
 #joy{position:absolute;left:clamp(calc(76px + var(--safe-left)),28%,calc(118px + var(--safe-left)));
   bottom:max(12px,calc(var(--safe-bottom) + 10px));width:clamp(116px,27vmin,164px);height:clamp(116px,27vmin,164px);
@@ -79,7 +81,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   color:#f6b94e;border:1px solid rgba(246,185,78,0.55);border-radius:999px;padding:6px 16px;font-size:14px;
   font-weight:700;display:none;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 4px 18px rgba(0,0,0,0.35)}
 @media (orientation:portrait){
-  #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(58px,15vmin,72px)}
+  #touchovl{--touch-s:clamp(48px,12vmin,60px);--touch-l:clamp(64px,15vmin,76px)}
   #joy{left:clamp(calc(68px + var(--safe-left)),46%,calc(94px + var(--safe-left)));bottom:max(16px,calc(var(--safe-bottom) + 14px))}
   #rjoy{right:calc(var(--safe-right) + var(--touch-l) + 12px);bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 40px);
     width:clamp(76px,18vmin,104px);height:clamp(76px,18vmin,104px)}
@@ -206,7 +208,7 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  padSet:'已绑定 {a} → {b}',padPause:'暂停',pauseT:'已暂停',pauseHint:'P/Start 继续 · M 静音',cycle:'周目',
  restored:'已恢复默认设置',
  h0t:'移动',h0d:'WASD/方向键/摇杆移动坦克;触屏拖动左侧圆盘摇杆(360°+幅度变速)。水面与油污/能量/熔岩区大幅减速。',
- h1t:'机关枪 [J]',h1d:'按住连发。射速快、单发伤害低,适合对付皮卡与消耗敌军装甲。',
+ h1t:'机枪 [J]',h1d:'按住连发。射速快、单发伤害低,适合对付皮卡与消耗敌军装甲。',
  h2t:'主炮 [K]',h2d:'发射爆裂弹,命中后小范围爆炸,对成群敌军效果最好。',
  h3t:'蓄力导弹 [L]',h3d:'长按蓄力(约0.5秒)后松开发射追踪导弹,自动锁定最近敌军并大范围爆炸。',
  h4t:'空袭轰炸 [U]',h4d:'呼叫支援飞机沿敌军密集处投下炸弹,冷却5秒。弹药无限,放心使用。',
@@ -2744,8 +2746,8 @@ function drawLocks(){
         uctx.fillStyle=main; uctx.beginPath(); uctx.arc(nx,ny,1.7,0,Math.PI*2); uctx.fill();
       }
     }
-    if(n>1){                                          /* 叠数标记 ×N */
-      uctx.font='bold 8px '+FONT; uctx.textAlign='center';
+    if(n>1){                                          /* 叠数标记 ×N (真机审校: 8px 在手机上过小 → 10px) */
+      uctx.font='bold 10px '+FONT; uctx.textAlign='center';
       uctx.fillStyle='#06121e'; uctx.fillText('×'+n, ex+R*0.72+1, ey-R*0.72+1);
       uctx.fillStyle=main; uctx.fillText('×'+n, ex+R*0.72, ey-R*0.72);
     }
@@ -2978,7 +2980,7 @@ function drawHUD(){
   txt(v.callsign||'IRONCLAD-07',6,4,7,PAL.gold);
   uMiniBar(70,6,54,4,p.hp/p.maxHp,p.hp>30?PAL.acid:PAL.red,PAL.panel2);
   txt(Math.ceil(p.hp)+'/'+Math.ceil(p.maxHp),132,3,7,PAL.white,'right');
-  txt('EN',138,4,6,PAL.steel);
+  txt('EN',138,4,6,PAL.lite);
   uMiniBar(154,6,38,4,p.sprintG,p.sprintLock?PAL.red:PAL.gold,PAL.panel2);
   const remain=cfg.quota-ST.killsLevel;
   txtO((RUN.cycle>0?'#'+(RUN.cycle+1)+' · ':'')+I18N[SET.lang].lvNames[RUN.lvl],VW/2,3,8,PAL.white,'center');
@@ -4808,12 +4810,13 @@ function setCnt(el,n,col){
   if(!n){ c.style.display='none'; return; }
   c.style.display='block'; c.textContent='×'+n; c.style.color=col;
 }
-/* doc §11 透明度态: idle 0.5 / 主武器常亮 0.65 / 触摸·蓄力 0.75 / 战斗关键 0.9 / 冷却 0.55 */
+/* doc §11 透明度态: idle 0.5 / 主武器常亮 0.8 (真机审校: 0.65 在暗背景仍像禁用) /
+   触摸·蓄力 0.75 / 战斗关键 0.9 / 冷却 0.55 */
 function setBtnState(el,mode){
   const v=el._vl||{};
   const on=el.classList.contains('on');
   if(on)mode='act';
-  const opacity=mode==='crit'?0.9:(mode==='act'?0.75:(mode==='fire'?0.65:(mode==='dim'?0.55:0.5)));
+  const opacity=mode==='crit'?0.9:(mode==='act'?0.75:(mode==='fire'?0.8:(mode==='dim'?0.55:0.5)));
   if(v.op!==opacity){ v.op=opacity; el.style.opacity=(''+opacity); }
   const wantCrit=mode==='crit';
   if(!!v.crit!==wantCrit){ v.crit=wantCrit; el.classList.toggle('v18crit',wantCrit); }
@@ -4831,10 +4834,10 @@ function touchHud(state){
   const p=player, h=(typeof hullCfg==='function')?hullCfg():null;
   const cdMul=(typeof calcStats==='function')?calcStats().cdMul:1;
   let el;
-  /* 导弹: 蓄力环+×N (蓄力=激活亮度, 满蓄=关键脉冲) / 冷却逆环灰化 / 就绪=关键 */
+  /* 导弹: 蓄力环+×N (蓄力=激活亮度, 满蓄=关键脉冲) / 冷却逆环灰化(恢复弧用亮钢白, 真机审校: 暗钢不可读) / 就绪=关键 */
   if((el=byAct('KeyL'))){
     if(p.mslCd>0){ const mc=h?h.missile.cd*cdMul:6;
-      setRing(el,rgba(PAL.steel,0.9),1-p.mslCd/mc); setCnt(el,0); setBtnState(el,'dim');
+      setRing(el,rgba(PAL.lite,0.95),1-p.mslCd/mc); setCnt(el,0); setBtnState(el,'dim');
     } else if(p.charging){
       const f=p.charge/1.2, cnt=(typeof mslCount==='function')?mslCount(p.charge):0;
       setRing(el,T.friendly,f); setCnt(el,cnt,T.gold);
@@ -4843,7 +4846,7 @@ function touchHud(state){
   }
   /* 空袭 */
   if((el=byAct('KeyU'))){
-    if(p.strikeCd>0){ setRing(el,rgba(PAL.steel,0.9),1-p.strikeCd/(5*cdMul)); setBtnState(el,'dim'); }
+    if(p.strikeCd>0){ setRing(el,rgba(PAL.lite,0.95),1-p.strikeCd/(5*cdMul)); setBtnState(el,'dim'); }
     else { setRing(el,T.gold,0); setBtnState(el,'crit'); }
   }
   /* 加速 (能量环; 锁定=红) */
@@ -4855,7 +4858,7 @@ function touchHud(state){
   if((el=byAct('Space'))){
     if(p.shieldT>0){ setRing(el,T.friendly,1); setBtnState(el,'crit'); }
     else if(p.shieldCd>0){ const sc=h?h.shield:{cd:1};
-      setRing(el,rgba(PAL.steel,0.9),1-p.shieldCd/Math.max(0.5,sc.cd*cdMul)); setBtnState(el,'dim');
+      setRing(el,rgba(PAL.lite,0.95),1-p.shieldCd/Math.max(0.5,sc.cd*cdMul)); setBtnState(el,'dim');
     } else { setRing(el,T.friendly,0); setBtnState(el,'crit'); }
   }
   /* 机枪/主炮: 主武器常亮 (0.65), 图标暗色底板保雪地可读 */
@@ -5179,10 +5182,10 @@ function drawUpgrade(){
     bg.addColorStop(0,'rgba(5,8,13,0)'); bg.addColorStop(1,'rgba(5,8,13,0.55)');
     uctx.fillStyle=bg; uctx.fillRect(0,0,VW,VH);
     uctx.restore();
-    /* 左中维修台: 徽章框 + 实时分层坦克 (车体朝上, 炮塔缓转; 不烘焙进背景) */
+    /* 左中维修台: 徽章框 + 实时分层坦克 (车体朝上, 炮塔侧摆展示立体感; 不烘焙进背景) */
     const ax=Math.round(0.34*VW), ay=Math.round(0.72*VH);
     const v=hullCfg().vis||{};
-    V18UIR.badge(uctx,ax,ay,116,{ta:-Math.PI/2+ST.t*0.35});
+    V18UIR.badge(uctx,ax,ay,116,{ta:-Math.PI/2+0.7+Math.sin(ST.t*0.35)*0.45});
     txtO(T(HULLS[RUN.hull].i18n),ax,ay-70,9,PAL.gold,'center');
     txt(v.callsign||'IRONCLAD-07',ax,ay+64,6,rgba(v.trim||PAL.cyan,0.95),'center');
     upx(ax-22,ay+72,44,2,v.trim||PAL.cyan);           /* 机体职业色条 (阵营色仍走 IFF) */
@@ -5197,13 +5200,13 @@ function drawUpgrade(){
       const lv=RUN.up[r[1]];
       if(sel){ upx(PX+8,y-5,PW-16,18,PAL.panel2); upx(PX+8,y-5,2,18,PAL.gold); txt('▶',PX+14,y,9,PAL.gold); }
       txt(T(r[0]),PX+26,y,9,sel?PAL.white:PAL.lite);
-      uMiniBar(PX+72,y+2,62,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
-      txt('Lv'+lv,PX+138,y,8,sel?PAL.gold:PAL.steel);
-      txt('-',PX+152,y,11,sel&&lv>0?PAL.red:PAL.steel,'center');
-      txt('+',PX+165,y,11,sel&&RUN.pts>0?PAL.lime:PAL.steel,'center');
-      TAP_RECTS.push({x:PX+6,y:y-4,w:140,h:20,act:()=>{ST.upg.sel=i;}});
-      TAP_RECTS.push({x:PX+144,y:y-6,w:16,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
-      TAP_RECTS.push({x:PX+158,y:y-6,w:16,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
+      uMiniBar(PX+70,y+2,48,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
+      txt('Lv'+lv,PX+122,y,8,sel?PAL.gold:PAL.lite);
+      txt('-',PX+148,y,11,sel&&lv>0?PAL.red:PAL.lite,'center');
+      txt('+',PX+162,y,11,sel&&RUN.pts>0?PAL.lime:PAL.lite,'center');
+      TAP_RECTS.push({x:PX+6,y:y-4,w:130,h:20,act:()=>{ST.upg.sel=i;}});
+      TAP_RECTS.push({x:PX+141,y:y-6,w:14,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
+      TAP_RECTS.push({x:PX+155,y:y-6,w:14,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
     });
     const st=calcStats();
     wrapTxt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),PW-26,8)
@@ -5706,7 +5709,7 @@ function draw(alpha){
       const k=HULL_KEYS[MENU.sel];
       if(!(window.AIART&&AIART.ok&&drawHullPreviewAI(k,127,200,226,62)))drawHullPreview(k,127,200,226,62);
     }
-    if(MENU.id==='pause')drawPauseHint(); }
+    if(MENU.id==='pause'&&inMode()!=='touch')drawPauseHint(); }   /* 触屏无键盘键位行 (真机审校) */
   if(errStr){ txt('ERR:'+errStr,4,VH-30,7,PAL.red); }
 }
 /* ---------- 调试/测试钩子 ---------- */
