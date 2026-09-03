@@ -78,15 +78,17 @@ function splashImage(kind,level){
   const im=kind==='title'?SPLASH_ART.images.title:SPLASH_ART.images.levels[clamp(level|0,0,6)];
   return im&&im.complete&&im.naturalWidth>0?im:null;
 }
-function drawSplashArt(kind,level){
-  const im=splashImage(kind,level); if(!im)return false;
-  const phase=kind==='title'?0:(level|0)*0.67;
+function drawCoverArt(im,phase){   /* Ken Burns: 缓慢缩放+漂移; 标题大图与旧 webp 共用 */
   const z=1.02+0.035*(0.5+0.5*Math.sin(ST.t*0.18+phase));
   const dw=VW*z,dh=VH*z;
   const pxn=Math.sin(ST.t*0.09+phase)*1.8,pyn=Math.cos(ST.t*0.07+phase)*0.8;
   ctx.save(); ctx.imageSmoothingEnabled=true;
   ctx.drawImage(im,(VW-dw)/2+pxn,(VH-dh)/2+pyn,dw,dh);
   ctx.restore();
+}
+function drawSplashArt(kind,level){
+  const im=splashImage(kind,level); if(!im)return false;
+  drawCoverArt(im,kind==='title'?0:(level|0)*0.67);
   return true;
 }
 function drawSplashOverlay(kind){
@@ -224,7 +226,8 @@ function drawDynamicLights(){
   }
   ctx.restore();
 }
-/* v1.5 玻璃面板: 亮顶渐变 + 顶部高光 + 双层描边 + 角标 (canvas 模拟毛玻璃) */
+/* v1.5 玻璃面板: 亮顶渐变 + 顶部高光 + 双层描边 + 角标 (canvas 模拟毛玻璃)
+   v1.8 UI: 底色填充后叠 UI-FRM-BASE 九宫格金属框 (V18UIR 可用时); 无资产走原路径 */
 function uPanel(x,y,w,h,c,a){
   uctx.save();
   const col=c||PAL.cyan, base=a===undefined?0.76:Math.max(0.5,a);
@@ -233,6 +236,7 @@ function uPanel(x,y,w,h,c,a){
   g.addColorStop(0.5,rgba(PAL.panel,base*0.92));
   g.addColorStop(1,rgba('#060b12',base*0.96));
   uctx.fillStyle=g; uctx.fillRect(x,y,w,h);
+  if(window.V18UIR&&V18UIR.panelFrame(uctx,x,y,w,h,col)){ uctx.restore(); return; }
   uctx.fillStyle=rgba(PAL.white,0.15); uctx.fillRect(x+1,y+1,w-2,1);   /* 顶部镜面高光 */
   uctx.fillStyle=rgba(PAL.white,0.05); uctx.fillRect(x+1,y+2,w-2,1);
   uctx.strokeStyle=rgba(col,0.62); uctx.lineWidth=1; uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
@@ -417,37 +421,69 @@ function drawAim(){
   uctx.closePath(); uctx.fillStyle=PAL.gold; uctx.fill();
   uctx.globalAlpha=1; uctx.restore();
 }
-/* v1.8 W4: 多锁准星 — 每锁一段旋转括弧(收拢动画+锁定瞬闪); 单目标多锁=同心叠环 */
+/* v1.8 W4→UI: 多锁准星 — doc§4 每目标 1 个主锁定框(四角括弧) + 外围节点圆点(=该目标叠弹数)
+   + 代码文字 ×N; 不再同心叠环. 状态色: Acquiring(age<0.2,青/雪地白青) → Locked(金白);
+   目标消失=红闪 0.16s (V18UIR.noteLost 记录末位). 深底描边保雪地/金沙可读 (W9-rubric). */
+const _lockPos={};   /* id→{x,y} 上一帧锁定位置: 目标死亡时供丢失红闪取坐标 */
 function drawLocks(){
   const p=player;
   if(!p||!p.charging||!p.lockSlots||!p.lockSlots.length||MENU||ST.state!=='play')return;
   uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
-  uctx.lineWidth=1.4;
-  const seen={}, tot={};
+  const tot={};
   for(const s of p.lockSlots) if(s.id)tot[s.id]=(tot[s.id]||0)+1;
+  const snow=RUN.lvl===4||RUN.lvl===5;
+  const seen={};
   for(const s of p.lockSlots){
     if(!s.id)continue;
     const e=enemies.find(x=>x.id===s.id&&!x.dead);
-    if(!e)continue;
-    const k=seen[s.id]=(seen[s.id]||0)+1;          /* 同目标第 k 锁 → 同心外扩 */
-    const age=Math.max(0,ST.t-(s.t0||ST.t));
-    const close=Math.max(0,1-age/0.2);             /* 新锁 0.2s 内从外收拢 */
-    const R=e.r+7+k*3.4+close*26;
-    const a0=ST.t*2.0+k*0.6, seg=Math.PI*0.30;
-    /* W9-rubric: 金框贴金沙不可读 → 深色描边垫底 + 雪地图用青白 */
-    const snow=RUN.lvl===4||RUN.lvl===5;
-    const main=age<0.09?PAL.white:(k===1?(snow?PAL.cyan:PAL.gold):rgba(snow?PAL.cyan:PAL.gold,0.55));
-    for(let q=0;q<4;q++){                       /* 双描: 深底 3.6px + 主色 1.8px */
-      const a1=a0+q*Math.PI/2;
-      uctx.strokeStyle='#06121e'; uctx.lineWidth=3.6;
-      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a1,a1+seg); uctx.stroke();
-      uctx.strokeStyle=main; uctx.lineWidth=1.8;
-      uctx.beginPath(); uctx.arc(IPx(e),IPy(e),R,a1,a1+seg); uctx.stroke();
+    if(!e){                                          /* 目标已死 → 末位红闪后由 updMslLocks 收走 */
+      if(_lockPos[s.id]&&window.V18UIR){ V18UIR.noteLost(_lockPos[s.id].x,_lockPos[s.id].y); delete _lockPos[s.id]; }
+      continue;
     }
-    if(k===1){                                  /* 每目标叠数标记 ×N (W9-rubric: 同心环静态帧不可读) */
+    _lockPos[s.id]={x:IPx(e),y:IPy(e)};
+    if(seen[s.id])continue;                           /* 同目标多锁只画 1 框, 叠数走节点 */
+    seen[s.id]=1;
+    const age=Math.max(0,ST.t-(s.t0||ST.t));
+    const close=Math.max(0,1-age/0.2);                /* 新锁 0.2s 内从外收拢 */
+    const n=tot[s.id], ex=IPx(e), ey=IPy(e);
+    const R=e.r+7+close*20;
+    const locked=age>=0.2;
+    const main=age<0.09?PAL.white:(locked?(snow?PAL.cyan:PAL.gold):PAL.aqua);
+    const L=Math.max(3.2,R*0.38);                     /* 四角括弧臂长 */
+    uctx.lineCap='butt';
+    for(let q=0;q<4;q++){                             /* 双描: 深底 3.6px + 主色 1.8px */
+      const a0=q*Math.PI/2+ST.t*(locked?0.6:2.2)-Math.PI/4;   /* 未锁定旋转快, 锁定后放缓 */
+      const ax=ex+Math.cos(a0)*R, ay=ey+Math.sin(a0)*R;
+      const tx=Math.cos(a0+Math.PI/2)*L, ty=Math.sin(a0+Math.PI/2)*L;
+      uctx.strokeStyle='#06121e'; uctx.lineWidth=3.6;
+      uctx.beginPath(); uctx.moveTo(ax-tx,ay-ty); uctx.lineTo(ax,ay); uctx.lineTo(ax+tx,ay+ty); uctx.stroke();
+      uctx.strokeStyle=main; uctx.lineWidth=1.8;
+      uctx.beginPath(); uctx.moveTo(ax-tx,ay-ty); uctx.lineTo(ax,ay); uctx.lineTo(ax+tx,ay+ty); uctx.stroke();
+    }
+    {                                                 /* 外围节点: 每发已叠导弹一枚圆点 */
+      const nr=R+6.5;
+      for(let i=0;i<n;i++){
+        const a1=-Math.PI/2+i*(Math.PI*2/Math.max(1,n))+ST.t*0.8;
+        const nx=ex+Math.cos(a1)*nr, ny=ey+Math.sin(a1)*nr;
+        uctx.fillStyle='#06121e'; uctx.beginPath(); uctx.arc(nx,ny,2.9,0,Math.PI*2); uctx.fill();
+        uctx.fillStyle=main; uctx.beginPath(); uctx.arc(nx,ny,1.7,0,Math.PI*2); uctx.fill();
+      }
+    }
+    if(n>1){                                          /* 叠数标记 ×N */
       uctx.font='bold 8px '+FONT; uctx.textAlign='center';
-      uctx.fillStyle='#06121e'; uctx.fillText('×'+tot[s.id], IPx(e)+R*0.72+1, IPy(e)-R*0.72+1);
-      uctx.fillStyle=main; uctx.fillText('×'+tot[s.id], IPx(e)+R*0.72, IPy(e)-R*0.72);
+      uctx.fillStyle='#06121e'; uctx.fillText('×'+n, ex+R*0.72+1, ey-R*0.72+1);
+      uctx.fillStyle=main; uctx.fillText('×'+n, ex+R*0.72, ey-R*0.72);
+    }
+  }
+  if(window.V18UIR){                                  /* 丢失目标红闪 (doc§4 Lost) */
+    for(const f of V18UIR.lostList()){
+      const k=1-(ST.t-f.t)/0.16;
+      uctx.globalAlpha=0.8*k;
+      uctx.strokeStyle=PAL.red; uctx.lineWidth=1.6;
+      uctx.strokeRect(f.x-9,f.y-9,18,18);
+      uctx.beginPath(); uctx.moveTo(f.x-4,f.y); uctx.lineTo(f.x+4,f.y);
+      uctx.moveTo(f.x,f.y-4); uctx.lineTo(f.x,f.y+4); uctx.stroke();
+      uctx.globalAlpha=1;
     }
   }
   uctx.restore();
@@ -674,21 +710,42 @@ function drawHUD(){
   txt(T('remain')+' '+remain+'  ·  '+fmtTime(ST.levelTime),VW/2,15,6,PAL.lite,'center');
   txt(T('score')+' '+RUN.score,VW-6,3,8,PAL.gold,'right');
   txt(T('kills')+' '+RUN.kills,VW-6,15,6,PAL.lite,'right');
-  /* ---- 武器状态: 芯片化(触屏时置于顶栏下, 避开底部按钮; 键盘/手柄时置左下角) ---- */
-  const cy=touchOn?31:VH-22;
-  hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
-  {   /* v1.8 W4: 导弹芯片双态 — 冷却(暗,恢复进度)/蓄力(亮, 0.20 首锁刻度+锁数) */
-    const mc=hullCfg().missile.cd*calcStats().cdMul;
-    if(p.mslCd>0)hudChip(26,cy,'➤',1-p.mslCd/mc,PAL.steel,false);
-    else if(p.charging){
-      hudChip(26,cy,'➤',p.charge/1.2,PAL.aqua,true);
-      const cnt=mslCount(p.charge);
-      if(cnt>0)txt('×'+cnt,42,cy+5,7,PAL.gold,'center');
-      txt('▮',6+Math.round(20*0.20/1.2),cy+13,5,rgba(PAL.gold,0.55));   /* 0.20s 首锁刻度 */
-    } else hudChip(26,cy,'➤',1,PAL.aqua,true);
+  /* ---- 武器状态: 芯片化(键盘/手柄置左下角); v1.8 UI: 触屏=按钮即HUD, 不再画重复武器栏 (doc§3) ---- */
+  if(!touchOn){
+    const chip2=window.V18UIR&&V18UIR.ok('ico')?V18UIR.chip:null;
+    const od=COMBO.od;
+    const wk=(x,idx,st,frac,col)=>chip2?chip2(x,VH-22,idx,st,col,frac,od):null;
+    if(chip2){
+      wk(6,3,p.strikeCd>0?'cool':'ready',1-p.strikeCd/5,PAL.gold);
+      {   /* v1.8 W4: 导弹芯片双态 — 冷却(去饱和+逆环)/蓄力(顺环+锁数+0.20首锁刻度) */
+        const mc=hullCfg().missile.cd*calcStats().cdMul;
+        if(p.mslCd>0)wk(26,2,'cool',1-p.mslCd/mc,PAL.steel);
+        else if(p.charging){
+          wk(26,2,'charging',p.charge/1.2,PAL.aqua);
+          const cnt=mslCount(p.charge);
+          if(cnt>0)txt('×'+cnt,42,VH-17,7,PAL.gold,'center');
+          txt('▮',6+Math.round(20*0.20/1.2),VH-9,5,rgba(PAL.gold,0.55));   /* 0.20s 首锁刻度 */
+        } else wk(26,2,'full',1,PAL.aqua);
+      }
+      wk(46,4,p.sprintLock?'disabled':(p.sprintG>=0.98?'full':'charging'),p.sprintG,PAL.acid);
+      wk(66,5,p.shieldCd>0?'cool':'ready',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan);
+    } else {
+      const cy=VH-22;
+      hudChip(6,cy,'✈',1-p.strikeCd/5,PAL.gold,p.strikeCd<=0);
+      {   /* 旧字形芯片回退 (V18UI 缺失时) */
+        const mc=hullCfg().missile.cd*calcStats().cdMul;
+        if(p.mslCd>0)hudChip(26,cy,'➤',1-p.mslCd/mc,PAL.steel,false);
+        else if(p.charging){
+          hudChip(26,cy,'➤',p.charge/1.2,PAL.aqua,true);
+          const cnt=mslCount(p.charge);
+          if(cnt>0)txt('×'+cnt,42,cy+5,7,PAL.gold,'center');
+          txt('▮',6+Math.round(20*0.20/1.2),cy+13,5,rgba(PAL.gold,0.55));
+        } else hudChip(26,cy,'➤',1,PAL.aqua,true);
+      }
+      hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
+      hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
+    }
   }
-  hudChip(46,cy,'»',p.sprintG,PAL.acid,!p.sprintLock);
-  hudChip(66,cy,'⬡',p.shieldCd<=0?1:1-p.shieldCd/Math.max(0.5,hullCfg().shield.cd),PAL.cyan,p.shieldCd<=0);
   /* ---- 右下装备/部件: 触屏时移到顶栏下右角, 不与按钮争位 ---- */
   const eqn=(RUN.eq.armor+RUN.eq.track+RUN.eq.fire+RUN.eq.comp);
   if(touchOn)txt('◆ '+RUN.pts+'  EQ '+eqn,VW-6,33,7,PAL.gold,'right');
@@ -1008,6 +1065,15 @@ const CREDITS=[
  '2026 · 完结撒花!','','',
  ''];
 function drawTitleBg(){
+  /* v1.8 UI: 优先新标题大图 (V18UIR 懒解码, 离开标题页释放); 回退旧 webp → 程序化 */
+  const vIm=(window.V18UIR&&V18UIR.bg('title'));
+  if(vIm){
+    drawCoverArt(vIm,0);
+    drawSplashOverlay('title');
+    drawSplashMotes('title',0);
+    drawWorldGrade('title');
+    return;
+  }
   if(drawSplashArt('title')){
     drawSplashOverlay('title');
     drawSplashMotes('title',0);
@@ -1061,9 +1127,16 @@ function drawClearCard(){
   uctx.globalAlpha=0.58; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   uPanel(VW/2-106,58,212,118,PAL.gold,0.78);
   txtO(T('clearT'),VW/2,64,16,PAL.gold,'center');
-  txt(TF('clearStats',{n:ST.killsLevel,t:fmtTime(ST.levelTime)}),VW/2,98,10,PAL.white,'center');
-  txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
-  txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
+  if(window.V18UIR&&V18UIR.ok('badge')&&V18UIR.ok('frame')){   /* v1.8 UI: 徽章+实时坦克 (doc Level3 结算) */
+    V18UIR.badge(uctx,VW/2-72,120,54,{ta:-Math.PI/2+Math.sin(ST.t*0.6)*0.35});
+    txt(TF('clearStats',{n:ST.killsLevel,t:fmtTime(ST.levelTime)}),VW/2-38,96,9,PAL.white);
+    txt(TF('clearBonus',{n:ST.clearBonus}),VW/2-38,112,8,PAL.acid);
+    txt(T('score')+' '+RUN.score,VW/2-38,128,10,PAL.gold);
+  } else {
+    txt(TF('clearStats',{n:ST.killsLevel,t:fmtTime(ST.levelTime)}),VW/2,98,10,PAL.white,'center');
+    txt(TF('clearBonus',{n:ST.clearBonus}),VW/2,114,9,PAL.acid,'center');
+    txt(T('score')+' '+RUN.score,VW/2,130,10,PAL.gold,'center');
+  }
   if((ST.t%1.2)<0.86)txtO(contDyn(),VW/2,164,9,PAL.white,'center');
   if(inMode()==='touch')TAP_RECTS.push({x:VW/2-100,y:146,w:200,h:42,act:()=>afterClear()});
 }

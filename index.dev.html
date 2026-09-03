@@ -34,6 +34,18 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 .tbtn.on{background:radial-gradient(circle at 50% 34%,rgba(246,185,78,0.34),rgba(239,83,56,0.20) 70%,rgba(5,8,13,0.34));
   border-color:rgba(246,185,78,0.70);color:#f3f7ff;
   box-shadow:inset 0 0 14px rgba(246,185,78,0.22),0 0 16px rgba(246,185,78,0.20)}
+/* v1.8 UI: 按钮即 HUD — 图标/充能环/×N/关键态 (V18UIR 注入, 缺资产时自动回退字形) */
+.tbtn .ic{display:flex;align-items:center;justify-content:center}
+.tbtn .ic .vic{width:clamp(16px,4vmin,26px);height:clamp(16px,4vmin,26px);pointer-events:none;box-sizing:content-box;
+  background:rgba(6,12,20,0.74);border:1px solid rgba(238,246,255,0.30);border-radius:26%;padding:5%}
+.tbtn.v18 .vring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;display:none;
+  -webkit-mask:radial-gradient(closest-side,transparent 82%,#000 83%);
+  mask:radial-gradient(closest-side,transparent 82%,#000 83%)}
+.tbtn.v18 .vcnt{position:absolute;top:-8px;right:-6px;font-size:clamp(11px,2.4vmin,14px);font-weight:800;
+  color:#f6b94e;background:rgba(6,12,20,0.88);border:1px solid rgba(246,185,78,0.55);border-radius:8px;
+  padding:0 4px;line-height:1.35;pointer-events:none;display:none;text-shadow:0 0 3px rgba(2,4,7,0.95)}
+.tbtn.v18crit{box-shadow:inset 0 0 0 1px rgba(53,200,255,0.55),inset 0 0 14px rgba(53,200,255,0.18),0 0 18px rgba(53,200,255,0.30);
+  border-color:rgba(53,200,255,0.80)}
 /* v1.5: 模拟摇杆圆环 (接近全透: 只留清晰环线与方向箭头, 不遮战场) */
 #joy{position:absolute;left:clamp(calc(76px + var(--safe-left)),28%,calc(118px + var(--safe-left)));
   bottom:max(12px,calc(var(--safe-bottom) + 10px));width:clamp(116px,27vmin,164px);height:clamp(116px,27vmin,164px);
@@ -58,10 +70,10 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 44px);
   width:clamp(88px,20vmin,132px);height:clamp(88px,20vmin,132px);
   pointer-events:auto;touch-action:none;border-radius:50%;
-  background:radial-gradient(circle at 50% 42%,rgba(246,185,78,0.03),rgba(5,8,13,0.04) 58%,rgba(5,8,13,0.10));
-  border:2px solid rgba(246,185,78,0.38);
+  background:radial-gradient(circle at 50% 42%,rgba(246,185,78,0.03),rgba(5,8,13,0.05) 58%,rgba(5,8,13,0.12));
+  border:2px solid rgba(246,185,78,0.62);
   -webkit-backdrop-filter:blur(3px) saturate(1.15);backdrop-filter:blur(3px) saturate(1.15);
-  box-shadow:inset 0 0 0 1px rgba(246,185,78,0.22),0 3px 12px rgba(0,0,0,0.22)}
+  box-shadow:inset 0 0 0 1px rgba(246,185,78,0.35),0 3px 12px rgba(0,0,0,0.22)}
 #toast{position:fixed;top:8%;left:50%;transform:translateX(-50%);z-index:20;
   background:rgba(10,17,28,0.52);-webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3);
   color:#f6b94e;border:1px solid rgba(246,185,78,0.55);border-radius:999px;padding:6px 16px;font-size:14px;
@@ -96,8 +108,10 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 <script src="src/game/aiart.js"></script>
 <script src="src/data/v15.data.js"></script>
 <script src="src/data/v18.data.js"></script>
+<script src="src/data/v18_ui.data.js"></script>
 <script src="src/game/v15art.js"></script>
 <script src="src/game/v15terrain.js"></script>
+<script src="src/game/v18ui.js"></script>
 <script src="src/game/ui.js"></script>
 <script src="src/game/main.js"></script>
 </body>

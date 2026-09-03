@@ -206,6 +206,7 @@ function draw(alpha){
   gAlpha=alpha||0;
   TAP_RECTS=[];
   if(!MENU)MENU_RECTS=[];   /* 菜单关闭后旧命中区立即失效, 防残留死区+TypeError (页面导览实测bug) */
+  if(window.V18UIR)V18UIR.frame(ST.state);   /* v1.8 UI: 大图懒解码/离页释放 + 触屏按钮皮肤 */
   const hs=(MENU&&MENU.id==='help');
   /* 阶段1: 像素世界 → 离屏缓冲 */
   if(ST.state==='title'||ST.state==='ctrl'){

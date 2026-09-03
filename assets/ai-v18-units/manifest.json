@@ -1,0 +1,102 @@
+{
+  "schema": "steel-roar.v18-modular-units/1",
+  "status": "candidate-awaiting-review",
+  "integration": "assets-only-not-wired",
+  "designReference": "/Volumes/vol1/像素小游戏/V1.8视觉配套优化.md",
+  "baselineReference": "assets/ai-v15-topdown/topdown-assets-manifest.json",
+  "architecture": {
+    "hull": {
+      "format": "4x4 atlas",
+      "directions": 16,
+      "stepDegrees": 22.5,
+      "rotationOrder": "clockwise",
+      "cellSize": 256,
+      "pivotPx": [128, 128]
+    },
+    "turret": {
+      "format": "single canonical layer",
+      "canvasSize": 512,
+      "pivotPx": [256, 256],
+      "zeroAngle": "east",
+      "continuousRotation": true,
+      "angleRange": "0..2PI"
+    }
+  },
+  "units": {
+    "assault": {
+      "displayName": "Raijin assault tank",
+      "role": "fast striker",
+      "professionColor": "#D97732",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "E",
+      "baseAngleDeg": 0,
+      "frameAnglesDeg": [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5],
+      "pairBoard": "source/canonical-pairs/assault-pair-board.png",
+      "hullLayer": "processed/layers/assault/hull-canonical.png",
+      "turretLayer": "processed/layers/assault/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/assault-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/assault-turret-canonical.png",
+      "sha256": {
+        "pairBoard": "793736e1377d67a0b306afbab966d8a96b9f186099caad690502f07d8ee280df",
+        "hullLayer": "a296d938cd2fbd923c42cac5b40900238691f5281747cda78d48775bf2a17664",
+        "turretLayer": "664dfaad6a78a56dea7751a2a101feb4d097162243d5231105626098e2f0208c",
+        "hullRuntime": "a868c0b880c096f32ebf0bc36cd5074bfb7b8a314dc96ff3699e5bc22fdae2ae",
+        "turretRuntime": "664dfaad6a78a56dea7751a2a101feb4d097162243d5231105626098e2f0208c"
+      }
+    },
+    "balanced": {
+      "displayName": "Ironclad command tank",
+      "role": "all-round command",
+      "professionColor": "#6D8EA3",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "N",
+      "baseAngleDeg": 270,
+      "frameAnglesDeg": [270, 292.5, 315, 337.5, 0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5],
+      "pairBoard": "source/canonical-pairs/balanced-pair-board.png",
+      "hullLayer": "processed/layers/balanced/hull-canonical.png",
+      "turretLayer": "processed/layers/balanced/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/balanced-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/balanced-turret-canonical.png",
+      "sha256": {
+        "pairBoard": "178e377967acd0626b6a0f26c4e604e252ff81fc406308c15cc46b0542efbc5a",
+        "hullLayer": "d0f40c3491f30eae13e76f4b9b6ff1ca61370bb08d7e71c0741e4e64625ca065",
+        "turretLayer": "86af5aecb0a9b13adfcdee0ceee0314ef4286f161df63ce8504d72fb9ec3f6f2",
+        "hullRuntime": "0de8b30a5a28165fa674eab26ee539992dae1e13f15655b04ab6826b0a6bac67",
+        "turretRuntime": "86af5aecb0a9b13adfcdee0ceee0314ef4286f161df63ce8504d72fb9ec3f6f2"
+      }
+    },
+    "heavy": {
+      "displayName": "Genbu fortress tank",
+      "role": "heavy armor",
+      "professionColor": "#30383E",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "S",
+      "baseAngleDeg": 90,
+      "frameAnglesDeg": [90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5, 0, 22.5, 45, 67.5],
+      "pairBoard": "source/canonical-pairs/heavy-pair-board.png",
+      "hullLayer": "processed/layers/heavy/hull-canonical.png",
+      "turretLayer": "processed/layers/heavy/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/heavy-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/heavy-turret-canonical.png",
+      "sha256": {
+        "pairBoard": "e7d83055fb01fdeea32052e03b084c5196a4d1a024a8b2db29e808475125be53",
+        "hullLayer": "68a21ebdbb3e930cf48294dc779f0e1ec15b0b19a113f113068ab20fadd9ffec",
+        "turretLayer": "257ee66c37baddf87375840d71638ef64085170030f1947119f01a685d7cc677",
+        "hullRuntime": "f2ae6d454ffb7bbbac3367126803c4158ac854b3f627d5ba99c38246d1e04ac8",
+        "turretRuntime": "257ee66c37baddf87375840d71638ef64085170030f1947119f01a685d7cc677"
+      }
+    }
+  },
+  "preserveForNow": [
+    "assets/ai-v15-topdown/processed/units/wingman_assault-sheet.png",
+    "assets/ai-v15-topdown/processed/units/wingman_guard-sheet.png",
+    "assets/ai-v15-topdown/processed/units/wingman_flex-sheet.png",
+    "assets/ai-v15-topdown/processed/units/enemy_crimson_tank-sheet.png",
+    "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier-sheet.png",
+    "assets/ai-v15-topdown/processed/units/boss_crimson_landship-sheet.png",
+    "assets/ai-v15-topdown/processed/units/support_airstrike_plane-sheet.png"
+  ],
+  "reviewArtifacts": [
+    "preview/unit-modular-contact-sheet.png"
+  ]
+}

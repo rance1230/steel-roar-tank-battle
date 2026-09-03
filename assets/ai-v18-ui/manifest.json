@@ -1,0 +1,106 @@
+{
+  "schema": "steel-roar.v18-ui-assets/1",
+  "status": "wired-v1.8.1",
+  "integration": "inlined-via-src/data/v18_ui.data.js+src/game/v18ui.js",
+  "sourceOfTruth": "source",
+  "runtimeDirectory": "runtime",
+  "generatedWith": "imagegen.imagegen + deterministic PIL normalization",
+  "designReference": "/Volumes/vol1/像素小游戏/V1.8视觉配套优化.md",
+  "tokens": {
+    "friendly": "#35C8FF",
+    "enemy": "#FF4C3F",
+    "gold": "#F6B94E",
+    "white": "#EEF6FF",
+    "background": "#0A0F14",
+    "panelAlpha": 0.72,
+    "hudAlpha": 0.58
+  },
+  "assets": {
+    "UI-TITLE": {
+      "source": "source/ui-title.png",
+      "runtime": "runtime/ui-title.webp",
+      "width": 1536,
+      "height": 864,
+      "colorMode": "RGB",
+      "alpha": false,
+      "sha256": {
+        "source": "e5e7eb56533b279889ef691584994a69890700e749eee15181cba7af906676cb",
+        "runtime": "48f6738b11932cb1753a269db185a3d1cb3d74e8779c4fff4bdc795612060912"
+      },
+      "loadScope": "title-only",
+      "safeArea": { "leftRatio": 0.35, "essentialSubjectMaxRatio": 0.70 }
+    },
+    "UI-FRM-BASE": {
+      "source": "source/ui-frame-base.png",
+      "runtime": "runtime/ui-frame-base.png",
+      "width": 1024,
+      "height": 1024,
+      "colorMode": "RGBA",
+      "alpha": true,
+      "sha256": {
+        "source": "7e5a0b63fbcadbe3c6b36cd59cab1531324d2d8f61e7e28a51120e44d6679fd3",
+        "runtime": "bd32ad0f17ee0a801bda86f170f11ea1a82d760b7529ddd7631051f194c1963f"
+      },
+      "runtimeWidth": 512,
+      "runtimeHeight": 512,
+      "nineSlice": { "sourceBorder": 96, "runtimeBorder": 48, "centerIsTransparent": true }
+    },
+    "UI-ICO-MASTER": {
+      "source": "source/ui-ico-master.png",
+      "runtime": "runtime/ui-ico-master.png",
+      "width": 1024,
+      "height": 1024,
+      "colorMode": "RGBA",
+      "alpha": true,
+      "sha256": {
+        "source": "bd9d3b2bcb38bd0e7db7e49ebadc765de0853bf197eba8225883be610b4add1b",
+        "runtime": "21a5b931fa9cec24c137adc2b76e91de68abc914473678959a1ea1b97e55c42b"
+      },
+      "runtimeWidth": 512,
+      "runtimeHeight": 512,
+      "grid": { "columns": 4, "rows": 2, "sourceCell": 256, "runtimeCell": 128 },
+      "icons": ["MG", "CANNON", "MISSILE", "AIRSTRIKE", "TURBO", "SHIELD", "PAUSE", "RESERVED"]
+    },
+    "UI-BADGE": {
+      "source": "source/ui-badge-frame.png",
+      "runtime": "runtime/ui-badge-frame.png",
+      "width": 1024,
+      "height": 1024,
+      "colorMode": "RGBA",
+      "alpha": true,
+      "sha256": {
+        "source": "300995b56ac4bf396a31b32a43fa4cdb6c3fd7b2c2fc609a5320202ae4d9619e",
+        "runtime": "67322b9243bc2018761da541ce4de7c8ba93c695985f5cd804e45062b042289e"
+      },
+      "runtimeWidth": 512,
+      "runtimeHeight": 512,
+      "centerIsTransparent": true,
+      "useWith": "V18.playerLayers or V18.paint"
+    },
+    "UI-BG-DEP": {
+      "source": "source/ui-bg-dep.png",
+      "runtime": "runtime/ui-bg-dep.webp",
+      "width": 1536,
+      "height": 864,
+      "colorMode": "RGB",
+      "alpha": false,
+      "sha256": {
+        "source": "d96aae14b5aec19aa7f8abd7fe062a701111e7cba0081c397d0d62186165ed8a",
+        "runtime": "7a85a099c91f34ba3a5b0b1309f214721db913454ee69af8246fe43249f118bf"
+      },
+      "loadScope": "garage-upgrade-only",
+      "tankAnchor": { "xRatio": 0.34, "yRatio": 0.72 },
+      "statsSafeArea": { "xMinRatio": 0.62, "widthRatio": 0.35 }
+    }
+  },
+  "iconStatePolicy": ["Ready", "Pressed", "Charging", "Full", "Cooldown", "Disabled", "Perfect", "Overdrive"],
+  "preserve": [
+    "assets/stage-intros",
+    "assets/ai-v15-topdown",
+    "assets/ai-v18-layers"
+  ],
+  "reviewArtifacts": [
+    "preview/ui-v18-contact-sheet.png",
+    "preview/ui-ico-24px-check.png"
+  ]
+}

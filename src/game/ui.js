@@ -269,8 +269,62 @@ function drawHelp(){
 }
 /* ---------- 整备画面 ---------- */
 function drawUpgrade(){
-  uctx.globalAlpha=0.84; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   TAP_RECTS=[];
+  /* v1.8 UI 新布局 (doc§13): 整备背景大图 + 左中维修台实时坦克(徽章框) + 右侧35%安全区面板;
+     V18UI 缺失时回退旧布局. 输入逻辑 (upgKey/TAP_RECTS/acts) 与旧版完全一致. */
+  const nu=window.V18UIR&&V18UIR.ok('badge');
+  if(nu){
+    const dep=V18UIR.bg('dep');
+    if(dep){ uctx.imageSmoothingEnabled=true; uctx.drawImage(dep,0,0,VW,VH); }
+    else { uctx.globalAlpha=0.84; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1; }
+    uctx.save();                                       /* 可读性压暗: 右侧面板带 + 底部 + 顶部轻角 */
+    const rg=uctx.createLinearGradient(VW*0.55,0,VW,0);
+    rg.addColorStop(0,'rgba(5,8,13,0)'); rg.addColorStop(1,'rgba(5,8,13,0.66)');
+    uctx.fillStyle=rg; uctx.fillRect(0,0,VW,VH);
+    const bg=uctx.createLinearGradient(0,VH*0.72,0,VH);
+    bg.addColorStop(0,'rgba(5,8,13,0)'); bg.addColorStop(1,'rgba(5,8,13,0.55)');
+    uctx.fillStyle=bg; uctx.fillRect(0,0,VW,VH);
+    uctx.restore();
+    /* 左中维修台: 徽章框 + 实时分层坦克 (车体朝上, 炮塔缓转; 不烘焙进背景) */
+    const ax=Math.round(0.34*VW), ay=Math.round(0.72*VH);
+    const v=hullCfg().vis||{};
+    V18UIR.badge(uctx,ax,ay,116,{ta:-Math.PI/2+ST.t*0.35});
+    txtO(T(HULLS[RUN.hull].i18n),ax,ay-70,9,PAL.gold,'center');
+    txt(v.callsign||'IRONCLAD-07',ax,ay+64,6,rgba(v.trim||PAL.cyan,0.95),'center');
+    upx(ax-22,ay+72,44,2,v.trim||PAL.cyan);           /* 机体职业色条 (阵营色仍走 IFF) */
+    /* 右侧安全区面板 (statsSafe x≥0.62VW) */
+    const PX=292,PW=178,PCX=PX+PW/2;
+    uPanel(PX,6,PW,258,PAL.gold,0.80);
+    txtO(T('upgT'),PCX,12,13,PAL.gold,'center');
+    txt(T('upgPts')+': '+RUN.pts,PCX,30,10,PAL.gold,'center');
+    const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr']];
+    rows.forEach((r,i)=>{
+      const y=46+i*22, sel=ST.upg.sel===i;
+      const lv=RUN.up[r[1]];
+      if(sel){ upx(PX+8,y-5,PW-16,18,PAL.panel2); upx(PX+8,y-5,2,18,PAL.gold); txt('▶',PX+14,y,9,PAL.gold); }
+      txt(T(r[0]),PX+26,y,9,sel?PAL.white:PAL.lite);
+      uMiniBar(PX+72,y+2,62,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
+      txt('Lv'+lv,PX+138,y,8,sel?PAL.gold:PAL.steel);
+      txt('-',PX+152,y,11,sel&&lv>0?PAL.red:PAL.steel,'center');
+      txt('+',PX+165,y,11,sel&&RUN.pts>0?PAL.lime:PAL.steel,'center');
+      TAP_RECTS.push({x:PX+6,y:y-4,w:140,h:20,act:()=>{ST.upg.sel=i;}});
+      TAP_RECTS.push({x:PX+144,y:y-6,w:16,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
+      TAP_RECTS.push({x:PX+158,y:y-6,w:16,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
+    });
+    const st=calcStats();
+    wrapTxt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),PW-26,8)
+      .forEach((l,i)=>txt(l,PCX,146+i*11,8,PAL.acid,'center'));
+    if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+2}),PCX,170,7,PAL.white,'center');
+    const touchU=inMode()==='touch';
+    uPanel(PX+18,236,142,20,PAL.gold,0.72);
+    txtO(touchU?T('ctrlGoT'):TF('ctrlGoP',{k:'⏎/A'}),PCX,241,8,PAL.white,'center');
+    TAP_RECTS.push({x:PX+18,y:234,w:142,h:24,act:()=>deployFromUpgrade()});
+    uPanel(6,VH-28,118,20,PAL.cyan,0.66);
+    txt((touchU?'':'R: ')+T('upgRefund'),65,VH-23,7,PAL.lite,'center');
+    TAP_RECTS.push({x:6,y:VH-28,w:118,h:20,act:()=>{refundAll();SFX.heal();}});
+    return;
+  }
+  uctx.globalAlpha=0.84; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   uPanel(48,8,VW-96,VH-28,PAL.gold,0.72);
   txtO(T('upgT'),VW/2,12,13,PAL.gold,'center');
   txt(T('upgPts')+': '+RUN.pts,VW/2,30,10,PAL.gold,'center');
