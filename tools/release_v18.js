@@ -48,8 +48,13 @@ try {
     '$HOME/Library/Android/sdk/build-tools/*/apksigner verify --print-certs ' + JSON.stringify(apk)).trim(); }
   catch (e) { certs = '(apksigner 不可用: ' + e.message.split('\n')[0] + ')'; }
 
+  const gradleTxt = fs.readFileSync(path.join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
+  const verCode = parseInt((gradleTxt.match(/versionCode\s+(\d+)/) || [])[1], 10);
+  const verName = (gradleTxt.match(/versionName\s+"([^"]+)"/) || [])[1];
+  if (!verCode || !verName) throw new Error('cannot read version from build.gradle');
+
   const manifest = {
-    version: '1.8.0', versionCode: 13, builtAt: new Date().toISOString(),
+    version: verName, versionCode: verCode, builtAt: new Date().toISOString(),
     indexHtml: { bytes: fs.statSync(path.join(ROOT, 'index.html')).size, sha256: hSrc },
     apk: { bytes: fs.statSync(apk).size, sha256: hApkFile, path: 'android/app/build/outputs/apk/release/app-release.apk' },
     signer: certs.split('\n').filter(l => /SHA-256|CN=/.test(l)).join('\n'),
