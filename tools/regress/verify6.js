@@ -114,12 +114,16 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
       const iv = setInterval(() => { out.push({t: tileAt((player.x / TS) | 0, (player.y / TS) | 0), s: Math.hypot(player.vx, player.vy)});
         if (++n >= 30) { clearInterval(iv); res(out); } }, 16); }));
     await page.keyboard.up('KeyW');
-    await ev(() => { window.G.tp(240, 135); player.vx = 0; player.vy = 0; });
-    await page.keyboard.down('KeyW'); await sleep(500);
-    const gs = await ev(() => Math.hypot(player.vx, player.vy));
-    await page.keyboard.up('KeyW');
     const ws = Math.max(0, ...wsam.filter(o => o.t === 3).map(o => o.s));
     const wframes = wsam.filter(o => o.t === 3).length;
+    /* 地面测速: findTile(0) 保证起步在地面格, 帧采样取最大 (写死地图中心会被随机岩石/河道堵死) */
+    const gpos = await ev(() => window.G.findTile(0));
+    await page.evaluate(w => { window.G.tp(w.x, w.y); player.vx = 0; player.vy = 0; }, gpos);
+    await page.keyboard.down('KeyW');
+    const gsam = await page.evaluate(() => new Promise(res => { const out = []; let n = 0;
+      const iv = setInterval(() => { out.push(Math.hypot(player.vx, player.vy)); if (++n >= 30) { clearInterval(iv); res(out); } }, 16); }));
+    await page.keyboard.up('KeyW');
+    const gs = Math.max(0, ...gsam);
     ok(wframes >= 3 && ws < gs * 0.75, '29 河流减速(水上最大 ' + ws.toFixed(0) + ' vs 地面 ' + gs.toFixed(0) + ', 水上帧' + wframes + ')');
   } else ok(false, '29 找不到水格');
   await ev(() => { ST.spawnT = 1e9; enemies.length = 0; window.G.boss(); });
@@ -146,7 +150,14 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await ev(() => { window.G.skipTo(6); }); await sleep(2600);     /* L7 开场走完进 play */
   await ev(() => { ST.spawnT = 1e9; window.G.win(); }); await sleep(600);
   await ev(() => onKeyPress('Enter')); await sleep(600);          /* L7 clear→win 撒花名单 */
-  await ev(() => onKeyPress('Enter')); await sleep(3400);         /* win Enter→直接下一周目(BASELINE: R 才是重分配) */
+  /* v1.9: win Enter→重编队 NG+ (选机体→选僚机→键位速览→整备→出击, 点数继承) */
+  await ev(() => onKeyPress('Enter')); await sleep(400);          /* win Enter→beginNgPlus: hull 菜单 */
+  ok(await ev(() => MENU && MENU.id === 'hull' && ST.flow === 'ngplus'), '35a 通关→重编队(hull 菜单, NG+ 流)');
+  await ev(() => menuActivate()); await sleep(300);               /* 选机体→wingman */
+  await ev(() => menuActivate()); await sleep(300);               /* 选僚机→ctrl */
+  await ev(() => exitCtrlIntro()); await sleep(300);              /* 速览→upgrade(NG+ 编入) */
+  ok(await ev(() => ST.state === 'upgrade' && ST.upg.from === 'win'), '35b 重编队→战地整备(from win)');
+  await ev(() => upgKey('Enter')); await sleep(3400);             /* 出击→cycle+1 L1 */
   const cyc1 = await ev(() => RUN.cycle), lvlN = await ev(() => RUN.lvl);
   ok(await ev(() => ST.state === 'play') && cyc1 === cyc0 + 1 && lvlN === 0, '35 通关→下一周目(cycle ' + cyc1 + ', L' + (lvlN + 1) + ')');
 
@@ -162,6 +173,6 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
 
   log('ERRORS:', errors.length ? errors.slice(0, 5) : 'none');
   await browser.close();
-  log(fails === 0 && errors.length === 0 ? '=== MAINFLOW 39 ALL PASS ===' : '=== ' + fails + ' FAILS ===');
+  log(fails === 0 && errors.length === 0 ? '=== MAINFLOW 41 ALL PASS ===' : '=== ' + fails + ' FAILS ===');
   process.exit(fails || errors.length ? 1 : 0);
 })().catch(e => { console.error('FATAL', e); process.exit(1); });

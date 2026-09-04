@@ -64,9 +64,37 @@ function makePlayer(){
     hp:s.maxHp,maxHp:s.maxHp,r:9,speed:s.speed,
     vx:0,vy:0,px:0,py:0,dist:0,moving:false,
     fireM:0,fireC:0,charge:0,charging:false,strikeCd:0,
-    mslCd:0,mslVolley:[],lockSlots:[],   /* v1.8 W4: 多锁导弹 — 冷却/固定步进弹幕队列/锁定快照 */
+    mslCd:0,mslVolley:[],lockSlots:[],mgLockId:0,mgAimMode:'auto',mgLockFlash:0,   /* 机枪自动瞄准与独立锁定 */
     shieldT:0,shieldCd:0,shieldGrace:0,shieldAge:9,lastShieldWasActive:false,breach:null,shieldFlash:0,
     sprintG:1,sprintLock:false,inv:1.4,dustT:0,flash:0,ghostA:0,ghostLen:0,trail:[]};
+}
+const MG_LOCK_R=360;
+function mgCandidates(){
+  return enemies.filter(e=>!e.dead&&!e.flying&&Math.hypot(e.x-player.x,e.y-player.y)<=MG_LOCK_R)
+    .sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
+}
+function cycleMgLock(){
+  const cs=mgCandidates(); if(!cs.length){player.mgLockId=0;return;}
+  const idx=cs.findIndex(e=>e.id===player.mgLockId);
+  player.mgLockId=cs[(idx+1+cs.length)%cs.length].id;
+  player.mgAimMode='lock'; player.mgLockFlash=0.55; SFX.pick();
+  const e=cs.find(x=>x.id===player.mgLockId); if(e)floater(e.x,e.y-e.r-12,T('mgLockMsg'),PAL.gold,8);
+}
+function updateMgAim(dt){
+  const p=player, ram=Math.hypot(PAD.rax,PAD.ray), cs=mgCandidates();
+  if(p.mgLockId&&!cs.some(e=>e.id===p.mgLockId)){p.mgLockId=0;p.mgAimMode='auto';p.mgLockFlash=0.28;}
+  if(PAD.just.lock)cycleMgLock();
+  const target=p.mgLockId?cs.find(e=>e.id===p.mgLockId):cs[0];
+  if(ram>0.18){
+    p.mgAimMode='manual';
+    const want=Math.atan2(PAD.ray,PAD.rax), tr=hullCfg().turret.rate*dt;
+    p.ta+=clamp(angDiff(p.ta,want),-tr,tr); p.aimT=0.35;
+  } else if(target){
+    p.mgAimMode=p.mgLockId?'lock':'auto';
+    const want=Math.atan2(target.y-p.y,target.x-p.x), tr=(hullCfg().turret.rate+5)*dt;
+    p.ta+=clamp(angDiff(p.ta,want),-tr,tr);
+  } else p.mgAimMode='auto';
+  p.mgLockFlash=Math.max(0,(p.mgLockFlash||0)-dt);
 }
 function shieldActive(){ return player.shieldT>0||player.shieldGrace>0; }
 
@@ -281,11 +309,11 @@ function updMslVolley(dt){
   }
 }
 function callAirstrike(){
-  let tx=player.x,ty=player.y,n=0;
-  for(const e of enemies){tx+=e.x;ty+=e.y;n++;}
-  if(n>0){tx/=n;ty/=n;}
-  const fromLeft=rnd()<0.5;
-  planes.push({ox:fromLeft?-40:WORLDW+40,oy:clamp(ty+rnd(-30,30),40,WORLDH-40),x:fromLeft?-40:WORLDW+40,y:clamp(ty+rnd(-30,30),40,WORLDH-40),dir:fromLeft?1:-1,dropT:0.1,drops:7});
+  const target=mgCandidates()[0]; if(!target)return;
+  const a=rnd(0,Math.PI*2),orbit=120;
+  planes.push({ox:player.x+Math.cos(a)*orbit,oy:player.y+Math.sin(a)*orbit,
+    x:player.x+Math.cos(a)*orbit,y:player.y+Math.sin(a)*orbit,phase:a,radius:orbit,
+    dropT:0.45,drops:7,targetId:target.id});
   SFX.strike(player.x,player.y); floater(player.x,player.y-26,T('strikeMsg'),PAL.gold,9);
 }
 
@@ -370,9 +398,7 @@ function updPlayer(dt){
   if(p.moving){ const mA=Math.atan2(p.vy,p.vx);
     p.bodyA+=clamp(angDiff(p.bodyA,mA),-mv.turnRate*dt,mv.turnRate*dt); }
   /* v1.8 W2: 炮塔 — 有瞄准输入按 turret.rate 平滑跟随, 松手永久保持最后方向(契约§2) */
-  { const ram=Math.hypot(PAD.rax,PAD.ray);
-    if(ram>0.18){ const want=Math.atan2(PAD.ray,PAD.rax), tr=hullCfg().turret.rate*dt;
-      p.ta+=clamp(angDiff(p.ta,want),-tr,tr); p.aimT=0.35; } }
+  updateMgAim(dt);
   p.aimT=Math.max(0,(p.aimT||0)-dt);
   p.inv=Math.max(0,p.inv-dt); p.flash=Math.max(0,p.flash-dt);
   p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt);
@@ -737,14 +763,17 @@ function updShots(dt){
 function updPlanes(dt){
   for(let i=planes.length-1;i>=0;i--){ const pl=planes[i];
     pl.ox=pl.x; pl.oy=pl.y;
-    pl.x+=pl.dir*270*dt; pl.dropT-=dt;
+    pl.phase+=dt*1.35; pl.radius=120+Math.sin(ST.t*1.7+pl.phase)*14;
+    pl.x=player.x+Math.cos(pl.phase)*pl.radius; pl.y=player.y+Math.sin(pl.phase)*pl.radius; pl.dropT-=dt;
     if(pl.dropT<=0&&pl.drops>0){ pl.drops--; pl.dropT=0.15;
-      const bx=pl.x+rnd(-8,8),by=pl.y+rnd(-2,10);
-      bombs.push({x:bx,y:by,ox:pl.x,oy:pl.y,t:0.34}); SFX.airDrop(bx,by); }
-    if(pl.x<-60||pl.x>WORLDW+60)planes.splice(i,1);
+      const cs=mgCandidates(), e=cs.find(x=>x.id===pl.targetId)||cs[0];
+      if(e){const bx=e.x+rnd(-18,18),by=e.y+rnd(-18,18); bombs.push({x:pl.x,y:pl.y,tx:bx,ty:by,ox:pl.x,oy:pl.y,t:0.48,life:0}); SFX.airDrop(bx,by);}
+    }
+    if(pl.drops<=0&&pl.dropT<=-0.8)planes.splice(i,1);
   }
   for(let i=bombs.length-1;i>=0;i--){ const b=bombs[i]; b.ox=b.x; b.oy=b.y; b.t-=dt;
-    if(b.t<=0){ explodeAt(b.x,b.y,30,20,false,'airstrike',0,2); bombs.splice(i,1); } }   /* v1.7: 空袭→中档; §3: airstrike 独立cause=atk×(原经explodeAt隐式×atk, 行为保真) */
+    b.life+=dt; const k=clamp(b.life/0.48,0,1); b.x=b.ox+(b.tx-b.ox)*Math.min(1,k*1.2); b.y=b.oy+(b.ty-b.oy)*Math.min(1,k*1.2);
+    if(b.t<=0){b.x=b.tx;b.y=b.ty;explodeAt(b.x,b.y,30,20,false,'airstrike',0,2);bombs.splice(i,1);} }
 }
 function updPickups(dt){
   for(let i=pickups.length-1;i>=0;i--){ const pk=pickups[i];
@@ -802,7 +831,7 @@ let wingman=null, wingThreatT=0;   /* wingThreatT: 玩家近旁有来袭弹的�
 function spawnWingman(){
   const w=WINGS[RUN.wing];
   if(!w||RUN.wing==='none'||!player){ wingman=null; return; }
-  const st=calcStats(), mhp=Math.round(st.maxHp*w.hp);
+  const st=calcStats(), g=RUN.wingmanGrowth||wingGrowthDef(), mhp=Math.round(st.maxHp*w.hp*(1+0.08*g.health));
   wingman={type:RUN.wing,x:player.x-34,y:player.y+26,ox:player.x-34,oy:player.y+26,
     vx:0,vy:0,a:0,r:9,hp:mhp,maxHp:mhp,downT:0,fireT:0,scanT:0.4,trailT:0};
 }
@@ -815,7 +844,7 @@ function wingmanDown(){
 }
 function updWingman(dt){
   if(!wingman||!player)return;
-  const w=wingman, cfg=WINGS[w.type];
+  const w=wingman, cfg=WINGS[w.type], g=RUN.wingmanGrowth||wingGrowthDef();
   w.ox=w.x; w.oy=w.y;
   wingThreatT=Math.max(0,wingThreatT-dt);
   if(w.downT>0){ w.downT-=dt;
@@ -869,9 +898,9 @@ function updWingman(dt){
   /* 开火: 240px 内最近敌人, 机枪弹 ×机型火力系数 */
   w.fireT-=dt;
   if(near&&nd<240*240&&w.fireT<=0){
-    w.fireT=0.16;
+    w.fireT=0.16/Math.max(1,1+0.08*g.rate);
     const ta=Math.atan2(near.y-w.y,near.x-w.x)+rnd(-0.06,0.06);
-    shot(w.x+Math.cos(ta)*10,w.y+Math.sin(ta)*10,ta,360,3*cfg.fire,true,'mg');   /* raw; 僚机=装备延伸, atk 仍由管线乘(契约§3) */
+    shot(w.x+Math.cos(ta)*10,w.y+Math.sin(ta)*10,ta,360,3*cfg.fire*(1+0.10*g.firepower),true,'mg');   /* 僚机成长 */
     part(w.x+Math.cos(ta)*11,w.y+Math.sin(ta)*11,rnd(-10,10),rnd(-10,10),0.06,PAL.gold,1.6);
     addLight(w.x+Math.cos(ta)*11,w.y+Math.sin(ta)*11,10,PAL.gold,0.12,0.05);
     SFX.wingMG(w.x,w.y);
@@ -883,7 +912,7 @@ function updWingman(dt){
     if(w.scanT<=0){ w.scanT=0.4;
       for(let i=shots.length-1;i>=0;i--){ const s=shots[i];
         if(s.friendly)continue;
-        if(dist2(s.x,s.y,player.x,player.y)<90*90&&dist2(s.x,s.y,w.x,w.y)<70*70){
+        if(dist2(s.x,s.y,player.x,player.y)<90*90&&dist2(s.x,s.y,w.x,w.y)<(70+g.intercept*4)**2){
           burst(s.x,s.y,5,[PAL.cyan,PAL.white],70,0.25); releaseShot(i); break; } }
     }
   }

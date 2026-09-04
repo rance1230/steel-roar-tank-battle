@@ -131,7 +131,8 @@ function badge(g,cx,cy,size,o){
   const w=size*0.58, bodyA=o.bodyA!==undefined?o.bodyA:-Math.PI/2;
   const ta=o.ta!==undefined?o.ta:bodyA;
   let painted=false;
-  if(typeof V18!=='undefined'&&V18.ok)painted=V18.playerLayers(g,cx,cy,bodyA,ta,w);
+  if(typeof V18M!=='undefined'&&V18M.playerLayers)painted=V18M.playerLayers(g,cx,cy,bodyA,ta,w);
+  if(!painted&&typeof V18!=='undefined'&&V18.ok)painted=V18.playerLayers(g,cx,cy,bodyA,ta,w);
   if(!painted&&typeof drawTank==='function'){                 /* 像素兜底 */
     const v=(typeof HULLS!=='undefined'&&HULLS[RUN.hull]&&HULLS[RUN.hull].vis)||{};
     g.save(); g.translate(cx,cy); g.scale(w/34,w/34);
@@ -157,6 +158,21 @@ function lostList(){ return lostFlash.filter(f=>ST.t-f.t<0.16); }
 
 /* ---------- 触屏按钮皮肤: 图标 + 充能环 + ×N + 透明度态 (按钮即 HUD, doc §3/§11) ---------- */
 const ACTION_ICO={KeyJ:0,KeyK:1,KeyL:2,KeyU:3,ShiftLeft:4,Space:5,KeyP:6};
+/* 锁定键图标: 母图第 8 格为保留空位(契约必须透明), 用代码画锁定框 (与 drawLocks 角括弧+中心点同语言) */
+function lockIconURL(size){
+  const key='lock|'+size;
+  if(urlCache.has(key))return urlCache.get(key);
+  const cv=document.createElement('canvas'); cv.width=cv.height=96;
+  const g=cv.getContext('2d'), r=30, L=13;
+  g.strokeStyle='#EEF6FF'; g.lineWidth=6; g.lineCap='butt';
+  for(let q=0;q<4;q++){ const a0=q*Math.PI/2-Math.PI/4, cx=48+Math.cos(a0)*r, cy=48+Math.sin(a0)*r;
+    const tx=Math.cos(a0+Math.PI/2)*L, ty=Math.sin(a0+Math.PI/2)*L;
+    g.beginPath(); g.moveTo(cx-tx,cy-ty); g.lineTo(cx,cy); g.lineTo(cx+tx,cy+ty); g.stroke(); }
+  g.fillStyle='#EEF6FF'; g.beginPath(); g.arc(48,48,7,0,Math.PI*2); g.fill();
+  const url=cv.toDataURL('image/png');
+  urlCache.set(key,url);
+  return url;
+}
 function actionTint(a){
   if(a==='KeyL'||a==='Space')return T.friendly;
   if(a==='KeyU')return T.gold;
@@ -183,10 +199,10 @@ function skinTouch(){
   if(!els.length)return;
   for(const el of els){
     const a=el.dataset.action, idx=ACTION_ICO[a];
-    if(idx===undefined)continue;
+    if(idx===undefined&&a!=='KeyI')continue;
     const ic=el.querySelector('.ic');
     if(ic){
-      const url=iconURL(idx,actionTint(a),96);
+      const url=a==='KeyI'?lockIconURL(96):iconURL(idx,actionTint(a),96);
       if(url){
         ic.innerHTML='';
         const im=document.createElement('img'); im.className='vic'; im.src=url; im.alt='';
@@ -271,9 +287,10 @@ function touchHud(state){
       setRing(el,rgba(PAL.lite,0.95),1-p.shieldCd/Math.max(0.5,sc.cd*cdMul)); setBtnState(el,'dim');
     } else { setRing(el,T.friendly,0); setBtnState(el,'crit'); }
   }
-  /* 机枪/主炮: 主武器常亮 (0.65), 图标暗色底板保雪地可读 */
+  /* 机枪/主炮: 主武器常亮 (0.8), 图标暗色底板保雪地可读; 锁定键: 锁定中=关键亮 */
   if((el=byAct('KeyJ')))setBtnState(el,'fire');
   if((el=byAct('KeyK')))setBtnState(el,'fire');
+  if((el=byAct('KeyI')))setBtnState(el,p.mgLockId?'crit':'idle');
 }
 
 /* ---------- 页面级懒解码/释放 (main.draw 每帧调用) ---------- */

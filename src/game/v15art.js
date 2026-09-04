@@ -146,8 +146,13 @@ V15.flushHd=function(ox,oy){
       if(q.kind==='ghost'){   /* v1.7: 深色剪影帧, 无影无光, 关平滑保轮廓锐利; v1.8: 有 id 时用 v18 hull 帧 */
         let f=null, wg=w;
         if(q.id){
-          const m=V18.meta[q.id];
-          if(m){ const gi=V18.frameIndex(q.id,q.ang||0); f=V18.ghostFrame(q.id,gi,q.lv||0); wg=w*m.scales[gi]; }
+          const vm=q.id.replace(/^hulls_/,'');
+          const mm=typeof V18M!=='undefined'&&V18M.meta[vm];
+          if(mm){ const gi=V18M.frameIndex(vm,q.ang||0); f=V18M.ghostFrame(vm,gi,q.lv||0); }
+          else {
+            const m=V18.meta[q.id];
+            if(m){ const gi=V18.frameIndex(q.id,q.ang||0); f=V18.ghostFrame(q.id,gi,q.lv||0); wg=w*m.scales[gi]; }
+          }
         } else f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
         uctx.save(); uctx.imageSmoothingEnabled=false;
         uctx.globalAlpha=q.alpha!==undefined?q.alpha:0.8;
@@ -169,7 +174,8 @@ V15.flushHd=function(ox,oy){
       if(q.kind==='player'&&(q.od||q.sprint))v15Glow(q.x,q.y,24,q.od?PAL.gold:PAL.blue,q.od?0.16:0.11);
       /* 16向帧: 就近方向, 不做旋转; v1.8 W2: 玩家=分层 hull@bodyA + turret@ta, 失败回退整图+ctx炮塔帽 */
       if(q.kind==='player'){
-        if(!V18.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w)){
+        const newMecha=typeof V18M!=='undefined'&&V18M.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w);
+        if(!newMecha&&!V18.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w)){
           v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
           drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);
         }
@@ -211,7 +217,8 @@ function v15Player(){
   /* v1.7: 残影彗尾 — 条数随冲刺位移增长(ghostLen/GHOST_GAP, 封顶6), 逐条变浅变淡, 先于本体入队 */
   const gn=ghostCount();
   if(player.ghostA>0.02&&gn>0&&player.trail&&player.trail.length>4){
-    const gid=V18.ready?('hulls_'+(RUN.hull||'balanced')):null;   /* v1.8: 残影用分层 hull 帧 */
+    const hk=RUN.hull||'balanced';
+    const gid=typeof V18M!=='undefined'&&V18M.meta[hk]?('hulls_'+hk):(V18.ready?('hulls_'+hk):null);   /* 新机体优先 */
     for(let i=0;i<gn;i++){
       const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
       V15.queue.push({kind:'ghost',id:gid,spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
@@ -277,7 +284,8 @@ window.drawHullPreviewAI=function(k,x,y,w,h){
       const cx=x+w/2, cy=y+h/2-4, dw=h-14;
       const pl=Math.sin(ST.t*1.1)*w*0.06;
       v15Glow(cx,cy,24,col,0.13);
-      if(!V18.playerLayers(uctx,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw)){   /* v1.8: 分层预览 */
+      const newMecha=typeof V18M!=='undefined'&&V18M.layers(uctx,k,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw);
+      if(!newMecha&&!V18.playerLayers(uctx,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw)){   /* 新机体优先 */
         v15Paint(uctx,sp,cx+pl,cy,-Math.PI/2,dw);
         drawTurretOverlay(uctx,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw/54,HULLS[k].vis);
       }
@@ -326,5 +334,6 @@ function hookG15(){
   G.v18={
     info(){return {ok:V18.ok,ready:V18.ready,imgs:Object.keys(V18.imgs).length};},
   };
+  G.v18mecha={info(){return typeof V18M==='undefined'?null:V18M.info();}};
 }
 requestAnimationFrame(hookG15);

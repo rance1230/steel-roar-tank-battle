@@ -1,0 +1,171 @@
+{
+  "schema": "steel-roar.v18-mecha/1",
+  "status": "wired-v1.9.0",
+  "integration": "inlined-via-src/data/v18_mecha.data.js+src/game/v18mecha.js (V18M 优先渲染, 旧 V18/v15 逐级回退)",
+  "designReference": "/Volumes/vol1/像素小游戏/V1.8视觉配套优化.md",
+  "styleReference": "assets/ai-v15-topdown/topdown-assets-manifest.json",
+  "generatedWith": "imagegen.imagegen + deterministic PIL normalization",
+  "architecture": {
+    "hull": {
+      "format": "4x4 atlas",
+      "directions": 16,
+      "stepDegrees": 22.5,
+      "rotationOrder": "clockwise",
+      "cellSize": 256,
+      "pivotPx": [
+        128,
+        128
+      ],
+      "frameZero": "south",
+      "frameZeroAngleDeg": 90
+    },
+    "turret": {
+      "format": "single canonical layer",
+      "canvasSize": 512,
+      "pivotPx": [
+        256,
+        256
+      ],
+      "zeroAngle": "east",
+      "continuousRotation": true,
+      "angleRange": "0..2PI"
+    }
+  },
+  "units": {
+    "assault": {
+      "displayName": "Raijin assault mech",
+      "role": "fast striker",
+      "professionColor": "#D97732",
+      "highlightColor": "#F6B94E",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "S",
+      "baseAngleDeg": 90,
+      "frameAnglesDeg": [
+        90,
+        112.5,
+        135,
+        157.5,
+        180,
+        202.5,
+        225,
+        247.5,
+        270,
+        292.5,
+        315,
+        337.5,
+        0,
+        22.5,
+        45,
+        67.5
+      ],
+      "pairBoard": "source/canonical-pairs/assault-pair-board.png",
+      "hullLayer": "processed/layers/assault/hull-canonical.png",
+      "turretLayer": "processed/layers/assault/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/assault-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/assault-turret-canonical.png",
+      "assembledFallback": "runtime/assembled/assault-assembled-16dir.png",
+      "sha256": {
+        "pairBoard": "cfcff5414ca622107061d14f04d7d92439fbdeba6d6eaf8b78671e79878adeba",
+        "hullLayer": "47eebb5d7311d638d348fd9f9811213e2c241458f144f25138734e79393ff865",
+        "turretLayer": "eaf8c82eaec5d6d4a516f79b2884bbcc7d9a1cdadadb87478797c700b63fda97",
+        "hullRuntime": "7fe2f9b923fcb224eaf9307b018e112810cb9afadf7ae7858486831496632693",
+        "turretRuntime": "eaf8c82eaec5d6d4a516f79b2884bbcc7d9a1cdadadb87478797c700b63fda97",
+        "assembledFallback": "43117467aa1f794d1331a29d9bb175b8679a76172fb563ccd48edd07e5bf342e"
+      }
+    },
+    "balanced": {
+      "displayName": "Ironclad command mech",
+      "role": "all-round command",
+      "professionColor": "#6D8EA3",
+      "highlightColor": "#EEF6FF",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "S",
+      "baseAngleDeg": 90,
+      "frameAnglesDeg": [
+        90,
+        112.5,
+        135,
+        157.5,
+        180,
+        202.5,
+        225,
+        247.5,
+        270,
+        292.5,
+        315,
+        337.5,
+        0,
+        22.5,
+        45,
+        67.5
+      ],
+      "pairBoard": "source/canonical-pairs/balanced-pair-board.png",
+      "hullLayer": "processed/layers/balanced/hull-canonical.png",
+      "turretLayer": "processed/layers/balanced/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/balanced-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/balanced-turret-canonical.png",
+      "assembledFallback": "runtime/assembled/balanced-assembled-16dir.png",
+      "sha256": {
+        "pairBoard": "ca0618072538e7d07ac8ef0cc9fe53993c54981a1915aaaba2e731fad238858d",
+        "hullLayer": "f77f163deb63a1efffe350c610e58b57084c0a01bbd1fad075e2fbd224827115",
+        "turretLayer": "41c1edb9b315fa03cf0d114f05e2ffc87327fc5b19f9fff2c0cfb4f5ba58ae39",
+        "hullRuntime": "74d4c0d0a205ad426c63f9e903245dee8559e77215a844238b40225102ced04b",
+        "turretRuntime": "41c1edb9b315fa03cf0d114f05e2ffc87327fc5b19f9fff2c0cfb4f5ba58ae39",
+        "assembledFallback": "61ff65d85078437941bdff6459e994d27eeeb16f85a6306c5dd30b0a1d6c5a57"
+      }
+    },
+    "heavy": {
+      "displayName": "Genbu fortress mech",
+      "role": "heavy armor",
+      "professionColor": "#30383E",
+      "highlightColor": "#F6B94E",
+      "iffColor": "#35C8FF",
+      "bodyFacing": "S",
+      "baseAngleDeg": 90,
+      "frameAnglesDeg": [
+        90,
+        112.5,
+        135,
+        157.5,
+        180,
+        202.5,
+        225,
+        247.5,
+        270,
+        292.5,
+        315,
+        337.5,
+        0,
+        22.5,
+        45,
+        67.5
+      ],
+      "pairBoard": "source/canonical-pairs/heavy-pair-board.png",
+      "hullLayer": "processed/layers/heavy/hull-canonical.png",
+      "turretLayer": "processed/layers/heavy/turret-canonical.png",
+      "hullRuntime": "runtime/hulls/heavy-hull-16dir.png",
+      "turretRuntime": "runtime/turrets/heavy-turret-canonical.png",
+      "assembledFallback": "runtime/assembled/heavy-assembled-16dir.png",
+      "sha256": {
+        "pairBoard": "44e9a723472b5f4c8a310280a69fd2e359685962cb2d63178886048bce22a2ec",
+        "hullLayer": "1fb20a33490625661e5c44dc15be24fc229c82569d9aa4b6a699e8c87abbfa9b",
+        "turretLayer": "c3b7e6a3675eb360dcd0e37ac8e06deb4a0bbbbad859be889a8a6e8d91dfd1b2",
+        "hullRuntime": "8c23f06ad49b0de03a6ddb2ad755fc03a1f5c213b429742dda59bf39a787fab3",
+        "turretRuntime": "c3b7e6a3675eb360dcd0e37ac8e06deb4a0bbbbad859be889a8a6e8d91dfd1b2",
+        "assembledFallback": "bdb8886e43d24901fc053b446068963a0e04a79e3e72cffba5ee965bf80afe7e"
+      }
+    }
+  },
+  "preserveForNow": [
+    "assets/ai-v15-topdown/processed/units/wingman_assault-sheet.png",
+    "assets/ai-v15-topdown/processed/units/wingman_guard-sheet.png",
+    "assets/ai-v15-topdown/processed/units/wingman_flex-sheet.png",
+    "assets/ai-v15-topdown/processed/units/enemy_crimson_tank-sheet.png",
+    "assets/ai-v15-topdown/processed/units/enemy_crimson_carrier-sheet.png",
+    "assets/ai-v15-topdown/processed/units/boss_crimson_landship-sheet.png",
+    "assets/ai-v15-topdown/processed/units/support_airstrike_plane-sheet.png"
+  ],
+  "reviewArtifacts": [
+    "preview/mecha-contact-sheet.png"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "tag": "v19-check",
+  "results": [
+    {
+      "pass": true,
+      "msg": "冲刺残影可见度 ghost=1 (期望>0.9)"
+    },
+    {
+      "pass": true,
+      "msg": "残影随冲刺增长 ramp@0.65s=1条 (期望1~4)"
+    },
+    {
+      "pass": true,
+      "msg": "满尾条数 ghostN=6 (期望>=5)"
+    },
+    {
+      "pass": true,
+      "msg": "卡住后残影归零 ghostN=0 len=0 (期望0)"
+    },
+    {
+      "pass": true,
+      "msg": "残影位置历史 trail=90 (期望>=20)"
+    },
+    {
+      "pass": true,
+      "msg": "机枪命中震动 T0=0.35 (记录:0.35,0.5,0.9,0.45,1.8)"
+    },
+    {
+      "pass": true,
+      "msg": "主炮命中震动 T1=0.9"
+    },
+    {
+      "pass": true,
+      "msg": "导弹命中震动 T2=1.8"
+    },
+    {
+      "pass": true,
+      "msg": "命中震动不超过 T2 (max=1.8)"
+    },
+    {
+      "pass": true,
+      "msg": "击破震动 T3=3 (记录:3)"
+    },
+    {
+      "pass": true,
+      "msg": "击破后 ST.shake=3.00 >= 3"
+    },
+    {
+      "pass": true,
+      "msg": "战斗场景 fps=51 (期望>=50)"
+    }
+  ],
+  "perf": {
+    "fps": 51,
+    "updateMs": 0,
+    "renderMs": 0.64,
+    "updates": 1286,
+    "quality": "AUTO",
+    "qLevel": 0,
+    "ghost": 0,
+    "ghostN": 0,
+    "ghostLen": 0,
+    "trail": 90,
+    "counts": {
+      "enemies": 6,
+      "shots": 2,
+      "parts": 12,
+      "pickups": 4
+    }
+  },
+  "sprintPerf": {
+    "fps": 52,
+    "updateMs": 0,
+    "renderMs": 0.69,
+    "updates": 579,
+    "quality": "AUTO",
+    "qLevel": 0,
+    "ghost": 1,
+    "ghostN": 6,
+    "ghostLen": 180,
+    "trail": 90,
+    "counts": {
+      "enemies": 0,
+      "shots": 0,
+      "parts": 102,
+      "pickups": 0
+    }
+  },
+  "hitKicks": [
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.5,
+    0.9,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.35,
+    0.45,
+    0.35,
+    1.8,
+    0.9,
+    1.8,
+    1.8,
+    0.35,
+    0.35,
+    0.35,
+    0.35
+  ],
+  "killLog": {
+    "kicks": [
+      3
+    ],
+    "shake": 3,
+    "hold": 0
+  },
+  "errors": []
+}

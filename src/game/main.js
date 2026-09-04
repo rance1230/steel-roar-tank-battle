@@ -25,7 +25,7 @@ function startLevel(){
   ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;ST.nextEnemyId=0;
   ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
-  lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq}));
+  lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq,wingmanGrowth:RUN.wingmanGrowth}));
   COMBO.n=0; COMBO.t=0; COMBO.tier=0; COMBO.od=false;   /* vNext: 连击重置 */
   MENU=null; ST.state='intro'; ST.introT=2.4;
   BGM.play('introj',false);
@@ -35,6 +35,7 @@ function retryLevel(){
   const s=JSON.parse(lvlSnap?JSON.stringify(lvlSnap):'{}');
   RUN.score=s.score||0;RUN.kills=s.kills||0;RUN.time=s.time||0;RUN.pts=s.pts||0;
   RUN.up=Object.assign({hp:0,spd:0,atk:0,def:0,cdr:0},s.up||{});RUN.eq=Object.assign({armor:0,track:0,fire:0,comp:0},s.eq||{});
+  RUN.wingmanGrowth=Object.assign(wingGrowthDef(),s.wingmanGrowth||{});
   startLevel();
 }
 function levelClear(){
@@ -88,9 +89,17 @@ function enterCtrlIntro(){
   ST.ctrlMode=detected>=0?detected:2;
   MENU=null; BGM.play('title',true);
 }
-function exitCtrlIntro(){ startLevel(); }
+function exitCtrlIntro(){
+  if(ST.flow==='ngplus'){ ST.flow=null; ST.state='upgrade'; ST.upg={sel:0,from:'win'}; MENU=null; return; }
+  startLevel();
+}
 /* 开局流程: 机体选择 → 僚机选择 → 键位速览 → 战斗 */
 function startNewGame(){ RUN=RUN_DEF(); openMenu('hull','title'); }
+function beginNgPlus(){
+  const pts=RUN.pts;                     /* cycle 由 deployFromUpgrade(from win) 恰好 +1, 此处不预增 */
+  RUN=RUN_DEF(); RUN.pts=pts;
+  ST.flow='ngplus'; openMenu('hull','win');
+}
 function continueGame(){ if(loadRun())startLevel(); else startNewGame(); }
 
 function onKeyPress(code){
@@ -114,12 +123,13 @@ function onKeyPress(code){
       else if(code==='KeyQ')toTitle();
       break;
     case 'win':
-      if(code==='Enter'){ RUN.cycle++; RUN.lvl=0; saveRun(); startLevel(); }
+      if(code==='Enter'){ beginNgPlus(); }
       else if(code==='KeyR'){ refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'}; }
       else if(code==='KeyQ')toTitle();
       break;
     case 'play':
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
+      if(code==='KeyI'){ cycleMgLock(); }
       if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); player.shieldAge=0; SFX.shield(player.x,player.y); } }
       if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5*calcStats().cdMul; callAirstrike(); }
       break;
@@ -145,8 +155,9 @@ function tick(dt){
   if(ST.state==='upgrade'){
     if(PAD.just.up){ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length;SFX.pick();}
     if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length;SFX.pick();}
-    if(PAD.just.right&&RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();}   /* v1.8 W5: 手柄路径补30级封顶 */
-    if(PAD.just.left&&RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();}
+    if(PAD.just.right)upgAdjust(UPG_KEYS[ST.upg.sel],1);
+    if(PAD.just.left)upgAdjust(UPG_KEYS[ST.upg.sel],-1);
+    tickUpgradeHold(dt);
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;
   }
@@ -178,7 +189,7 @@ function tick(dt){
     if(PAD.just.confirm)retryLevel();          /* A=重试本关 */
     else if(PAD.just.back)toTitle(); }         /* B=回标题 */
   else if(ST.state==='win'){ ST.winT+=dt; updWinFx(dt);
-    if(PAD.just.confirm){ RUN.cycle++; RUN.lvl=0; saveRun(); startLevel(); }  /* A=下一周目 */
+    if(PAD.just.confirm){ beginNgPlus(); }  /* A=重新编队并进入下一周目 */
     else if(PAD.just.cannon){ refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'}; }  /* X=重分配 */
     else if(PAD.just.back)toTitle();           /* B=回标题 */
     if(!ST.creditsBgm&&ST.winT>4.8){ ST.creditsBgm=true; BGM.play('credits',true); } }
@@ -242,6 +253,7 @@ function draw(alpha){
   drawFloats();
   drawAim();   /* v1.8 W2: 瞄准指示 */
   drawLocks(); /* v1.8 W4: 多锁准星 */
+  drawMgLockHud();
   if(ST.state==='play'||ST.state==='clear')drawHUD();
   if(ST.state==='intro')drawIntroCard();
   if(ST.state==='clear')drawClearCard();
@@ -265,7 +277,7 @@ window.G={
     enemies:enemies.length,kills:ST.killsLevel,quota:cfg?cfg.quota:0,time:ST.levelTime,
     score:RUN.score,runKills:RUN.kills,pts:RUN.pts,cycle:RUN.cycle,lvl:RUN.lvl,
     up:JSON.parse(JSON.stringify(RUN.up)),eq:JSON.parse(JSON.stringify(RUN.eq)),
-    hull:RUN.hull,wing:RUN.wing,debug:!!ST.debugActive,
+    hull:RUN.hull,wing:RUN.wing,mgLockId:player?player.mgLockId:0,mgAimMode:player?player.mgAimMode:'auto',wingmanGrowth:JSON.parse(JSON.stringify(RUN.wingmanGrowth||wingGrowthDef())),debug:!!ST.debugActive,
     wingman:wingman?{type:wingman.type,hp:Math.round(wingman.hp),maxHp:wingman.maxHp,down:wingman.downT>0}:null,
     bgmName:BGM.name,pad:PAD.gp?PAD.gp.index:-1,
     vkeys:[...VKEYS], alive:enemies.map(e=>({k:e.kind,b:e.boss,hp:Math.round(e.hp),x:Math.round(e.x),y:Math.round(e.y)}))}; },

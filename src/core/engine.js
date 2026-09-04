@@ -50,7 +50,7 @@ function startGameLoop(updateFn,renderFn){
    输入: 键盘 + 虚拟键 + 手柄
    ============================================================ */
 const keys=new Set(), VKEYS=new Set();
-const GAME_CODES=new Set(['F3','KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyJ','KeyK','KeyL','KeyU','Space','ShiftLeft','ShiftRight','Enter','KeyR','KeyQ','KeyP','KeyM','Escape','Backspace']);
+const GAME_CODES=new Set(['F3','KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyI','KeyJ','KeyK','KeyL','KeyU','Space','ShiftLeft','ShiftRight','Enter','KeyR','KeyQ','KeyP','KeyM','Escape','Backspace']);
 addEventListener('keydown',e=>{
   if(GAME_CODES.has(e.code))e.preventDefault();
   initAudio(); setInMode('key');
@@ -69,6 +69,7 @@ const IN={   /* v1.8 契约§1: 方向键由移动改为瞄准(8向数字量→p
   cannon:()=>anyHold('KeyK')||PAD.hold.cannon,
   msl:()=>anyHold('KeyL')||PAD.hold.msl,
   strike:()=>anyHold('KeyU')||PAD.hold.strike,
+  lock:()=>anyHold('KeyI')||PAD.hold.lock,
   sprint:()=>anyHold('ShiftLeft')||anyHold('ShiftRight')||PAD.hold.sprint,
 };
 /* ---------- 手柄 (Gamepad API: 蓝牙/有线统一) ---------- */
@@ -82,7 +83,7 @@ let INMODE=null;
 function inMode(){ if(INMODE)return INMODE;
   return PAD.gp?'pad':((SET.touch!=='off'&&hasTouch)?'touch':'key'); }
 function setInMode(m){ if(m&&INMODE!==m){INMODE=m;} }
-const KEY_NAMES={mg:'J',cannon:'K',msl:'L',strike:'U',sprint:'SHIFT',shield:'SPACE',pause:'P',confirm:'ENTER',back:'ESC'};
+const KEY_NAMES={mg:'J',cannon:'K',msl:'L',strike:'U',lock:'I',sprint:'SHIFT',shield:'SPACE',pause:'P',confirm:'ENTER',back:'ESC'};
 /* keyHint(a): 当前输入方式下动作 a 的提示按键名; 触屏模式返回 ''(虚拟按钮自带中文标签) */
 function keyHint(a){
   const m=inMode();
@@ -237,6 +238,7 @@ function tbtn(label,ic,css,code,press,parent){
   const edge='max(12px,calc(var(--safe-right) + 10px))';
   const inner='calc(var(--safe-right) + '+L+' + 20px)';
   B(cr,'机枪','●',{right:edge,bottom:'calc(var(--safe-bottom) + 16px)',width:L,height:L},'KeyJ');
+  B(cr,'锁定','◎',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + '+S+' + 24px)',width:S,height:S},'KeyI',true);
   B(cr,'主炮','◆',{right:inner,bottom:'calc(var(--safe-bottom) + 4px)',width:S,height:S},'KeyK');
   B(cr,'加速','»',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + 12px)',width:S,height:S},'ShiftLeft');
   B(cr,'导弹','▲',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + '+S+' + 20px)',width:S,height:S},'KeyL');

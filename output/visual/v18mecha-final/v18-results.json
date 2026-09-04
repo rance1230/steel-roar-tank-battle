@@ -1,0 +1,14 @@
+[
+  {
+    "pass": true,
+    "msg": "V18 6 atlas 全部解码 ({\"ok\":true,\"ready\":true,\"imgs\":6})"
+  },
+  {
+    "pass": true,
+    "msg": "进入 play 态"
+  },
+  {
+    "pass": true,
+    "msg": "零页面错误"
+  }
+]

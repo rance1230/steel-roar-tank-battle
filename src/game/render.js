@@ -488,6 +488,18 @@ function drawLocks(){
   }
   uctx.restore();
 }
+function drawMgLockHud(){
+  if(!player||MENU||ST.state!=='play')return;
+  const cs=mgCandidates(), e=player.mgLockId?cs.find(x=>x.id===player.mgLockId):cs[0];
+  if(!e)return;
+  const ex=IPx(e),ey=IPy(e),r=e.r+11,c=player.mgAimMode==='manual'?PAL.lite:(player.mgLockId?PAL.gold:PAL.cyan);
+  uctx.save(); uctx.translate(-Math.round(IPx(cam)),-Math.round(IPy(cam)));
+  uctx.strokeStyle=rgba(c,0.9); uctx.lineWidth=1.5; uctx.setLineDash([4,3]); uctx.strokeRect(ex-r,ey-r,r*2,r*2); uctx.setLineDash([]);
+  uctx.fillStyle=c; uctx.fillRect(ex-r,ey-r,8,2); uctx.fillRect(ex-r,ey-r,2,8);
+  uctx.font='bold 8px '+FONT; uctx.fillText(player.mgLockId?'LOCK':'AUTO',ex+r+4,ey-r-2);
+  uctx.fillText(Math.round(Math.hypot(e.x-player.x,e.y-player.y))+'m',ex+r+4,ey+r+7);
+  uctx.restore();
+}
 function drawTruck(x,y,ang,o){
   const s=o.s, accent=o.trim||PAL.red;
   unitShadow(x,y,(o.boss?18:11)*s,(o.boss?7:5)*s,o.boss?0.5:0.34);
@@ -560,8 +572,11 @@ function drawShots(){
   }
 }
 function drawPlaneI(pl){
-  glow(IPx(pl)-pl.dir*10,IPy(pl),20,PAL.cyan,0.08);
-  ctx.save(); ctx.translate(IPx(pl),IPy(pl)); ctx.scale(pl.dir,1);
+  ctx.save(); ctx.globalAlpha=0.22; ctx.strokeStyle=PAL.gold; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(IPx(player),IPy(player),pl.radius||120,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  const fa=pl.phase||0, dir=Math.cos(fa)>=0?1:-1;
+  glow(IPx(pl)-dir*10,IPy(pl),20,PAL.cyan,0.08);
+  ctx.save(); ctx.translate(IPx(pl),IPy(pl)); ctx.scale(dir,1);
   px(-16,-3,32,6,PAL.rail); px(-5,-13,10,26,PAL.rail);
   px(-16,-3,32,2,PAL.lite); px(-5,-13,2,26,PAL.lite);
   px(-18,-1,5,2,PAL.ember); px(10,-2,5,4,PAL.cyan);
@@ -845,7 +860,7 @@ function drawWorld(){
   if(ST.state!=='over')drawPlayer();
   if(ST.state!=='over')drawWingman();
   drawShots();
-  for(const b of bombs){ glow(IPx(b),IPy(b),12,PAL.ember,0.18); px(IPx(b)-2,IPy(b)-2,4,4,PAL.dark); px(IPx(b)-1,IPy(b)-4,2,3,PAL.red); }
+  for(const b of bombs){ glow(IPx(b),IPy(b),12,PAL.ember,0.18); px(IPx(b)-2,IPy(b)-2,4,4,PAL.dark); px(IPx(b)-1,IPy(b)-4,2,3,PAL.red); ctx.globalAlpha=0.35;ctx.strokeStyle=PAL.red;ctx.strokeRect(IPx(b)-8,IPy(b)-8,16,16);ctx.globalAlpha=1; }
   for(const pl of planes)drawPlaneI(pl);
   drawParts();
   drawDynamicLights();
@@ -1184,9 +1199,7 @@ function drawWin(){
   uctx.restore();
   upx(0,118,VW,1,PAL.gold); upx(0,VH-8,VW,1,PAL.dark);
   if(inMode()==='touch'&&ST.winT>2){
-    drawTouchAction(24,VH-35,140,TF('touchNext',{n:RUN.cycle+2}),PAL.gold,()=>{
-      RUN.cycle++; RUN.lvl=0; saveRun(); startLevel();
-    });
+    drawTouchAction(24,VH-35,140,TF('touchNext',{n:RUN.cycle+2}),PAL.gold,()=>beginNgPlus());   /* v1.9: 触屏同走重编队流 */
     drawTouchAction(170,VH-35,140,T('touchRespec'),PAL.cyan,()=>{
       refundAll(); ST.state='upgrade'; ST.upg={sel:0,from:'win'};
     });

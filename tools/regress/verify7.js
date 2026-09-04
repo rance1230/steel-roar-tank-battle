@@ -19,7 +19,7 @@ const OUT = __dirname + '/../../output/visual/regress-pre';
 
   // 1) 虚拟按钮(v1.5+): 7 个动作钮 + 摇杆环
   const btns = await page.evaluate(() => [...document.querySelectorAll('.tbtn')].map(b => b.innerText.trim()));
-  ok(btns.length === 7, '虚拟按钮数量 7 (' + btns.length + ')');
+  ok(btns.length === 8, '虚拟按钮数量 8 (' + btns.length + ')');   /* v1.9: +锁定 ◎ */
   ok(btns.every(t => t && t.length > 0), '每个按钮都有文字说明');
   log('  按钮文字:', JSON.stringify(btns));
   ok(await page.evaluate(() => { const j = document.getElementById('joy'); return !!j && !!j.querySelector('.jstick'); }), '模拟摇杆环 #joy 存在(含摇杆头)');

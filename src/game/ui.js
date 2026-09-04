@@ -53,7 +53,7 @@ function menuBack(){
 function volBlocks(v){ if(v===0)return T('volOff'); return '▮'.repeat(v)+'▯'.repeat(4-v); }
 /* padmap 行的动作名 (engine 改键成功 toast 也用它); 帮助页标题去掉 [J] 类后缀 */
 function padActLabel(a){
-  const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',pause:'padPause'};
+  const lbls={mg:'h1t',cannon:'h2t',msl:'h3t',strike:'h4t',sprint:'h5t',shield:'h6t',lock:'mgLock',pause:'padPause'};
   return lbls[a]?T(lbls[a]).replace(/\s*\[.*/,''):(a==='confirm'?'⏎ OK':'⎋ '+T('back'));
 }
 function menuItems(id){
@@ -116,7 +116,7 @@ function menuItems(id){
     return its;
   }
   if(id==='padmap'){
-    const acts=['mg','cannon','msl','strike','sprint','shield','pause','confirm','back'];
+    const acts=['mg','cannon','msl','strike','sprint','shield','lock','pause','confirm','back'];
     for(const a of acts){
       its.push({choice:1,act:a,
         labelFn:()=>padActLabel(a),
@@ -158,17 +158,28 @@ function menuKey(code){
   }
 }
 /* ---------- 整备(升级)画面输入 ---------- */
-const UPG_KEYS=['hp','spd','atk','def','cdr'];   /* v1.8 W5: CDR 培养项 */
+const UPG_KEYS=['hp','spd','atk','def','cdr','wgFire','wgHp','wgRate','wgIntercept'];
+const UPG_MAP={wgFire:['firepower','wing'],wgHp:['health','wing'],wgRate:['rate','wing'],wgIntercept:['intercept','wing']};
+const UPG_HOLD={key:null,delta:0,t:0,next:0};
+function upgValue(key){const m=UPG_MAP[key];return m?(RUN.wingmanGrowth||wingGrowthDef())[m[0]]:RUN.up[key];}
+function upgAdjust(key,d){
+  const v=upgValue(key); if(d>0&&RUN.pts>0&&v<30){RUN.pts--;if(UPG_MAP[key])RUN.wingmanGrowth[UPG_MAP[key][0]]++;else RUN.up[key]++;SFX.pick();}
+  if(d<0&&v>0){RUN.pts++;if(UPG_MAP[key])RUN.wingmanGrowth[UPG_MAP[key][0]]--;else RUN.up[key]--;SFX.pick();}
+}
+function startUpgradeHold(key,d){upgAdjust(key,d);UPG_HOLD.key=key;UPG_HOLD.delta=d;UPG_HOLD.t=0;UPG_HOLD.next=0.42;}
+function stopUpgradeHold(){UPG_HOLD.key=null;UPG_HOLD.delta=0;}
+function tickUpgradeHold(dt){if(!UPG_HOLD.key)return;UPG_HOLD.t+=dt;if(UPG_HOLD.t<UPG_HOLD.next)return;UPG_HOLD.next=0.075;upgAdjust(UPG_HOLD.key,UPG_HOLD.delta);}
 function upgKey(code){
   switch(code){
     case 'ArrowUp': case 'KeyW': ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length; SFX.pick(); break;
     case 'ArrowDown': case 'KeyS': ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length; SFX.pick(); break;
-    case 'ArrowRight': case 'KeyD': if(RUN.pts>0&&RUN.up[UPG_KEYS[ST.upg.sel]]<30){RUN.pts--;RUN.up[UPG_KEYS[ST.upg.sel]]++;SFX.pick();} break;
-    case 'ArrowLeft': case 'KeyA': if(RUN.up[UPG_KEYS[ST.upg.sel]]>0){RUN.pts++;RUN.up[UPG_KEYS[ST.upg.sel]]--;SFX.pick();} break;
+    case 'ArrowRight': case 'KeyD': upgAdjust(UPG_KEYS[ST.upg.sel],1); break;
+    case 'ArrowLeft': case 'KeyA': upgAdjust(UPG_KEYS[ST.upg.sel],-1); break;
     case 'Enter': case 'KeyJ': deployFromUpgrade(); break;
     case 'KeyR': refundAll(); SFX.heal(); break;
   }
 }
+addEventListener('pointerup',stopUpgradeHold); addEventListener('pointercancel',stopUpgradeHold); addEventListener('blur',stopUpgradeHold);
 
 /* ---------- 菜单绘制 ---------- */
 function drawMenu(){
@@ -237,7 +248,7 @@ function drawHelp(){
   uctx.globalAlpha=0.82; upx(0,0,VW,VH,PAL.ink); uctx.globalAlpha=1;
   uPanel(22,8,VW-44,VH-22,PAL.cyan,0.68);
   /* 标题动态按键提示: 手柄模式显示手柄键名, 触屏模式不显示键名 */
-  const HELP_ACTS={1:'mg',2:'cannon',3:'msl',4:'strike',5:'sprint',6:'shield'};
+  const HELP_ACTS={1:'mg',2:'cannon',3:'msl',4:'strike',5:'sprint',6:'shield',7:'lock'};
   let ht=T('h'+pg+'t').replace(/\s*\[.*\]/,'');
   const kh=keyHint(HELP_ACTS[pg]);
   if(kh)ht+=' ['+kh+']';
@@ -297,10 +308,10 @@ function drawUpgrade(){
     uPanel(PX,6,PW,258,PAL.gold,0.80);
     txtO(T('upgT'),PCX,12,13,PAL.gold,'center');
     txt(T('upgPts')+': '+RUN.pts,PCX,30,10,PAL.gold,'center');
-    const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr']];
+    const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr'],['upgWFire','wgFire'],['upgWHp','wgHp'],['upgWRate','wgRate'],['upgWIntercept','wgIntercept']];
     rows.forEach((r,i)=>{
-      const y=46+i*22, sel=ST.upg.sel===i;
-      const lv=RUN.up[r[1]];
+      const y=40+i*16, sel=ST.upg.sel===i;
+      const lv=upgValue(r[1]);
       if(sel){ upx(PX+8,y-5,PW-16,18,PAL.panel2); upx(PX+8,y-5,2,18,PAL.gold); txt('▶',PX+14,y,9,PAL.gold); }
       txt(T(r[0]),PX+26,y,9,sel?PAL.white:PAL.lite);
       uMiniBar(PX+70,y+2,48,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
@@ -308,13 +319,13 @@ function drawUpgrade(){
       txt('-',PX+148,y,11,sel&&lv>0?PAL.red:PAL.lite,'center');
       txt('+',PX+162,y,11,sel&&RUN.pts>0?PAL.lime:PAL.lite,'center');
       TAP_RECTS.push({x:PX+6,y:y-4,w:130,h:20,act:()=>{ST.upg.sel=i;}});
-      TAP_RECTS.push({x:PX+141,y:y-6,w:14,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
-      TAP_RECTS.push({x:PX+155,y:y-6,w:14,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
+      TAP_RECTS.push({x:PX+141,y:y-6,w:14,h:20,act:p=>{if(p&&p.pointerType==='touch')startUpgradeHold(r[1],-1);else upgAdjust(r[1],-1);}});
+      TAP_RECTS.push({x:PX+155,y:y-6,w:14,h:20,act:p=>{if(p&&p.pointerType==='touch')startUpgradeHold(r[1],1);else upgAdjust(r[1],1);}});
     });
     const st=calcStats();
     wrapTxt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),PW-26,8)
-      .forEach((l,i)=>txt(l,PCX,146+i*11,8,PAL.acid,'center'));
-    if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+2}),PCX,170,7,PAL.white,'center');
+      .forEach((l,i)=>txt(l,PCX,184+i*10,8,PAL.acid,'center'));
+    if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+1}),PCX,216,7,PAL.white,'center');
     const touchU=inMode()==='touch';
     uPanel(PX+18,236,142,20,PAL.gold,0.72);
     txtO(touchU?T('ctrlGoT'):TF('ctrlGoP',{k:'⏎/A'}),PCX,241,8,PAL.white,'center');
@@ -328,10 +339,10 @@ function drawUpgrade(){
   uPanel(48,8,VW-96,VH-28,PAL.gold,0.72);
   txtO(T('upgT'),VW/2,12,13,PAL.gold,'center');
   txt(T('upgPts')+': '+RUN.pts,VW/2,30,10,PAL.gold,'center');
-  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr']];   /* v1.8 W5: 5行 */
+  const rows=[['upgHp','hp'],['upgSpd','spd'],['upgAtk','atk'],['upgDef','def'],['upgCdr','cdr'],['upgWFire','wgFire'],['upgWHp','wgHp'],['upgWRate','wgRate'],['upgWIntercept','wgIntercept']];
   rows.forEach((r,i)=>{
-    const y=46+i*21, sel=ST.upg.sel===i;
-    const lv=RUN.up[r[1]];
+    const y=39+i*16, sel=ST.upg.sel===i;
+    const lv=upgValue(r[1]);
     if(sel){ upx(66,y-5,250,18,PAL.panel2); upx(66,y-5,2,18,PAL.gold); txt('▶',60,y,9,PAL.gold); }
     txt(T(r[0]),74,y,9,sel?PAL.white:PAL.lite);
     uMiniBar(150,y+2,100,6,Math.min(1,lv/30),lv>=30?PAL.gold:PAL.acid);
@@ -339,12 +350,12 @@ function drawUpgrade(){
     txt('-',290,y,11,sel&&lv>0?PAL.red:PAL.steel,'center');
     txt('+',310,y,11,sel&&RUN.pts>0?PAL.lime:PAL.steel,'center');
     TAP_RECTS.push({x:56,y:y-4,w:230,h:20,act:()=>{ST.upg.sel=i;}});
-    TAP_RECTS.push({x:280,y:y-6,w:20,h:20,act:()=>{if(lv>0){RUN.pts++;RUN.up[r[1]]--;SFX.pick();}}});
-    TAP_RECTS.push({x:300,y:y-6,w:20,h:20,act:()=>{if(RUN.pts>0&&lv<30){RUN.pts--;RUN.up[r[1]]++;SFX.pick();}}});
+    TAP_RECTS.push({x:280,y:y-6,w:20,h:20,act:p=>{if(p&&p.pointerType==='touch')startUpgradeHold(r[1],-1);else upgAdjust(r[1],-1);}});
+    TAP_RECTS.push({x:300,y:y-6,w:20,h:20,act:p=>{if(p&&p.pointerType==='touch')startUpgradeHold(r[1],1);else upgAdjust(r[1],1);}});
   });
   const st=calcStats();
-  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),VW/2,162,9,PAL.acid,'center');
-  if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+2}),VW/2,166,7,PAL.white,'center');
+  txt(TF('upgStat',{a:Math.round(st.maxHp),s:Math.round((st.speed/88-1)*100),k:Math.round((st.atk-1)*100),d:Math.round(st.def*100),c:Math.round((1-st.cdMul)*100)}),VW/2,184,8,PAL.acid,'center');
+  if(ST.upg.from==='win')txt(TF('winOpt',{n:RUN.cycle+1}),VW/2,198,7,PAL.white,'center');
   const blink=(ST.t%1.2)<0.86;
   if(blink)txtO(T('upgHint'),VW/2,VH-40,7,PAL.lite,'center');
   TAP_RECTS.push({x:VW/2-70,y:VH-26,w:140,h:18,act:()=>deployFromUpgrade()});
@@ -365,6 +376,7 @@ const CTRL_ACTS=[
   {id:'strike',t:'cStrike',scene:4},
   {id:'sprint',t:'cSprint',scene:5},
   {id:'shield',t:'cShield',scene:6},
+  {id:'lock',  t:'mgLock', scene:1},
   {id:'pause', t:'cPause', scene:-1}];
 function ctrlKeyOf(a,mode){
   if(mode===0){ const bi=SET.pad[a]; return bi>=0?padBtnName(bi):''; }
