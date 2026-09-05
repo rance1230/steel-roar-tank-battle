@@ -21,10 +21,16 @@ function genMap(){
   if(cfg.river){ const mid=MAPH/2+rnd(-4,4)|0, seed=rnd(10);
     for(let x=1;x<MAPW-1;x++){ const yy=Math.round(mid+Math.sin(x*0.22+seed)*2.4);
       for(let k=0;k<3;k++){ const y=yy+k; if(y>0&&y<MAPH-1) m[y*MAPW+x]=3; } } }
-  const rockN=cfg.ground==='waste'?18:10;
-  for(let i=0;i<rockN;i++){ let x,y,tries=0;
-    do{x=rnd(2,MAPW-2)|0;y=rnd(2,MAPH-2)|0;tries++;}while(tries<30&&(m[y*MAPW+x]===5||Math.abs(x-MAPW/2)<4&&Math.abs(y-MAPH/2)<4));
-    m[y*MAPW+x]=5; }
+  const rockN=cfg.ground==='waste'?18:10,rocks=[];
+  // Two empty tiles of surface clearance: a 16px slit cannot fit an 18px tank.
+  for(let i=0;i<rockN;i++){
+    for(let tries=0;tries<100;tries++){
+      const x=rnd(3,MAPW-3)|0,y=rnd(3,MAPH-3)|0;
+      if(Math.abs(x-MAPW/2)<5&&Math.abs(y-MAPH/2)<5)continue;
+      if(rocks.some(r=>Math.hypot(Math.max(0,Math.abs(x-r.x)-1)*TS,Math.max(0,Math.abs(y-r.y)-1)*TS)<32))continue;
+      m[y*MAPW+x]=5;rocks.push({x,y});break;
+    }
+  }
   terr={m};
 }
 function blockedAt(x,y,r){

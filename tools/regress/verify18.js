@@ -1,7 +1,7 @@
 /* verify18 — v1.8 专项断言套件 (W9 Layer B; 按 CONTROL_CONTRACT_v1.8)
    [G0-5] 旧存档迁移: v1.7/v1.3 trSave 无 cdr → backfill cdr=0 / 其余不变 / refundAll 守恒 / retry 兜底 */
-const pw = require('/Users/rancequan/.hermes/hermes-agent/node_modules/playwright-core');
-const EXE = process.env.HOME + '/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
+const pw = require('./runtime.cjs').pw;
+const EXE = require('./runtime.cjs').executablePath;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(...a);
 let fails = 0;
@@ -12,7 +12,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   const errors = [];
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
-  await page.goto('file:///Volumes/vol1/像素小游戏/index.html'); await sleep(1000);
+  await page.goto(require('./runtime.cjs').gameURL); await sleep(1000);
   const ev = fn => page.evaluate(fn);
 
   /* ---- A. v1.7 旧存档 (up 无 cdr) 加载 backfill ---- */
@@ -305,6 +305,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   await sleep(700);                                /* 等 L4 残留弹幕全部出膛 */
   await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; enemies.length = 0; });
   const L5 = await page.evaluate(() => new Promise(res => {      /* 无目标→沿ta直射 (插桩计数, 不依赖弹数组存量) */
+    const wasLab=DBG.lab; DBG.lab=true; /* 无目标武器测试须同时暂停编队导演 */
     enemies.length = 0; player.mslCd = 0; player.ta = 0;
     window.__dumbN = 0; window.__lockN = 0;
     const _fm = fireMissileAt;
@@ -312,7 +313,7 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
     keys.add('KeyL');
     setTimeout(() => { keys.delete('KeyL');
       setTimeout(() => { fireMissileAt = _fm; window.fireMissileAt = _fm;
-        res({n: window.__dumbN, dumb: window.__lockN === 0 && window.__dumbN > 0}); }, 300); }, 1000); }));
+        DBG.lab=wasLab; res({n: window.__dumbN, dumb: window.__lockN === 0 && window.__dumbN > 0}); }, 300); }, 1000); }));
   ok(L5.n >= 1 && L5.dumb, 'L5 无目标沿ta直射 dumb-fire (dumb=' + L5.n + ', 全部无lock=' + L5.dumb + ')');
   await ev(() => { player.mslVolley.length = 0; player.lockSlots.length = 0; RUN.hull = 'balanced'; });
 
@@ -369,13 +370,17 @@ const ok = (c, n) => { log((c ? 'PASS' : '!!FAIL') + ' - ' + n); if (!c) fails++
   ok(N3.tg && N3.moved > 60, 'N3 坦克侧闪: 前兆辉光+横移击退 (tg=' + N3.tg + ', kv=' + N3.moved + ')');
 
   /* ---- O. W9-B 补齐: MG 击杀节奏 + 静态零 p.a ---- */
-  const O1 = await page.evaluate(() => new Promise(res => {   /* MG 单杀 truck ≥1.2s (削玩家后节奏) */
+  const O1 = await page.evaluate(() => new Promise(res => {   /* Isolated MG kill: no prior projectiles, combo buffs, or wing damage. */
+    resetTransientInput(); enemies.length=0;shots.length=0;planes.length=0;bombs.length=0;wingman=null;
+    COMBO.n=0;COMBO.tier=0;COMBO.od=false;COMBO.t=0;ST.dbg={atk:1};ST.lightT=9999;
+    player.vx=player.vy=0;player.fireM=0;player.breach=null;SET.autoFire=false;
+
     RUN.hull = 'balanced'; RUN.up = {hp: 0, spd: 0, atk: 0, def: 0, cdr: 0}; RUN.eq = {armor: 0, track: 0, fire: 0, comp: 0};
     const s = window.__open(); G.tp(s.x, s.y);
     const t = G.dummy('truck', s.x + 60, s.y); t.stun = 99; t.kvx = 0; t.kvy = 0;
     player.ta = 0; player.bodyA = 0;
     keys.add('KeyJ'); const t0 = performance.now();
-    const iv = setInterval(() => { if (t.dead) { clearInterval(iv); keys.delete('KeyJ');
+    const iv = setInterval(() => { if (t.dead || performance.now()-t0>5000) { clearInterval(iv); keys.delete('KeyJ');
         res({ms: Math.round(performance.now() - t0), hp: t.maxHp}); } }, 50); }));
   ok(O1.ms >= 1100 && O1.ms <= 4000, 'O1 MG 击杀节奏 1.1-4s (' + O1.ms + 'ms, hp' + O1.hp.toFixed(1) + ' — 本关cfg×难度后血量, 非秒杀)');
 

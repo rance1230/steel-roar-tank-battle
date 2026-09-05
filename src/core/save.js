@@ -4,11 +4,19 @@
    设置 / 难度 / 存档
    ============================================================ */
 const SAVE_VERSION=3;
-const SET_DEF={lang:'zh',diff:2,bgm:3,se:3,touch:'auto',
+const SET_DEF={lang:'zh',diff:2,bgm:3,se:3,touch:'auto',aimMode:'hybrid',autoFire:false,shake:1,
   pad:{mg:0,cannon:2,msl:3,strike:1,sprint:5,shield:4,lock:11,pause:9,confirm:0,back:1}};
 let SET=(function(){try{const s=JSON.parse(localStorage.getItem('trSet'));
-  if(s&&s.pad)return Object.assign(JSON.parse(JSON.stringify(SET_DEF)),s);}catch(e){}
+  if(s&&typeof s==='object'){const out=Object.assign(JSON.parse(JSON.stringify(SET_DEF)),s);out.pad=Object.assign({},SET_DEF.pad,s.pad||{});out.aimMode=['auto','hybrid','manual'].includes(s.aimMode)?s.aimMode:'hybrid';out.shake=[0,0.5,1].includes(s.shake)?s.shake:1;return out;}}catch(e){}
   return JSON.parse(JSON.stringify(SET_DEF));})();
+const AIM_MODES=['auto','hybrid','manual'];
+function aimMode(){ return AIM_MODES.includes(SET.aimMode)?SET.aimMode:'hybrid'; }
+function setAimMode(mode){
+  SET.aimMode=AIM_MODES.includes(mode)?mode:'hybrid';
+  resetTransientInput();
+  if(typeof player!=='undefined'&&player){player.mgLockId=0;player.mgAutoId=0;player.aimT=0;player.mgAimMode=aimMode()==='manual'?'manual':'auto';}
+  saveSet(); updOvl();
+}
 function saveSet(){try{localStorage.setItem('trSet',JSON.stringify(SET));}catch(e){}}
 const VOLS=[0,0.12,0.24,0.36,0.50], SEVOLS=[0,0.20,0.40,0.60,0.85];
 

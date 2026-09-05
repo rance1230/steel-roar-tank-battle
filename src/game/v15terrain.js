@@ -15,18 +15,23 @@ window.V15T={ok:false,ready:false,sets:null};
   if(!M||!M.terrain||!M.terrain.stages||!M.terrain.stages.length)return;
   const T=M.terrain, stages=T.stages;
   V15T.sets=new Array(stages.length);
-  function bakeSet(im){
+  function bakeSet(im,stage){
     /* 条带 8 槽横排; 顺序 = TERRAIN_SLOTS [0,1,2,6,7,8,14,15] */
     const src=im.naturalWidth/8, sh=im.naturalHeight;
     const mk=j=>{ const c=document.createElement('canvas'); c.width=TS; c.height=TS;
       const g=c.getContext('2d'); g.imageSmoothingEnabled=true;
-      g.drawImage(im,j*src,0,src,sh,0,0,TS,TS); return c; };
+      g.drawImage(im,j*src,0,src,sh,0,0,TS,TS);
+      if(j!==5){ // Preserve rock edges; quiet flat ground, snow and industrial noise.
+        const tint=['#aa9275','#68767c','#607765','#777b7d','#afc4d0','#485968','#756a63'][stage]||'#777b7d';
+        g.fillStyle=tint;g.globalAlpha=stage===4?0.50:stage===3?0.42:0.23;g.fillRect(0,0,TS,TS);
+      }
+      return c; };
     return {g0:mk(0),g1:mk(1),path:mk(2),water:mk(3),wedge:mk(4),rock:mk(5),d0:mk(6),d1:mk(7)};
   }
   let left=stages.length;
   for(let i=0;i<stages.length;i++){
     const im=new Image();
-    im.onload=()=>{ try{ V15T.sets[i]=bakeSet(im); }catch(e){}
+    im.onload=()=>{ try{ V15T.sets[i]=bakeSet(im,i); }catch(e){}
       if(--left===0){ V15T.ok=V15T.sets.some(Boolean); V15T.ready=true; } };
     im.onerror=()=>{ if(--left===0){ V15T.ok=V15T.sets.some(Boolean); V15T.ready=true; } };
     im.src=M.images[stages[i].img];

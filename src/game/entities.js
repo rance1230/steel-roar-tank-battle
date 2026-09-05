@@ -42,18 +42,18 @@ let shotsFired=0;
 /* v1.7: 冲刺残影 — 彗尾模型: 位置历史环(60Hz×1.5s) + 尾长随冲刺实际位移增长,
    每走 GHOST_GAP(26px≈一个身位)多一条剪影, 封顶 GHOST_TAILMAX(156px=6条);
    停冲或卡住(实际位移≈0, 顶墙速度再大也不算)时尾长收缩 → 残影逐条消失 */
-const GHOST_GAP=30, GHOST_TAILMAX=180, GHOST_SHRINK=380;
-function trailRec(p){ p.trail=p.trail||[]; p.trail.push({x:p.x,y:p.y,a:p.bodyA}); if(p.trail.length>90)p.trail.shift(); }
+const GHOST_GAP=12, GHOST_TAILMAX=48, GHOST_SHRINK=380;
+function trailRec(p){p.trail=p.trail||[];const prev=p.trail[p.trail.length-1];if(prev&&Math.hypot(p.x-prev.x,p.y-prev.y)>100)p.trail.length=0; p.trail.push({x:p.x,y:p.y,a:p.bodyA,ta:p.ta,t:ST.t});if(p.trail.length>36)p.trail.shift();}
 function trailAtDist(p,distBack){
   const t=p.trail; if(!t||t.length<2)return null;
   let need=distBack;
   for(let i=t.length-1;i>0;i--){
     const dx=t[i].x-t[i-1].x, dy=t[i].y-t[i-1].y, d=Math.hypot(dx,dy);
     if(d>0&&need<=d){ const k=need/d;
-      return {x:t[i].x+(t[i-1].x-t[i].x)*k, y:t[i].y+(t[i-1].y-t[i].y)*k, a:t[i].a}; }
+      return {x:t[i].x+(t[i-1].x-t[i].x)*k, y:t[i].y+(t[i-1].y-t[i].y)*k, a:t[i].a+angDiff(t[i].a,t[i-1].a)*k,ta:t[i].ta+angDiff(t[i].ta,t[i-1].ta)*k,t:t[i].t+(t[i-1].t-t[i].t)*k}; }
     need-=d;
   }
-  return t[0];
+  return null;
 }
 function ghostCount(){ return player?Math.min(6,Math.floor((player.ghostLen||0)/GHOST_GAP)):0; }
 
@@ -74,26 +74,32 @@ function mgCandidates(){
     .sort((a,b)=>dist2(player.x,player.y,a.x,a.y)-dist2(player.x,player.y,b.x,b.y));
 }
 function cycleMgLock(){
+  if(!player||aimMode()==='manual')return;
   const cs=mgCandidates(); if(!cs.length){player.mgLockId=0;return;}
   const idx=cs.findIndex(e=>e.id===player.mgLockId);
-  player.mgLockId=cs[(idx+1+cs.length)%cs.length].id;
-  player.mgAimMode='lock'; player.mgLockFlash=0.55; SFX.pick();
+  player.mgLockId=idx<0?(cs.find(e=>e.id===player.mgAutoId)||cs[0]).id:cs[(idx+1)%cs.length].id;
+  player.mgAimMode='lock'; player.mgLockFlash=0.55; SFX.lock();
   const e=cs.find(x=>x.id===player.mgLockId); if(e)floater(e.x,e.y-e.r-12,T('mgLockMsg'),PAL.gold,8);
 }
 function updateMgAim(dt){
-  const p=player, ram=Math.hypot(PAD.rax,PAD.ray), cs=mgCandidates();
-  if(p.mgLockId&&!cs.some(e=>e.id===p.mgLockId)){p.mgLockId=0;p.mgAimMode='auto';p.mgLockFlash=0.28;}
-  if(PAD.just.lock)cycleMgLock();
-  const target=p.mgLockId?cs.find(e=>e.id===p.mgLockId):cs[0];
-  if(ram>0.18){
-    p.mgAimMode='manual';
+  const p=player, mode=aimMode(), ram=Math.hypot(PAD.rax,PAD.ray), cs=mgCandidates();
+  if(p.mgLockId&&!cs.some(e=>e.id===p.mgLockId)){p.mgLockId=0;p.mgLockFlash=0.28;}
+  if(PAD.just.lock&&mode!=='manual')cycleMgLock();
+  const nearest=cs[0], held=cs.find(e=>e.id===p.mgAutoId);
+  // A new target must be materially closer before automatic tracking switches.
+  const autoTarget=held&&(!nearest||dist2(p.x,p.y,held.x,held.y)<dist2(p.x,p.y,nearest.x,nearest.y)*1.44)?held:nearest;
+  const target=p.mgLockId?cs.find(e=>e.id===p.mgLockId):autoTarget;
+  p.mgAutoId=autoTarget?autoTarget.id:0;
+  if(mode!=='auto'&&ram>0.18){
+    p.mgAimMode='manual'; p.aimT=0.65;
     const want=Math.atan2(PAD.ray,PAD.rax), tr=hullCfg().turret.rate*dt;
-    p.ta+=clamp(angDiff(p.ta,want),-tr,tr); p.aimT=0.35;
-  } else if(target){
-    p.mgAimMode=p.mgLockId?'lock':'auto';
-    const want=Math.atan2(target.y-p.y,target.x-p.x), tr=(hullCfg().turret.rate+5)*dt;
     p.ta+=clamp(angDiff(p.ta,want),-tr,tr);
-  } else p.mgAimMode='auto';
+  } else if(mode==='manual'||(mode==='hybrid'&&p.aimT>0)){
+    p.mgAimMode='manual';p.aimT=Math.max(0,(p.aimT||0)-dt);
+  } else {
+    p.mgAimMode=p.mgLockId?'lock':'auto';
+    if(target){const want=Math.atan2(target.y-p.y,target.x-p.x),tr=(hullCfg().turret.rate+5)*dt;p.ta+=clamp(angDiff(p.ta,want),-tr,tr);}
+  }
   p.mgLockFlash=Math.max(0,(p.mgLockFlash||0)-dt);
 }
 function shieldActive(){ return player.shieldT>0||player.shieldGrace>0; }
@@ -203,6 +209,7 @@ function rollDrops(e,cause){
   const mul=dm.drop*(bonus?3.2:1)*comboMul();
   const drop=(kind,extra)=>{ if(pickups.length>12)pickups.shift();
     pickups.push(Object.assign({x:e.x+rnd(-10,10),y:e.y+rnd(-10,10),t:16,bob:rnd(6),kind},extra||{})); SFX.drop(); };
+  if(e.elite){drop('part',{val:2});drop('heal');return;}
   if(e.boss){
     const n=2+RUN.cycle+Math.round(dm.reward);
     for(let i=0;i<Math.min(n,7);i++)drop('part',{val:(bonus?2:1)});
@@ -308,13 +315,18 @@ function updMslVolley(dt){
     }
   }
 }
+function tryAirstrike(){
+  if(!player||player.strikeCd>0)return false;
+  if(!callAirstrike()){showToast(T('noTarget'));return false;}
+  player.strikeCd=5*calcStats().cdMul;return true;
+}
 function callAirstrike(){
-  const target=mgCandidates()[0]; if(!target)return;
+  const cs=mgCandidates(),target=cs.find(e=>e.id===player.mgLockId)||cs[0]; if(!target)return false;
   const a=rnd(0,Math.PI*2),orbit=120;
   planes.push({ox:player.x+Math.cos(a)*orbit,oy:player.y+Math.sin(a)*orbit,
     x:player.x+Math.cos(a)*orbit,y:player.y+Math.sin(a)*orbit,phase:a,radius:orbit,
-    dropT:0.45,drops:7,targetId:target.id});
-  SFX.strike(player.x,player.y); floater(player.x,player.y-26,T('strikeMsg'),PAL.gold,9);
+    dropT:0.45,drops:7,life:0,targetId:target.id});
+  SFX.strike(player.x,player.y); floater(player.x,player.y-26,T('strikeMsg'),PAL.gold,9); return true;
 }
 
 /* ============================================================
@@ -399,7 +411,7 @@ function updPlayer(dt){
     p.bodyA+=clamp(angDiff(p.bodyA,mA),-mv.turnRate*dt,mv.turnRate*dt); }
   /* v1.8 W2: 炮塔 — 有瞄准输入按 turret.rate 平滑跟随, 松手永久保持最后方向(契约§2) */
   updateMgAim(dt);
-  p.aimT=Math.max(0,(p.aimT||0)-dt);
+
   p.inv=Math.max(0,p.inv-dt); p.flash=Math.max(0,p.flash-dt);
   p.shieldT=Math.max(0,p.shieldT-dt); p.shieldCd=Math.max(0,p.shieldCd-dt);
   p.shieldAge+=dt;
@@ -411,14 +423,14 @@ function updPlayer(dt){
   p.strikeCd=Math.max(0,p.strikeCd-dt);
   p.fireM-=dt; p.fireC-=dt;
   if(p.maxHp!==calcStats().maxHp){ const ns=calcStats(); p.hp=Math.min(p.hp+Math.max(0,ns.maxHp-p.maxHp),ns.maxHp); p.maxHp=ns.maxHp; }
-  if(IN.mg()&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)*calcStats().wcdMul/hullCfg().mgDps; fireMG(); }
+  if((IN.mg()||(SET.autoFire&&mgCandidates().length>0))&&p.fireM<=0){ p.fireM=0.085*(COMBO.od?0.87:1)*calcStats().wcdMul/hullCfg().mgDps; fireMG(); }
   if(IN.cannon()&&p.fireC<=0){ p.fireC=0.55*(COMBO.od?0.9:1)*calcStats().wcdMul; fireCannon(); }
   /* v1.8 W4: 多锁导弹 — 冷却期禁蓄力; 蓄力期间持续刷新锁定快照; 松手→弹幕队列 */
   p.mslCd=Math.max(0,p.mslCd-dt);
   updMslVolley(dt);
   if(IN.msl()&&p.mslCd<=0){ p.charging=true; p.charge=Math.min(1.2,p.charge+dt); updMslLocks(mslCount(p.charge)); }
   else if(p.charging){ releaseMsl(); p.charging=false; p.charge=0; p.lockSlots.length=0; }
-  if(PAD.just.strike&&p.strikeCd<=0){ p.strikeCd=5*calcStats().cdMul; callAirstrike(); }
+  if(PAD.just.strike)tryAirstrike();
   if(PAD.just.shield&&p.shieldCd<=0){ const sc=hullCfg().shield; p.shieldT=sc.dur; p.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); p.shieldAge=0; SFX.shield(p.x,p.y); }
   const tid=tileAtPx(p.x,p.y);
   const disp=Math.hypot(p.x-px0,p.y-py0);   /* v1.7: 实际位移(顶墙卡住时≈0) — 特效与残影共用的判定 */
@@ -469,7 +481,7 @@ function tryContact(e){
           floater(e.x,e.y-16,''+Math.round(60*calcStats().atk),PAL.gold,11);
         } else {
           applyDamage(e,55,'ram');
-          floater(e.x,e.y-16,'CRUSH!',PAL.gold,12,0.3);
+          floater(e.x,e.y-16,e.dead?'CRUSH!':T('ramHit'),PAL.gold,12,0.3);
         }
         /* v1.8 W3.5: 击退=速度冲量(敌 kv 击退场, exp 衰减), 玩家反冲按质量比 — 禁位移直改 */
         const kbV=e.boss?70:240;
@@ -501,11 +513,7 @@ function tryContact(e){
 function d2p(e){ return Math.hypot(player.x-e.x,player.y-e.y); }
 const DODGE_P=[0,0.3,0.5,0.7,0.85];   /* v1.8 W6平衡: 侧闪概率按难度 */
 function updEnemies(dt){
-  const aliveReg=enemies.filter(e=>!e.boss).length;
-  if(ST.spawnedN<cfg.quota-1){
-    ST.spawnT-=dt;
-    if(ST.spawnT<=0&&aliveReg<cfg.conc+Math.min(2,Math.floor(RUN.cycle/2))){ spawnEnemy(); ST.spawnedN++;
-      ST.spawnT=Math.max(1.0,2.4-0.12*RUN.lvl); } }
+  updateEncounter(dt);
   if(!ST.bossSpawned&&ST.bossWarn===0&&ST.spawnedN>=cfg.quota-1&&enemies.length===0){
     ST.bossWarn=1.6; SFX.horn(); BGM.play('bossintro',false); }
   if(ST.bossWarn>0){ ST.bossWarn-=dt; if(ST.bossWarn<=0)spawnBoss(); }
@@ -516,6 +524,7 @@ function updEnemies(dt){
     e.flash=Math.max(0,e.flash-dt); e.ramCd=Math.max(0,e.ramCd-dt); e.touchCd=Math.max(0,e.touchCd-dt);
     e.jitter=Math.max(0,(e.jitter||0)-dt);
     /* ---- 被击飞: 直线飞行/敌敌碰撞/撞墙终止 ---- */
+    if(e.elite&&!e.flying){updateAce(e,dt);continue;}
     if(e.flying){
       const f=e.flying;
       e.a+=11*dt;
@@ -596,6 +605,10 @@ function updEnemies(dt){
         mx=gx/gl; my=gy/gl;
       } else e.escort=false;
     }
+    if(e.formation){const g=e.formation,s=e.slot;
+      const gx=g.x-Math.cos(g.a)*s.back-Math.sin(g.a)*s.side-e.x,gy=g.y-Math.sin(g.a)*s.back+Math.cos(g.a)*s.side-e.y;
+      const gl=Math.hypot(gx,gy);mx=gl>4?gx/gl:0;my=gl>4?gy/gl:0;
+    }
     /* v1.8 W6平衡: 坦克侧闪战术 — 来弹威胁→履带亮光前兆(telegraph)→反应延迟120-300ms
        →横向击退速度闪避; 冷却1.5-3s; 难度门控 简单0/普通30%/困难50%/噩梦70%/疯狂85% */
     if(e.kind==='tank'&&!e.boss&&!e.flying&&e.stun<=0){
@@ -625,7 +638,8 @@ function updEnemies(dt){
     const ml=Math.hypot(mx,my)||1;
     const spd=e.speed*slowMul(tileAtPx(e.x,e.y));
     /* v1.8 W3.5: 击退速度场叠加进位移(经碰撞路径), 指数衰减 */
-    moveCirc(e,mx/ml*spd*dt+(e.kvx||0)*dt,my/ml*spd*dt+(e.kvy||0)*dt,e.r);
+    if(e.formation)tacticalMove(e,mx/ml*spd+(e.kvx||0),my/ml*spd+(e.kvy||0),dt);
+    else moveCirc(e,mx/ml*spd*dt+(e.kvx||0)*dt,my/ml*spd*dt+(e.kvy||0)*dt,e.r);
     e.kvx=(e.kvx||0)*Math.exp(-6*dt); e.kvy=(e.kvy||0)*Math.exp(-6*dt);
     e.dist+=spd*dt;
     if(Math.random()<0.15){ const tid=tileAtPx(e.x,e.y);
@@ -745,7 +759,7 @@ function updShots(dt){
           }
         }
         /* 僚机承伤: 敌弹撞僚机 */
-        else if(wingman&&wingman.downT<=0&&dist2(s.x,s.y,wingman.x,wingman.y)<(wingman.r+s.r)*(wingman.r+s.r)){
+        else if(!duelActive()&&wingman&&wingman.downT<=0&&dist2(s.x,s.y,wingman.x,wingman.y)<(wingman.r+s.r)*(wingman.r+s.r)){
           wingman.hp-=s.dmg*0.6; hitFx(s.x,s.y,'armor',s.ang); burst(s.x,s.y,4,[PAL.gold,PAL.white],60,0.25);
           if(wingman.hp<=0){ wingmanDown(); }
           dead=true;
@@ -762,33 +776,47 @@ function updShots(dt){
 }
 function updPlanes(dt){
   for(let i=planes.length-1;i>=0;i--){ const pl=planes[i];
-    pl.ox=pl.x; pl.oy=pl.y;
+    pl.ox=pl.x; pl.oy=pl.y; pl.life=(pl.life||0)+dt;
     pl.phase+=dt*1.35; pl.radius=120+Math.sin(ST.t*1.7+pl.phase)*14;
     pl.x=player.x+Math.cos(pl.phase)*pl.radius; pl.y=player.y+Math.sin(pl.phase)*pl.radius; pl.dropT-=dt;
-    if(pl.dropT<=0&&pl.drops>0){ pl.drops--; pl.dropT=0.15;
+    if(pl.dropT<=0&&pl.drops>0){ pl.dropT=0.15;
       const cs=mgCandidates(), e=cs.find(x=>x.id===pl.targetId)||cs[0];
-      if(e){const bx=e.x+rnd(-18,18),by=e.y+rnd(-18,18); bombs.push({x:pl.x,y:pl.y,tx:bx,ty:by,ox:pl.x,oy:pl.y,t:0.48,life:0}); SFX.airDrop(bx,by);}
+      if(e){pl.drops--; const bx=e.x+rnd(-18,18),by=e.y+rnd(-18,18); bombs.push({x:pl.x,y:pl.y,tx:bx,ty:by,ox:pl.x,oy:pl.y,t:0.48,life:0}); SFX.airDrop(bx,by);}
     }
-    if(pl.drops<=0&&pl.dropT<=-0.8)planes.splice(i,1);
+    if((pl.drops<=0&&pl.dropT<=-0.8)||pl.life>8)planes.splice(i,1);
   }
   for(let i=bombs.length-1;i>=0;i--){ const b=bombs[i]; b.ox=b.x; b.oy=b.y; b.t-=dt;
     b.life+=dt; const k=clamp(b.life/0.48,0,1); b.x=b.ox+(b.tx-b.ox)*Math.min(1,k*1.2); b.y=b.oy+(b.ty-b.oy)*Math.min(1,k*1.2);
     if(b.t<=0){b.x=b.tx;b.y=b.ty;explodeAt(b.x,b.y,30,20,false,'airstrike',0,2);bombs.splice(i,1);} }
 }
+function grantPickup(pk){
+  if(pk.collected)return; // Clear settlement and visual arrival share one grant.
+  pk.collected=true;
+  if(pk.kind==='heal'){ player.hp=Math.min(player.maxHp,player.hp+16);
+    floater(player.x,player.y-20,T('healMsg'),PAL.lime,9); SFX.heal(); }
+  else if(pk.kind==='part'){ RUN.pts+=pk.val;
+    floater(player.x,player.y-20,T('ptsMsg')+pk.val,PAL.gold,9); SFX.pick(); }
+  else { RUN.eq[pk.eqk]++;
+    floater(player.x,player.y-20,T('eqGet')+pickupName(pk),PAL.white,9); SFX.heal(); }
+}
+function settleClearLoot(){
+  for(const pk of pickups)grantPickup(pk);
+}
 function updPickups(dt){
+  const collecting=ST.state==='clear';
   for(let i=pickups.length-1;i>=0;i--){ const pk=pickups[i];
-    pk.t-=dt; pk.bob+=dt*4;
-    if(pk.t<=0){pickups.splice(i,1);continue;}
+    if(!collecting)pk.t-=dt;
+    pk.bob+=dt*4;
+    if(!collecting&&pk.t<=0){pickups.splice(i,1);continue;}
+    if(collecting){const dx=player.x-pk.x,dy=player.y-pk.y,d=Math.hypot(dx,dy);
+      const step=Math.min(d,(260+d*4)*dt);
+      if(d){pk.x+=dx/d*step;pk.y+=dy/d*step;}}
     if(dist2(pk.x,pk.y,player.x,player.y)<16*16){
-      if(pk.kind==='heal'){ player.hp=Math.min(player.maxHp,player.hp+16);
-        floater(player.x,player.y-20,T('healMsg'),PAL.lime,9); SFX.heal(); }
-      else if(pk.kind==='part'){ RUN.pts+=pk.val;
-        floater(player.x,player.y-20,T('ptsMsg')+pk.val,PAL.gold,9); SFX.pick(); }
-      else { RUN.eq[pk.eqk]++;
-        floater(player.x,player.y-20,T('eqGet')+pickupName(pk),PAL.white,9); SFX.heal(); }
+      grantPickup(pk);
       burst(pk.x,pk.y,8,[PAL.gold,PAL.white],60,0.4);
       pickups.splice(i,1);
-    } }
+    }
+  }
 }
 function updParts(dt){
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i];
@@ -844,6 +872,7 @@ function wingmanDown(){
 }
 function updWingman(dt){
   if(!wingman||!player)return;
+  if(duelActive())return;
   const w=wingman, cfg=WINGS[w.type], g=RUN.wingmanGrowth||wingGrowthDef();
   w.ox=w.x; w.oy=w.y;
   wingThreatT=Math.max(0,wingThreatT-dt);
@@ -877,7 +906,7 @@ function updWingman(dt){
       const nx=cdx/cd, ny=cdy/cd, push=minD-cd;
       const wShare=0.74, pShare=0.26;
       w.x+=nx*push*wShare; w.y+=ny*push*wShare;
-      player.x-=nx*push*pShare; player.y-=ny*push*pShare;
+      moveCirc(player,-nx*push*pShare,-ny*push*pShare,player.r);
       const rvx=w.vx-player.vx, rvy=w.vy-player.vy, rel=rvx*nx+rvy*ny;
       if(rel<0){
         const j=-rel;

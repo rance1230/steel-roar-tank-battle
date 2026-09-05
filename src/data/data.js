@@ -48,7 +48,7 @@ zh:{gameTitle:'钢 铁 咆 哮',sub:'~ 坦 克 大 战 ~',tag:'TANK RAMPAGE · E
  wN_f:'单人作战, 不携带僚机',
  debugOn:'DEBUG MODE ENABLED',dbgGod:'God Mode',dbgHp:'HP 上限',dbgAtk:'攻击倍率',dbgDef:'防御加成',dbgSpd:'速度倍率',
  wingDown:'僚机受损,撤离维修',wingBack:'僚机返场',
- h11t:'我方机体',h11d:'新游戏三选一: 突击型(高速·三枚分锁导弹·瞬发盾)/均衡型(标准全能)/重装型(厚甲重炮·要塞盾)。护盾与导弹行为随机型改变。',
+ h11t:'我方机体',h11d:'突击型：高速、瞬发盾，最多锁定6个目标。均衡型：全能、反射盾，最多5个目标。重装型：厚甲重炮、要塞盾，最多4个目标。',
  h12t:'僚机系统',h12d:'僚机自动索敌开火并随你推进。突击僚机强攻,防御僚机拦截弹丸,自适应随威胁切换。默认配对: 突击→防御/均衡→自适应/重装→突击; 也可更换或无僚机。僚机受损撤离8秒后返场。',
  navHintP:'↑↓ 选择 ←→ 调整 {c} 确认 {b} 返回',
  navHintT:'点按选择项目 · 点按确认',
@@ -117,7 +117,7 @@ ja:{gameTitle:'鋼鉄の咆哮',sub:'~ タンク バトル ~',tag:'TANK RAMPAGE 
  wN_f:'単機出撃',
  debugOn:'DEBUG MODE ENABLED',dbgGod:'God Mode',dbgHp:'HP上限',dbgAtk:'攻撃倍率',dbgDef:'防御補正',dbgSpd:'速度倍率',
  wingDown:'ウィング被弾,離脱修理',wingBack:'ウィング復帰',
- h11t:'機体システム',h11d:'新ゲームで3択: 強襲型(高速·ミサイル3連·瞬間盾)/均衡型(標準)/重装型(重装甲·要塞シールド)。',
+ h11t:'機体システム',h11d:'強襲型：高速・瞬間盾、最大6目標。均衡型：標準・反射盾、最大5目標。重装型：重装甲・要塞盾、最大4目標。',
  h12t:'ウィングシステム',h12d:'ウィングは自動索敵・射撃し随伴する。強襲/防御/適応の3種。被弾すると8秒離脱後復帰。',
  navHintP:'↑↓ 選択 ←→調整 {c} 決定 {b} 戻る',
  navHintT:'タップで選択 · タップで決定',
@@ -186,7 +186,7 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  wN_f:'Deploy solo, no wingman',
  debugOn:'DEBUG MODE ENABLED',dbgGod:'God Mode',dbgHp:'Max HP',dbgAtk:'Attack',dbgDef:'Defense',dbgSpd:'Speed',
  wingDown:'Wingman hit, retreating',wingBack:'Wingman back',
- h11t:'PLAYER HULLS',h11d:'Pick one on new game: ASSAULT (fast, 3 split-lock missiles, reactive shield) / BALANCED (baseline) / FORTRESS (heavy armor, fortress shield). Shield & missiles differ per hull.',
+ h11t:'PLAYER HULLS',h11d:'ASSAULT: fast, reactive shield, up to 6 targets. BALANCED: all-rounder, reflection shield, up to 5 targets. HEAVY: reinforced armor, fortress shield, up to 4 targets.',
  h12t:'WINGMAN',h12d:'Wingman auto-targets and fires alongside you. ASSAULT attacks, GUARD intercepts shots, FLEX adapts. Default pairing: assault→guard, balanced→flex, fortress→assault; changeable. Retreats 8s when damaged.',
  navHintP:'↑↓ Select ←→ Adjust {c} OK {b} Back',
  navHintT:'Tap item to select · Tap to confirm',
@@ -234,6 +234,15 @@ en:{gameTitle:'STEEL ROAR',sub:'~ TANK BATTLE ~',tag:'TANK RAMPAGE · ENDLESS',
  h9t:'Drops & Rewards',h9d:'Enemies may drop repairs / parts / equipment. Bosses always drop big rewards. Higher difficulty, bigger rewards!',
  h10t:'Field Refit',h10d:'Spend the shared points on hull and wingman growth. Upgrade wing fire, HP, rate and interception; hold touch controls for continuous adjustment. Re-form the squad before NG+.'}
 };
+Object.assign(I18N.zh,{"controls": "操作与辅助", "aimSetting": "右摇杆", "aim_auto": "关闭 · 自动", "aim_hybrid": "开启 · 半自动", "aim_manual": "开启 · 手动", "aimHint_auto": "自动跟踪最近敌人；右摇杆关闭", "aimHint_hybrid": "推杆手动瞄准；松杆片刻后恢复自动", "aimHint_manual": "全手动瞄准；松杆保持方向", "autoFire": "自动机枪", "shakeSetting": "画面震动", "reduced": "减弱", "standard": "标准", "noTarget": "范围内无目标，空袭已保留", "ramHit": "冲撞命中", "upHull": "机体", "upWing": "僚机", "upMax": "已达有效上限", "upNext": "下一点", "deploy": "出击", "aimManual": "手动瞄准", "h0d": "WASD / 左摇杆移动，方向键 / 右摇杆瞄准。操作设置可选：自动（关右杆）、半自动（松杆后自动跟踪）、手动（松杆保持方向）。", "h1d": "按住机枪连续射击，主炮与机枪共用炮塔方向。自动/半自动时按锁定切换目标；全手动时由方向键或右摇杆瞄准。可在操作设置开启自动机枪。", "h4d": "空袭优先攻击已锁定目标；否则攻击附近敌人。无目标不消耗冷却。支援机携带7枚炸弹，暂时失去目标会等待，最多护航8秒。", "h10d": "机体与僚机共享强化部件。选择属性可查看实际效果，达到有效上限不扣点；加减键可长按。NG+保留装备和周目，已投入的强化全额退回重配。"});
+Object.assign(I18N.en,{"controls": "Controls & assists", "aimSetting": "Right stick", "aim_auto": "Off / Auto", "aim_hybrid": "On / Hybrid", "aim_manual": "On / Manual", "aimHint_auto": "Tracks nearby enemies; right stick disabled", "aimHint_hybrid": "Aim with stick; release to resume auto tracking", "aimHint_manual": "Aim manually; release to keep heading", "autoFire": "Auto machine gun", "shakeSetting": "Screen shake", "reduced": "Reduced", "standard": "Standard", "noTarget": "No target in range. Airstrike retained.", "ramHit": "RAM HIT", "upHull": "HULL", "upWing": "WINGMAN", "upMax": "Effective limit reached", "upNext": "Next point", "deploy": "DEPLOY", "aimManual": "MANUAL AIM", "h0d": "WASD / left stick moves; arrows / right stick aims. Settings: Auto disables right stick; Hybrid resumes tracking after release; Manual keeps the last heading.", "h1d": "Hold MG to fire. Cannon and MG share turret heading. Cycle lock in Auto/Hybrid; aim with arrows or right stick in Manual. Optional auto fire is in Controls.", "h4d": "Support targets your lock, then nearby enemies. No target means no cooldown spent. Seven bombs; waits briefly after losing targets, with an eight-second escort limit.", "h10d": "Hull and wingman share points. Select an upgrade to inspect actual gains. Effective caps prevent wasted points. NG+ keeps equipment and cycle, refunding all growth for a new build."});
+Object.assign(I18N.ja,{"controls": "操作とアシスト", "aimSetting": "右スティック", "aim_auto": "OFF・自動", "aim_hybrid": "ON・半自動", "aim_manual": "ON・手動", "aimHint_auto": "近くの敵を自動追尾・右スティックOFF", "aimHint_hybrid": "スティックで照準・離すと自動追尾", "aimHint_manual": "手動照準・離しても方向を維持", "autoFire": "機銃自動射撃", "shakeSetting": "画面振動", "reduced": "弱", "standard": "標準", "noTarget": "射程内に目標なし・空襲を温存", "ramHit": "衝突命中", "upHull": "機体", "upWing": "僚機", "upMax": "有効上限に到達", "upNext": "次の強化", "deploy": "出撃", "aimManual": "手動照準", "h0d": "WASD・左スティックで移動、矢印・右スティックで照準。自動は右操作OFF、半自動は離すと自動追尾、手動は方向を維持。", "h1d": "機銃ボタン長押しで連射。主砲と機銃は同じ方向。自動・半自動ではロック切替、手動では右スティックで照準。設定で自動射撃も可能。", "h4d": "ロック対象を優先して支援。目標がなければクールダウンを消費しない。爆弾は7発、目標喪失時は待機し、最大8秒で撤退。", "h10d": "機体と僚機でポイントを共有。強化の実効果と上限を表示。NG+では装備と周回を維持し、成長ポイントを全額返却して再編成。"});
+Object.assign(I18N.zh,{"guardOnly": "仅防御 / 自适应僚机启用拦截", "nextCycle": "出击进入第 {n} 周目", "brief_move": "左摇杆移动；右摇杆模式可在设置切换。", "brief_mg": "按住连发。自动机枪可在操作设置开启。", "brief_cannon": "主炮沿炮塔方向开火，命中产生范围爆炸。", "brief_msl": "按住蓄力，松开发射多目标追踪导弹。", "brief_strike": "向锁定或附近敌人投弹；无目标保留冷却。", "brief_sprint": "加速移动，正面高速接敌触发冲撞。", "brief_shield": "迎弹开启护盾；精确时机可以弹反。", "brief_lock": "自动/半自动：切换锁定目标。手动：关闭锁定。", "brief_pause": "暂停后可调整操作模式、声音和难度。"});
+Object.assign(I18N.en,{"guardOnly": "Interception: Guard / Adaptive wings only", "nextCycle": "Deploy into cycle {n}", "brief_move": "Left stick moves. Choose right-stick mode in settings.", "brief_mg": "Hold to fire. Optional auto fire is in Controls.", "brief_cannon": "Fires along turret heading; explodes on impact.", "brief_msl": "Hold to charge, release for multi-target missiles.", "brief_strike": "Bombs your lock or a nearby enemy. No target: retained.", "brief_sprint": "Accelerate into enemies for a frontal ram.", "brief_shield": "Activate as shots arrive for a precise reflection.", "brief_lock": "Cycle targets in Auto / Hybrid. Disabled in Manual.", "brief_pause": "Pause to change controls, sound and difficulty."});
+Object.assign(I18N.ja,{"guardOnly": "迎撃は防御・適応型僚機のみ", "nextCycle": "第 {n} 周へ出撃", "brief_move": "左で移動。右スティックのモードは設定で変更。", "brief_mg": "長押しで連射。設定で自動射撃も選択可能。", "brief_cannon": "砲塔方向に射撃し、命中時に範囲爆発。", "brief_msl": "長押しでチャージ、離して追尾弾を発射。", "brief_strike": "ロックか近くの敵を爆撃。目標なしなら温存。", "brief_sprint": "加速して正面から敵に衝突。", "brief_shield": "着弾に合わせて展開すると反射。", "brief_lock": "自動・半自動で対象切替。手動では無効。", "brief_pause": "操作、音声、難易度を一時停止中に変更。"});
+Object.assign(I18N.zh,{"short_move": "移动", "short_mg": "机枪", "short_cannon": "主炮", "short_msl": "导弹", "short_strike": "空袭", "short_sprint": "加速", "short_shield": "护盾", "short_lock": "锁定", "short_pause": "暂停"});
+Object.assign(I18N.en,{"short_move": "Move", "short_mg": "MG", "short_cannon": "Cannon", "short_msl": "Missile", "short_strike": "Air", "short_sprint": "Boost", "short_shield": "Shield", "short_lock": "Lock", "short_pause": "Pause"});
+Object.assign(I18N.ja,{"short_move": "移動", "short_mg": "機銃", "short_cannon": "主砲", "short_msl": "ミサイル", "short_strike": "空襲", "short_sprint": "加速", "short_shield": "シールド", "short_lock": "ロック", "short_pause": "停止"});
 function T(k){const d=I18N[SET.lang]||I18N.zh;return d[k]!==undefined?d[k]:k;}
 function TF(k,map){let s=T(k);for(const key in map)s=s.split('{'+key+'}').join(map[key]);return s;}
 
@@ -270,3 +279,8 @@ const LEVELS=[
  {th:6, ground:'waste',rain:false,river:true, quota:30,tankR:0.65,hp:1.60,rate:1.50,dmg:1.30,conc:8,boss:'tank', bossHp:720},
 ];
 function themeCfg(){ return THEMES[cfg?cfg.th:0]||THEMES[0]; }
+
+// Wave / ace guide and repeat-input hint (same mechanics in every language).
+Object.assign(I18N.zh,{upHoldHint:'长按 ← / → 连续减点 / 加点',h13t:'敌军编队与精英对决',h13d:'敌人以楔形、横列或双翼编队推进。每关中段清场后迎战一台精英：深色机体继承我方约80%属性，能加速与开盾。红圈为技能预警；护盾有空档。单挑时僚机待命，击破后恢复支援。'});
+Object.assign(I18N.en,{upHoldHint:'Hold ← / → to decrease / increase',h13t:'Formations and ace duels',h13d:'Waves advance in wedge, line or pincer formations. Mid-stage, clear the wave to face one dark-armored ace with 80% of your core stats, boost and shield. Red rings warn of abilities; shields have downtime. Your wingman stands by during the duel and rejoins afterward.'});
+Object.assign(I18N.ja,{upHoldHint:'← / → 長押しで連続減算 / 加算',h13t:'敵編隊とエース対決',h13d:'敵は楔形・横陣・挟撃で進撃。各ステージ中盤の掃討後、味方の約80%の能力を持つ暗色エースと対決します。加速とシールドの前に赤い予告が出ます。盾の隙を狙いましょう。対決中は僚機が待機し、撃破後に復帰します。'});

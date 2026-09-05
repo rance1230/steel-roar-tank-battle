@@ -94,3 +94,16 @@ RUN.up = Object.assign({hp:0,spd:0,atk:0,def:0,cdr:0}, saved.up||{})   // loadRu
 
 - 旧套件除 §1 SUPERSEDED 项必须全 PASS；SUPERSEDED 项由本契约对应新断言替代验收
 - 新断言归属：W9 Layer B 专项套件（tools/regress/verify18.js，随各 W 落地逐步补充）
+
+
+## 2026-09-05 操作与成长增量（优先于上方旧版瞄准描述）
+
+- `SET.aimMode`: `auto` / `hybrid` / `manual`；旧设置缺字段默认 `hybrid`。右虚拟摇杆只在后两档可见；键盘/手柄右杆同受此设置约束。
+- auto：忽略瞄准轴，自动跟踪近敌；I / 锁定可固定目标。
+- hybrid：输入高于死区时手动转向；松手保持 0.65 秒后恢复跟踪。自动换目标有距离滞回，避免近距离交叉敌人反复抢锁。
+- manual：无自动炮塔追踪，松手保留方向，I 不改变目标。导弹和空袭独立寻敌机制保持。
+- 切换档位清除瞬态输入；每帧重新计算 PAD 瞄准轴，释放/取消/切后台均不保留旧轴。
+- NG+：保留 cycle、eq、score/kills/time；up 和 wingmanGrowth 全额退回 pts。部署时 cycle 恰好加一；取消重编队回 win 卡。
+- 冷却有效上限 21，防御按装备补偿后的 85% 上限计算。高于上限的旧投入仍可退还；无效增加不扣点。
+- 空袭无目标不扣冷却。优先显式锁定；飞行中失锁不扣炸弹，最多等待至护航总时长 8 秒。
+- 回归：`node tools/regress/verify20.js`；构建后加 `GAME_URL=file:///绝对路径/index.html`。完整回归：`npm test`；当前视觉：`npm run screenshots`。

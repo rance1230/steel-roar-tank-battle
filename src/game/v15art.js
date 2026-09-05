@@ -148,13 +148,13 @@ V15.flushHd=function(ox,oy){
         if(q.id){
           const vm=q.id.replace(/^hulls_/,'');
           const mm=typeof V18M!=='undefined'&&V18M.meta[vm];
-          if(mm){ const gi=V18M.frameIndex(vm,q.ang||0); f=V18M.ghostFrame(vm,gi,q.lv||0); }
+          if(mm){ const gi=V18M.frameIndex(vm,q.ang||0); f=V18M.ghostFrame(vm,gi,q.lv||0,q.ta); }
           else {
             const m=V18.meta[q.id];
             if(m){ const gi=V18.frameIndex(q.id,q.ang||0); f=V18.ghostFrame(q.id,gi,q.lv||0); wg=w*m.scales[gi]; }
           }
         } else f=V15.ghostFrame(sp,V15.dirIndex(sp,q.ang||0),q.lv||0);
-        uctx.save(); uctx.imageSmoothingEnabled=false;
+        uctx.save(); uctx.imageSmoothingEnabled=true;
         uctx.globalAlpha=q.alpha!==undefined?q.alpha:0.8;
         if(f)uctx.drawImage(f,Math.round(q.x-wg/2),Math.round(q.y-wg/2),wg,wg);
         else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w,q.alpha);
@@ -162,7 +162,7 @@ V15.flushHd=function(ox,oy){
       }
       if(!v15Image(sp.img))continue;
       /* 落影: 俯视单位椭圆影贴脚 (小而淡, 别压过暖光池) */
-      uctx.save(); uctx.globalAlpha=q.boss?0.36:0.26; uctx.fillStyle=PAL.shadow;
+      uctx.save(); uctx.globalAlpha=q.kind==='player'&&typeof V18M!=='undefined'&&V18M.valid((RUN.hull||'balanced')+'_hull')?0:(q.boss?0.30:0.20); uctx.fillStyle=PAL.shadow;
       uctx.beginPath(); uctx.ellipse(q.x,q.y+2,w*(q.boss?0.40:0.36),w*0.12,0,0,Math.PI*2); uctx.fill(); uctx.restore();
       /* 阵营辉光: 敌红/僚机与玩家机体色/空袭青 */
       if(q.kind==='enemy'){ v15Glow(q.x,q.y,q.boss?14+Math.sin(ST.t*4)*2:8,PAL.red,q.boss?0.16:((RUN.lvl===4||RUN.lvl===5)?0.2:0.10));   /* W9: 雪地白迷彩敌加红辉光 */
@@ -171,15 +171,21 @@ V15.flushHd=function(ox,oy){
         v15Glow(q.x-Math.cos(q.ang)*w*0.45,q.y-Math.sin(q.ang)*w*0.45,7,PAL.ember,0.20); }
       else if(sp.glow){ v15Glow(q.x+Math.cos(q.ang||0)*w*0.28,q.y+Math.sin(q.ang||0)*w*0.28,
         7+Math.sin(ST.t*5)*1.6,sp.glow,0.13); }
+      if(q.kind==='player')v15Glow(q.x,q.y,w*0.48,PAL.cyan,0.11);
       if(q.kind==='player'&&(q.od||q.sprint))v15Glow(q.x,q.y,24,q.od?PAL.gold:PAL.blue,q.od?0.16:0.11);
       /* 16向帧: 就近方向, 不做旋转; v1.8 W2: 玩家=分层 hull@bodyA + turret@ta, 失败回退整图+ctx炮塔帽 */
       if(q.kind==='player'){
+        uctx.save();uctx.globalAlpha=q.alpha===undefined?1:q.alpha;
         const newMecha=typeof V18M!=='undefined'&&V18M.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w);
         if(!newMecha&&!V18.playerLayers(uctx,q.x,q.y,q.ang||0,q.ta||0,w)){
           v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
           drawTurretOverlay(uctx,q.x,q.y,q.ang||0,q.ta,w/54,(HULLS[RUN.hull]||HULLS.balanced).vis);
         }
-      } else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
+        uctx.restore();
+      } else if(q.elite){if(!V18M.layers(uctx,q.hullKey,q.x,q.y,q.ang||0,q.ta||0,w,true))v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
+        if(q.shield)drawShieldOrb(uctx,q.x,q.y,23,PAL.red,.8,{age:q.shieldAge});
+        if(q.wind){uctx.strokeStyle=PAL.red;uctx.lineWidth=1;uctx.beginPath();uctx.arc(q.x,q.y,26,0,Math.PI*2);uctx.stroke();}
+      }else v15Paint(uctx,sp,q.x,q.y,q.ang||0,w);
       if(q.flash>0){ uctx.save(); uctx.globalCompositeOperation='lighter';
         uctx.globalAlpha=Math.min(0.5,q.flash*1.7); uctx.fillStyle=PAL.white;
         uctx.beginPath(); uctx.ellipse(q.x,q.y,w*0.36,w*0.36,0,0,Math.PI*2); uctx.fill(); uctx.restore(); }
@@ -211,7 +217,8 @@ V15.flushHd=function(ox,oy){
 function v15Player(){
   if(!v15Active()||!player)return false;
   const p=player;
-  if(p.inv>0&&Math.floor(ST.t*10)%2===0)return true;
+  // Keep a readable silhouette during invulnerability, rather than hiding it.
+  const invAlpha=p.inv>0&&Math.floor(ST.t*10)%2===0?0.90:1;
   const sp=v15Spec('player',RUN.hull||'balanced');
   if(!sp||!v15Image(sp.img))return false;
   /* v1.7: 残影彗尾 — 条数随冲刺位移增长(ghostLen/GHOST_GAP, 封顶6), 逐条变浅变淡, 先于本体入队 */
@@ -219,14 +226,14 @@ function v15Player(){
   if(player.ghostA>0.02&&gn>0&&player.trail&&player.trail.length>4){
     const hk=RUN.hull||'balanced';
     const gid=typeof V18M!=='undefined'&&V18M.meta[hk]?('hulls_'+hk):(V18.ready?('hulls_'+hk):null);   /* 新机体优先 */
-    for(let i=0;i<gn;i++){
-      const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e)break;
-      V15.queue.push({kind:'ghost',id:gid,spec:sp,x:e.x,y:e.y,ang:e.a,w:sp.w,
-        alpha:Math.max(0.35,0.85-i*0.1)*player.ghostA,lv:Math.min(5,i)});
+    for(let i=gn-1;i>=0;i--){
+      const e=trailAtDist(player,(i+1)*GHOST_GAP); if(!e||ST.t-e.t>0.28)continue;
+      V15.queue.push({kind:'ghost',id:gid,spec:sp,x:e.x,y:e.y,ang:e.a,ta:e.ta,w:sp.w,
+        alpha:0.25*(1-i/5)*Math.max(0,1-(ST.t-e.t)/0.28)*player.ghostA,lv:Math.min(5,i)});
     }
   }
   const v=hullCfg().vis||{}, sc2=hullCfg().shield;
-  V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.bodyA,ta:p.ta,flash:p.flash||0,
+  V15.queue.push({kind:'player',spec:sp,x:IPx(p),y:IPy(p),ang:p.bodyA,ta:p.ta,alpha:invAlpha,flash:p.flash||0,
     shield:p.shieldT>0||p.shieldGrace>0,shieldA:clamp(p.shieldT/0.5,0.25,1),
     shieldAge:p.shieldAge,shieldFlash:p.shieldFlash||0,fortress:!!sc2.fortress,
     ringCol:v.ring||sp.glow||PAL.aqua,od:COMBO.od,sprint:p.sprintG<0.95});
@@ -235,15 +242,15 @@ function v15Player(){
 function v15Enemy(e){
   if(!v15Active()||!e)return false;
   const jx=e.jitter>0?rnd(-1.3,1.3):0, jy=e.jitter>0?rnd(-1.3,1.3):0;
-  const sp=e.boss?v15Spec('boss','landship'):v15Spec('enemy',e.kind==='tank'?'tank':'truck');
+  const sp=e.elite?v15Spec('player',e.hullKey):e.boss?v15Spec('boss','landship'):v15Spec('enemy',e.kind==='tank'?'tank':'truck');
   if(!sp||!v15Image(sp.img))return false;
-  V15.queue.push({kind:'enemy',spec:sp,x:IPx(e)+jx,y:IPy(e)+jy,ang:e.a,flash:e.flash||0,tg:e.telegraph>0,
+  V15.queue.push({kind:'enemy',elite:!!e.elite,hullKey:e.hullKey,ta:e.ta,shield:e.shieldT>0,shieldAge:e.shieldAge,wind:e.dashWind>0||e.shieldWind>0,spec:sp,x:IPx(e)+jx,y:IPy(e)+jy,ang:e.a,flash:e.flash||0,tg:e.telegraph>0,
     boss:!!e.boss,r:e.r,hp:e.hp/e.maxHp,showHp:!e.boss&&e.hp<e.maxHp,flying:!!e.flying});
   return true;
 }
 function v15Wing(){
   if(!v15Active())return false;
-  if(!wingman||wingman.downT>0||!player)return true;
+  if(!wingman||wingman.downT>0||!player||duelActive())return true;
   const w=wingman;
   const sp=v15Spec('wingman',w.type||'flex');
   if(!sp||!v15Image(sp.img))return false;
@@ -280,8 +287,8 @@ window.drawHullPreviewAI=function(k,x,y,w,h){
       uctx.save();
       uctx.beginPath(); uctx.rect(x,y,w,h); uctx.clip();
       upx(x,y,w,h,PAL.ink);
-      upx(x,y+h-12,w,12,PAL.sand); upx(x+4,y+h-12,w-8,2,PAL.brown);
-      const cx=x+w/2, cy=y+h/2-4, dw=h-14;
+      upx(x,y+h-8,w,8,PAL.panel2); upx(x+4,y+h-8,w-8,1,PAL.rail);
+      const cx=x+w/2, cy=y+h/2, dw=h*1.12;
       const pl=Math.sin(ST.t*1.1)*w*0.06;
       v15Glow(cx,cy,24,col,0.13);
       const newMecha=typeof V18M!=='undefined'&&V18M.layers(uctx,k,cx+pl,cy,-Math.PI/2,-Math.PI/2,dw);

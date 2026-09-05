@@ -1,15 +1,15 @@
 {
-  "version": "1.9.0",
-  "versionCode": 15,
-  "builtAt": "2026-09-04T15:50:59.821Z",
+  "version": "1.10.0",
+  "versionCode": 16,
+  "builtAt": "2026-09-05T14:05:54.388464+00:00",
   "indexHtml": {
-    "bytes": 12637740,
-    "sha256": "a2d2273ee93cf5ff08343a72592703269f6710f22b1313747bfe533ae4fc155f"
+    "bytes": 14928072,
+    "sha256": "ced4edb755e95d902c4eb9605a524ff077472d871f6595eff4d00c2b8cc1ebea"
   },
   "apk": {
-    "bytes": 13653343,
-    "sha256": "a11a314ca05402fc38b4a73b913eef42a882ff213ee04e1056fb447490dcd567",
+    "bytes": 15373151,
+    "sha256": "742635dd8d740060aad93a436f55a3607de08508c02c02e8ac1a9655052c5b2b",
     "path": "android/app/build/outputs/apk/release/app-release.apk"
   },
-  "signer": ""
+  "signer": "SHA-256: 700cfdfd2bef0e7dc4edca060858e928ea18ac84938474fdc5481572e2aa6c5b"
 }

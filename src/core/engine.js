@@ -92,6 +92,7 @@ function keyHint(a){
   return KEY_NAMES[a]||'';
 }
 function pollPad(){
+  PAD.rax=0; PAD.ray=0; // Recompute every frame: released keyboard/touch axes must not stick.
   const gps=navigator.getGamepads?navigator.getGamepads():[];
   let gp=null; for(const g of gps){ if(g&&g.connected){gp=g;break;} }
   PAD.gp=gp;
@@ -129,9 +130,12 @@ function pollPad(){
       }
     }
     /* 任一实体输入(按键/摇杆/十字键)即切换到手柄提示 */
-    let act=am>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
+    let act=am>0.3||rmag>0.3||Math.abs(hx)>HDZ||Math.abs(hy)>HDZ;
     if(!act)for(let i=0;i<gp.buttons.length;i++)if(gp.buttons[i]&&gp.buttons[i].pressed){act=true;break;}
-    if(act)setInMode('pad');
+    if(act){setInMode('pad');
+      const now=performance.now();
+      if((!AC||AC.state!=='running')&&(!PAD.audioWakeAt||now-PAD.audioWakeAt>1000)){PAD.audioWakeAt=now;initAudio();}
+    }
   }
   if(!gp){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}
   else if(Math.abs(VJ.ax)+Math.abs(VJ.ay)>0.02){PAD.ax=VJ.ax;PAD.ay=VJ.ay;}   /* 触屏摇杆优先于闲置手柄轴 */
@@ -238,7 +242,7 @@ function tbtn(label,ic,css,code,press,parent){
   const edge='max(12px,calc(var(--safe-right) + 10px))';
   const inner='calc(var(--safe-right) + '+L+' + 20px)';
   B(cr,'机枪','●',{right:edge,bottom:'calc(var(--safe-bottom) + 16px)',width:L,height:L},'KeyJ');
-  B(cr,'锁定','◎',{right:edge,bottom:'calc(var(--safe-bottom) + '+L+' + '+S+' + 24px)',width:S,height:S},'KeyI',true);
+  B(cl,'锁定','◎',{left:'max(12px,calc(var(--safe-left) + 10px))',bottom:'calc(var(--safe-bottom) + 190px)',width:S,height:S},'KeyI',true);
   B(cr,'主炮','◆',{right:inner,bottom:'calc(var(--safe-bottom) + 4px)',width:S,height:S},'KeyK');
   B(cr,'加速','»',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + 12px)',width:S,height:S},'ShiftLeft');
   B(cr,'导弹','▲',{right:inner,bottom:'calc(var(--safe-bottom) + '+S+' + '+S+' + 20px)',width:S,height:S},'KeyL');
@@ -260,6 +264,10 @@ function resetTouchControls(){ resetTransientInput(); }   /* 兼容别名(updOvl
 function updOvl(){
   /* 触屏按钮层: 虚拟按钮=开 时强制显示; auto 时触屏设备显示, 但当前用手柄则隐藏(回到触屏一点即恢复) */
   const show=((SET.touch==='on')||(SET.touch==='auto'&&hasTouch&&inMode()!=='pad'))&&!MENU&&(ST.state==='play'||ST.state==='intro');
+  const stick=document.getElementById('rjoy');
+  if(stick)stick.style.display=aimMode()==='auto'?'none':'';
+  const lock=TBTNS.find(b=>b.dataset.action==='KeyI');
+  if(lock)lock.style.display=aimMode()==='manual'?'none':'';
   const d=show?'block':'none';
   if(OVL.style.display!==d){ if(d==='none')resetTouchControls(); OVL.style.display=d; }
 }

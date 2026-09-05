@@ -5,13 +5,14 @@ const partPool=[];
 /* ---------- Decal 层 (视觉设计第一版 §7 L5): 弹坑/履带痕迹/油渍, 关卡内持久 ---------- */
 const decalBuf=document.createElement('canvas'); decalBuf.width=WORLDW; decalBuf.height=WORLDH;
 const dctx=decalBuf.getContext('2d');
+function fadeDecals(dt){dctx.save();dctx.globalCompositeOperation='destination-out';dctx.globalAlpha=1-Math.exp(-dt/18);dctx.fillStyle='#000';dctx.fillRect(0,0,WORLDW,WORLDH);dctx.restore();}
 function clearDecals(){ dctx.clearRect(0,0,WORLDW,WORLDH); }
 function stampScorch(x,y,r){
-  dctx.globalAlpha=0.46;
+  r=Math.min(r,22); dctx.globalAlpha=0.22;
   const g=dctx.createRadialGradient(x,y,0,x,y,r);
-  g.addColorStop(0,'rgba(2,4,7,0.9)'); g.addColorStop(0.55,'rgba(2,4,7,0.45)'); g.addColorStop(1,'rgba(2,4,7,0)');
+  g.addColorStop(0,'rgba(45,43,40,0.65)'); g.addColorStop(0.55,'rgba(2,4,7,0.45)'); g.addColorStop(1,'rgba(2,4,7,0)');
   dctx.fillStyle=g; dctx.fillRect(x-r,y-r,r*2,r*2);
-  dctx.globalAlpha=0.5;                                  /* 放射状碎屑飞痕 */
+  dctx.globalAlpha=0.20;                                  /* 放射状碎屑飞痕 */
   for(let i=0;i<7;i++){ const a=rnd(Math.PI*2),d=rnd(r*0.7,r*1.5);
     dctx.fillStyle='rgba(2,4,7,0.6)'; dctx.fillRect(x+Math.cos(a)*d-1,y+Math.sin(a)*d-1,rnd(1,3),rnd(1,2)); }
   for(let i=0;i<5;i++){ const a=rnd(Math.PI*2),d=rnd(r*0.2,r*0.8);   /* 灰白余烬点提对比 */
@@ -144,7 +145,8 @@ function updDynamicLights(dt){
 }
 function cameraKick(power,ang,zoom){
   if(!cam)return;
-  power=power||1; ang=ang===undefined?rnd(Math.PI*2):ang+Math.PI;
+  if(SET.shake===0)return;
+  power=(power||1)*(SET.shake===0.5?0.5:1); if(zoom!==undefined)zoom*=SET.shake===0.5?0.5:1; ang=ang===undefined?rnd(Math.PI*2):ang+Math.PI;
   ST.shake=Math.min(12,ST.shake+power);
   cam.kickX=(cam.kickX||0)+Math.cos(ang)*power*0.45;
   cam.kickY=(cam.kickY||0)+Math.sin(ang)*power*0.45;

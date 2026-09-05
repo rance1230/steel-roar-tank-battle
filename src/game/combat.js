@@ -36,7 +36,7 @@ function applyDamage(e,raw,cause,opts){
     parentId:opts.parentId||0,chainDepth:opts.chainDepth||0,
     comboEligible:opts.comboEligible!==false};
   if(e.dead)return ev;
-  const dmg=raw*(ev.statPolicy?calcStats().atk:1);   /* atk 恰好乘一次 */
+  const dmg=raw*(ev.statPolicy?calcStats().atk:1)*(e.elite?(1-(e.def||0))*(e.shieldT>0?.2:1):1);   /* atk 恰好乘一次 */
   ev.dmg=dmg;
   e.hp-=dmg; e.flash=0.1;
   STATS.dmg[ev.cause]=(STATS.dmg[ev.cause]||0)+dmg;

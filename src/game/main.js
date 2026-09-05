@@ -22,7 +22,7 @@ function startLevel(){
   for(let i=0;i<3;i++){ let bx=0,by=0,ok=false;
     for(let t=0;t<30&&!ok;t++){ bx=rnd(2,MAPW-2)|0; by=rnd(2,MAPH-2)|0; if(tileAt(bx,by)===5)ok=true; }
     lightPools.push({x:bx*TS+8,y:by*TS+8,r:rnd(36,54),ph:rnd(6)}); }
-  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;ST.nextEnemyId=0;
+  ST.killsLevel=0;ST.levelTime=0;ST.spawnT=0.8;ST.bossSpawned=false;ST.bossWarn=0;ST.spawnedN=0;ST.nextEnemyId=0;resetEncounter();
   ST.shake=0;ST.shakeHold=0;ST.flash=0;ST.bolt=null;ST.lightT=rnd(3,7);
   cam={x:clamp(player.x-VW/2,0,WORLDW-VW),y:clamp(player.y-VH/2,0,WORLDH-VH),kickX:0,kickY:0,zoom:0};
   lvlSnap=JSON.parse(JSON.stringify({score:RUN.score,kills:RUN.kills,time:RUN.time,pts:RUN.pts,up:RUN.up,eq:RUN.eq,wingmanGrowth:RUN.wingmanGrowth}));
@@ -39,13 +39,19 @@ function retryLevel(){
   startLevel();
 }
 function levelClear(){
+  if(ST.state!=='play')return;
   ST.state='clear'; ST.clearT=0;
+  ST.clearLoot=pickups.filter(pk=>!pk.collected).length;
+  settleClearLoot(); // Commit all rewards before saving or allowing a fast skip.
+  shots.length=0;bombs.length=0;planes.length=0; // Battle is won; no post-clear damage.
   const bonus=200+Math.max(0,Math.round((90-ST.levelTime))*10);
   RUN.score+=bonus; RUN.time+=ST.levelTime; ST.clearBonus=bonus; saveRun();
   try{ if(!ST.debugActive&&RUN.score>ST.best){ST.best=RUN.score;localStorage.setItem('trBest',''+ST.best);} }catch(e){}   /* §27: Debug 不更新最高分 */
   BGM.play('warp',false);
 }
 function afterClear(){ // clear卡 → 整备或通关
+  if(ST.state!=='clear')return;
+  settleClearLoot();pickups.length=0;saveRun();
   if(RUN.lvl>=LEVELS.length-1){ ST.state='win'; ST.winT=0; ST.creditsBgm=false; saveRun(); BGM.play('win',false); }
   else { ST.state='upgrade'; ST.upg={sel:0,from:'clear'}; }
 }
@@ -96,9 +102,9 @@ function exitCtrlIntro(){
 /* 开局流程: 机体选择 → 僚机选择 → 键位速览 → 战斗 */
 function startNewGame(){ RUN=RUN_DEF(); openMenu('hull','title'); }
 function beginNgPlus(){
-  const pts=RUN.pts;                     /* cycle 由 deployFromUpgrade(from win) 恰好 +1, 此处不预增 */
-  RUN=RUN_DEF(); RUN.pts=pts;
-  ST.flow='ngplus'; openMenu('hull','win');
+  // Preserve the finished run until deployment; refunded growth is fully reusable.
+  refundAll();
+  ST.flow='ngplus'; ST.state='title'; openMenu('hull','win');
 }
 function continueGame(){ if(loadRun())startLevel(); else startNewGame(); }
 
@@ -131,13 +137,14 @@ function onKeyPress(code){
       if(code==='KeyP'||code==='Escape'){ openMenu('pause'); }
       if(code==='KeyI'){ cycleMgLock(); }
       if(code==='Space'){ if(player.shieldCd<=0){ const sc=hullCfg().shield; player.shieldT=sc.dur; player.shieldCd=Math.max(sc.cd*calcStats().cdMul,sc.dur+SHIELD_GRACE+0.25); player.shieldAge=0; SFX.shield(player.x,player.y); } }
-      if(code==='KeyU'&&player.strikeCd<=0){ player.strikeCd=5*calcStats().cdMul; callAirstrike(); }
+      if(code==='KeyU')tryAirstrike();
       break;
   }
 }
 
 /* ---------- 主更新 ---------- */
 function tick(dt){
+  if(ST.state==='play'&&!MENU){ST.decalT=(ST.decalT||0)+dt;if(ST.decalT>=0.5){fadeDecals(ST.decalT);ST.decalT=0;}}
   ST.t+=dt; pollPad(); updOvl(); konamiPad();
   // 手柄菜单导航(长按重复)
   if(MENU&&!MENU.capture&&MENU.id!=='help'){
@@ -153,10 +160,10 @@ function tick(dt){
     if(PAD.just.confirm||PAD.just.back)menuBack(); }
   if(MENU&&MENU.capture&&PAD.gp){ /* pollPad内处理 */ }
   if(ST.state==='upgrade'){
-    if(PAD.just.up){ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length;SFX.pick();}
-    if(PAD.just.down){ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length;SFX.pick();}
-    if(PAD.just.right)upgAdjust(UPG_KEYS[ST.upg.sel],1);
-    if(PAD.just.left)upgAdjust(UPG_KEYS[ST.upg.sel],-1);
+    if(PAD.just.up){stopUpgradeHold();ST.upg.sel=(ST.upg.sel+UPG_KEYS.length-1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.down){stopUpgradeHold();ST.upg.sel=(ST.upg.sel+1)%UPG_KEYS.length;SFX.pick();}
+    if(PAD.just.right)startUpgradeHold(UPG_KEYS[ST.upg.sel],1,'pad','right');
+    if(PAD.just.left)startUpgradeHold(UPG_KEYS[ST.upg.sel],-1,'pad','left');
     tickUpgradeHold(dt);
     if(PAD.just.confirm)deployFromUpgrade();
     updParts(dt); return;
@@ -182,7 +189,7 @@ function tick(dt){
     cam.y+=((clamp(cty0-VH/2,0,WORLDH-VH))-cam.y)*Math.min(1,dt*5);
     updCameraFX(dt);   /* v1.7: shake 衰减并入 (含 shakeHold 门控) */
   }
-  else if(ST.state==='clear'){ ST.clearT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
+  else if(ST.state==='clear'){ ST.clearT+=dt; updPickups(dt); updParts(dt); updDynamicLights(dt); updCameraFX(dt);
     if(PAD.just.confirm)afterClear();
     if(ST.clearT>4)afterClear(); }
   else if(ST.state==='over'){ ST.overT+=dt; updParts(dt); updDynamicLights(dt); updCameraFX(dt);
@@ -230,7 +237,8 @@ function draw(alpha){
     }
   }
   else if(ST.state==='intro'){ drawStageIntroBg(); }
-  else { drawWorld(); if(ST.state==='win')drawWinBG(); }
+  else if(ST.state==='win')drawWinBG();
+  else drawWorld();
   /* 阶段2: nearest-neighbor 放大到显示画布 */
   uctx.setTransform(1,0,0,1,0,0);
   uctx.imageSmoothingEnabled=false;

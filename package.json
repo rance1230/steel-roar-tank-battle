@@ -1,0 +1,11 @@
+{
+  "name": "steel-roar-tank-battle",
+  "version": "1.10.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "test": "node tools/regress/run-release.cjs",
+    "screenshots": "node tools/regress/shot-release.cjs"
+  },
+  "devDependencies": { "playwright-core": "1.62.1" }
+}

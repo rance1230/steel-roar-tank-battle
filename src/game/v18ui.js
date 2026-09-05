@@ -123,11 +123,11 @@ function chip(x,y,idx,st,col,frac,od){
 function badge(g,cx,cy,size,o){
   o=o||{};
   g.save();
-  g.globalAlpha=0.40; g.fillStyle=T.bg;                       /* 代码底色 (透明中心衬底) */
+  g.globalAlpha=size>100?0:0.12; g.fillStyle=T.bg;                       /* 代码底色 (透明中心衬底) */
   g.beginPath(); g.arc(cx,cy,size*0.46,0,Math.PI*2); g.fill();
   g.restore();
   let framed=false;
-  if(ok('badge')){ g.drawImage(imgs.badge,cx-size/2,cy-size/2,size,size); framed=true; }
+  if(ok('badge')&&size<=100){g.save();g.strokeStyle='rgba(54,101,123,0.6)';g.lineWidth=1;g.beginPath();g.ellipse(cx,cy+size*.12,size*.45,size*.32,0,0,Math.PI*2);g.stroke();g.strokeStyle='rgba(255,255,255,0.8)';g.beginPath();g.ellipse(cx,cy+size*.12,size*.40,size*.28,0,0,Math.PI*2);g.stroke();g.restore();framed=true;}
   const w=size*0.58, bodyA=o.bodyA!==undefined?o.bodyA:-Math.PI/2;
   const ta=o.ta!==undefined?o.ta:bodyA;
   let painted=false;
@@ -140,7 +140,7 @@ function badge(g,cx,cy,size,o){
       turret:v.turret||PAL.lite,barrel:v.barrel||PAL.steel,twin:!!v.twin,antenna:true,core:true,dist:ST.t*20,flash:0});
     g.restore(); painted=true;
   }
-  if(!framed){                                                /* 无框图兜底: 代码细环 */
+  if(!framed&&size<=100){                                      /* 无框图兜底: 代码细环 */
     g.strokeStyle=rgba(T.friendly,0.7); g.lineWidth=1.5;
     g.beginPath(); g.arc(cx,cy,size*0.46,0,Math.PI*2); g.stroke();
   }

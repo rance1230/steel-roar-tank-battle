@@ -6,7 +6,7 @@
 <title>钢铁咆哮 · 坦克大战 [DEV]</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2305080d'/%3E%3Cpath d='M32 6l22 10v16c0 12-8 21-22 26C18 53 10 44 10 32V16L32 6z' fill='%23162231' stroke='%2322c0ff' stroke-width='4'/%3E%3Cpath d='M19 35h25v7H19zM23 25h17v10H23zM38 29h13v4H38z' fill='%23f6b94e'/%3E%3C/svg%3E">
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;height:100dvh;background:#05080d;overflow:hidden;
+html,body{margin:0;padding:0;width:100%;height:100%;height:100dvh;background:#d5e3e8;overflow:hidden;
   touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
   radial-gradient(circle at 50% 40%,rgba(34,192,255,.10),transparent 34%),
@@ -15,7 +15,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background:
   opacity:.75}
 #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
-  touch-action:none;box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 24px 80px rgba(0,0,0,.72)}
+  touch-action:none;box-shadow:0 0 0 1px rgba(34,192,255,.28),0 0 0 2px rgba(246,185,78,.10),0 18px 70px rgba(35,65,85,.20)}
 #touchovl{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;
   --touch-s:clamp(48px,11vmin,66px);--touch-l:clamp(64px,13.5vmin,84px);
   --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
@@ -24,10 +24,10 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 /* v1.5: 圆形玻璃高透明按钮 (不支持 backdrop-filter 时自动退化为半透明) */
 .tbtn{position:absolute;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 50% 34%,rgba(126,158,198,0.20),rgba(22,34,49,0.26) 66%,rgba(5,8,13,0.36));
+  background:radial-gradient(circle at 50% 34%,rgba(87,109,120,0.60),rgba(15,26,33,0.80) 66%,rgba(5,8,13,0.88));
   border:1px solid rgba(255,255,255,0.28);border-radius:50%;
   color:rgba(243,247,255,0.82);font-weight:800;letter-spacing:1px;line-height:1.1;
-  -webkit-backdrop-filter:blur(9px) saturate(1.35);backdrop-filter:blur(9px) saturate(1.35);
+  -webkit-backdrop-filter:none;backdrop-filter:none;
   box-shadow:inset 0 0 0 1px rgba(34,192,255,0.15),inset 0 8px 16px rgba(255,255,255,0.06),0 4px 18px rgba(0,0,0,0.38);
   font-size:clamp(10px,2.4vmin,14px);touch-action:none;outline:none;padding:0;appearance:none;-webkit-appearance:none}
 .tbtn .ic{font-size:clamp(14px,3.4vmin,20px);margin-bottom:1px}
@@ -68,8 +68,8 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 .jl{left:6%;top:50%;transform:translateY(-50%)}.jr{right:6%;top:50%;transform:translateY(-50%)}
 #joy.jU .jt,#joy.jD .jb,#joy.jL .jl,#joy.jR .jr,#rjoy.jU .jt,#rjoy.jD .jb,#rjoy.jL .jl,#rjoy.jR .jr{color:#f6b94e;text-shadow:0 0 6px rgba(246,185,78,0.6)}
 /* v1.8 W1: 右摇杆(瞄准) — 金色环区别于左移动杆, 置于右簇按钮栈上方空带 */
-#rjoy{position:absolute;right:calc(var(--safe-right) + var(--touch-l) + 20px);
-  bottom:calc(var(--safe-bottom) + var(--touch-l) + 2*var(--touch-s) + 44px);
+#rjoy{position:absolute;right:calc(var(--safe-right) + var(--touch-l) + var(--touch-s) + 36px);
+  bottom:calc(var(--safe-bottom) + 28px);
   width:clamp(88px,20vmin,132px);height:clamp(88px,20vmin,132px);
   pointer-events:auto;touch-action:none;border-radius:50%;
   background:radial-gradient(circle at 50% 42%,rgba(246,185,78,0.03),rgba(5,8,13,0.05) 58%,rgba(5,8,13,0.12));
@@ -112,11 +112,14 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#05080d;
 <script src="src/data/v18.data.js"></script>
 <script src="src/data/v18_mecha.data.js"></script>
 <script src="src/data/v18_ui.data.js"></script>
+<script src="src/data/v22_art.data.js"></script>
 <script src="src/game/v18mecha.js"></script>
 <script src="src/game/v15art.js"></script>
 <script src="src/game/v15terrain.js"></script>
+<script src="src/game/v22terrain.js"></script>
 <script src="src/game/v18ui.js"></script>
 <script src="src/game/ui.js"></script>
+<script src="src/game/encounters.js"></script>
 <script src="src/game/main.js"></script>
 </body>
 </html>
